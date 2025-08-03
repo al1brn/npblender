@@ -352,7 +352,8 @@ class FieldArray(object):
     
     def __setattr__(self, name, value):
 
-        if name in self._slots or name in type(self).__dict__:
+        #if name in self._slots or name in type(self).__dict__:
+        if name in self._slots or name in dir(self):
             super().__setattr__(name, value)
 
         elif name in self._infos:

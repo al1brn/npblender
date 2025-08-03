@@ -13,15 +13,11 @@ Created on Fri Nov 10 11:13:13 2023
 Root class for geometries
 """
 
+from contextlib import contextmanager
 
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
+from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
+from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
 
-else:
-    from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
 
 
 # =============================================================================================================================
@@ -35,7 +31,6 @@ class Geometry:
 
     def check(self, halt=True):
         return True
-
 
     @staticmethod
     def LoadObject(name):
@@ -129,3 +124,119 @@ class Geometry:
         for domain_name, data in data['domains'].items():
             if data is not None:
                 domains[domain_name].from_dict(data)
+
+    # ====================================================================================================
+    # Object edition
+    # ====================================================================================================
+
+    @contextmanager
+    def object(self, index=0, readonly=True):
+
+        import bpy
+        from . import blender
+
+        temp_name = index if isinstance(index, str) else f"BPBL Temp {index}"
+
+        ctx = bpy.context
+
+        old_sel = [obj.name for obj in bpy.data.objects if obj.select_get()]
+        old_active = ctx.view_layer.objects.active
+        if old_active is None:
+            old_active_name = None
+        else:
+            old_active_name = old_active.name
+
+        bpy.ops.object.select_all(action='DESELECT')        
+
+        obj = self.to_object(temp_name)
+        obj.select_set(True)
+        bpy.context.view_layer.objects.active = obj        
+
+        yield obj
+
+        # ===== Returns from context
+
+        if not readonly:
+            self.capture(type(self).from_object(obj))
+
+        blender.delete_object(obj)
+
+        bpy.ops.object.select_all(action='DESELECT')        
+        for name in old_sel:
+            obj = bpy.data.objects.get(name)
+            if obj is not None:
+                obj.select_set(True)
+
+        if old_active_name is not None:
+            bpy.context.view_layer.objects.active = bpy.data.objects.get(old_active_name)
+
+    # ====================================================================================================
+    # Material
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Index from material name
+    # ----------------------------------------------------------------------------------------------------
+
+    def get_material_index(self, mat_name):
+        """ Return the index of a material name.
+
+        If the material doesn't exist, it is created
+
+        Arguments
+        ---------
+            - mat_name (str) : material name
+
+        Returns
+        -------
+            - int : index of the material name in the materials list
+        """
+
+        if mat_name in self.materials:
+            return self.materials.index(mat_name)
+        else:
+            self.materials.append(mat_name)
+            return len(self.materials)-1
+        
+    # ----------------------------------------------------------------------------------------------------
+    # Add a material or a list of materials
+    # ----------------------------------------------------------------------------------------------------
+
+    def add_materials(self, materials):
+        """ Add a materials list to the existing one.
+
+        If a material already exist, it is not added another time.
+
+        Arguments
+        ---------
+            - materials (list of strs) : the list of materials to append.
+        """
+        if isinstance(materials, str):
+            self.materials.append(materials)
+        else:
+            self.materials.extend(materials)     
+
+    # =============================================================================================================================
+    # Transformation
+    # =============================================================================================================================
+
+    def transform(self, transfo):
+        self.points.position = transfo @ self.points.position
+        return self
+    
+    def translate(self, translation):
+        self.points.position += translation
+        return self
+
+    def scale(self, scale, pivot = None):
+        if pivot is not None:
+            self.points.position -= pivot
+        self.points.position *= scale
+        if pivot is not None:
+            self.points.position += pivot
+
+        return self
+
+
+
+

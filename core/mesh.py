@@ -17,47 +17,26 @@ Mesh geometry.
 from contextlib import contextmanager
 import numpy as np
 
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
+from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
+from . constants import bfloat, bint, bbool
+from . constants import FillCap
+from . import blender
+from . maths import BSplines, Bezier, Poly, Nurbs
+from . maths import Transformation, Quaternion, Rotation
+from . maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_map
+from . maths.topology import border_edges, edges_between, row_edges, col_edges
 
-    from constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    from constants import bfloat, bint, bbool
-    from maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
-
-    from geometry import Geometry
-    from domain import PointDomain, CornerDomain, FaceDomain, EdgeDomain
-
-else:
-    from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    from . constants import bfloat, bint, bbool
-    from . constants import FillCap
-    from . import blender
-    from . maths import BSplines, Bezier, Poly, Nurbs
-    from . maths import Transformation, Quaternion, Rotation
-    from . maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_map
-    from . maths.topology import border_edges, edges_between, row_edges, col_edges
-    
-
-    from . geometry import Geometry
-    from . domain import PointDomain, CornerDomain, FaceDomain, EdgeDomain
+from . geometry import Geometry
+from . domain import PointDomain, CornerDomain, FaceDomain, EdgeDomain
 
 
-    import bpy
-    from mathutils.bvhtree import BVHTree
-    from mathutils import Vector
-    import bmesh
+import bpy
+import bmesh
+from mathutils.bvhtree import BVHTree
 
 
 
 DATA_TEMP_NAME = "npblender_TEMP"
-
-
-
-
-
-    
 
 
 # =============================================================================================================================
@@ -70,9 +49,9 @@ class Mesh(Geometry):
 
         Arguments
         ---------
-            - verts (array of vectors = None) : the vertices
+            - points (array of vectors = None) : the vertices
             - corners (array of ints = None) : corners, i.e. indices on the array of points
-            - sizes (array of ints = None) : size of the faces, the sum of this array must be equal to the length of the corners array
+            - faces (array of ints = None) : size of the faces, the sum of this array must be equal to the length of the corners array
             - materials (str or list of strs = None) : list of materials used in the geometry
             - **attrs (dict) : other geometry attributes
         """
@@ -181,7 +160,7 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     @classmethod
-    def from_mesh(cls, other, points_sel=None, faces_sel=None, edges_sel=None):
+    def from_mesh(cls, other, points=None, faces=None, edges=None):
         """ Create a Mesh from another mesh.
 
         Arguments
@@ -199,23 +178,23 @@ class Mesh(Geometry):
         mesh.faces   = FaceDomain(other.faces,   mode='COPY')
         mesh.edges   = EdgeDomain(other.edges,    mode='COPY')
 
-        if points_sel is None:
+        if points is None:
             points_mask = None
         else:
             points_mask = np.ones(len(mesh.points), dtype=bool)
-            points_mask[points_sel] = False
+            points_mask[points] = False
 
-        if faces_sel is None:
+        if faces is None:
             faces_mask = None
         else:
             faces_mask = np.ones(len(mesh.faces), dtype=bool)
-            faces_mask[faces_sel] = False
+            faces_mask[faces] = False
 
-        if edges_sel is None:
+        if edges is None:
             edges_mask = None
         else:
             edges_mask = np.ones(len(mesh.edges), dtype=bool)
-            edges_mask[edges_sel] = False
+            edges_mask[edges] = False
 
         mesh.delete_vertices(points=points_mask, faces=faces_mask, edges=edges_mask)
 
@@ -288,7 +267,7 @@ class Mesh(Geometry):
 
             a = np.empty(len(bl_mesh.polygons), bint)
             bl_mesh.polygons.foreach_get("loop_total", a)
-            mesh.faces.append_faces(a)
+            mesh.faces.append_sizes(a)
 
             del a
 
@@ -591,45 +570,6 @@ class Mesh(Geometry):
         if not readonly:
             self.capture(Mesh.FromMeshData(data))
 
-    # ====================================================================================================
-    # Object edition
-    # ====================================================================================================
-
-    @contextmanager
-    def object(self, index=0, readonly=True):
-
-        temp_name = index if isinstance(index, str) else f"BPBL Temp Mesh {index}"
-
-        ctx = bpy.context
-
-        old_sel = [obj.name for obj in bpy.data.objects if obj.select_get()]
-        old_active = ctx.view_layer.objects.active
-        if old_active is None:
-            old_active_name = None
-        else:
-            old_active_name = old_active.name
-
-        bpy.ops.object.select_all(action='DESELECT')        
-
-        obj = self.to_object(temp_name)
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj        
-
-        yield obj
-
-        if not readonly:
-            self.capture(Mesh.from_object(obj))
-
-        blender.delete_object(obj)
-
-        bpy.ops.object.select_all(action='DESELECT')        
-        for name in old_sel:
-            obj = bpy.data.objects.get(name)
-            if obj is not None:
-                obj.select_set(True)
-
-        if old_active_name is not None:
-            bpy.context.view_layer.objects.active = bpy.data.objects.get(old_active_name)
 
     # ====================================================================================================
     # From something
@@ -654,54 +594,6 @@ class Mesh(Geometry):
             raise Exception(f"Mesh.from_model: 'model' type is not valid: {type(model)}")
 
         return mesh
-    
-    # =============================================================================================================================
-    # Material
-    # =============================================================================================================================
-
-    def get_material_index(self, mat_name):
-        """ Return the index of a material name.
-
-        If the material doesn't exist, it is created
-
-        Arguments
-        ---------
-            - mat_name (str) : material name
-
-        Returns
-        -------
-            - int : index of the material name in the materials list
-        """
-
-        if mat_name in self.materials:
-            return self.materials.index(mat_name)
-        else:
-            self.materials.append(mat_name)
-            return len(self.materials)-1
-
-    def change_material(self, old, new):
-        """ Change the material index from one value to another.
-
-        Arguments
-        ---------
-            - old (int) : material index to replace
-            - new (int) : new material index
-        """
-        self.faces.material_index[self.faces.material_index == old] = new
-
-    def add_materials(self, materials):
-        """ Add a materials list to the existing one.
-
-        If a material already exist, it is not added another time.
-
-        Arguments
-        ---------
-            - materials (list of strs) : the list of materials to append.
-        """
-        if isinstance(materials, str):
-            self.materials.append(materials)
-        else:
-            self.materials.extend(materials)
 
     # =============================================================================================================================
     # Utility
@@ -724,19 +616,9 @@ class Mesh(Geometry):
     def join(self, *others):
         """ Join other Meshes.
 
-        To append the MeshBuilder:
-            - The verts, faces and corners arrays array appended
-            - Before being appends, the values of the corners array are shifted by the number of existing vertices
-            - The materials are merged:
-                - materials is added with add_materials
-                - appended material indices are remapped to the new materials list
-
-        If the appened geometry has attributes which don't exist, they are created.
-
         Arguments
         ---------
-            - other (Mesh) : the Mesh to append
-            - quick (bool=False) : don't check the attributes and the material indices
+            - others (Mesh) : the Mesh to append
         """
 
         for other in others:
@@ -873,28 +755,6 @@ class Mesh(Geometry):
 
     def __imul__(self, count):
         return self.multiply(count, in_place=True)
-    
-    # =============================================================================================================================
-    # Transformation
-    # =============================================================================================================================
-
-    def transform(self, transfo):
-        self.points.position = transfo @ self.points.position
-        return self
-    
-    def translate(self, translation):
-        self.points.position += translation
-        return self
-
-    def scale(self, scale, pivot = None):
-        if pivot is not None:
-            self.points.position -= pivot
-        self.points.position *= scale
-        if pivot is not None:
-            self.points.position += pivot
-
-        return self
-
 
     # =============================================================================================================================
     # Editing
@@ -1012,7 +872,7 @@ class Mesh(Geometry):
             faces = np.ones(nfaces, dtype=bint)*faces
         
         added['corners'] = self.corners.append(vertex_index=corners, **disp_attrs['corners'])
-        added['faces'] = self.faces.append_faces(faces, **disp_attrs['faces'])
+        added['faces'] = self.faces.append_sizes(faces, **disp_attrs['faces'])
 
         if safe_mode:
             self.check()

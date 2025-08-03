@@ -1,99 +1,150 @@
-# ====================================================================================================
-# Tests
-# ====================================================================================================
-
-import matplotlib.pyplot as plt
-from numpy import pi
 import numpy as np
 
-from maths.distribs import *
+class Test:
+    def __init__(self, is_scalar=False):
+        self.is_scalar = is_scalar
 
-# Ici, on suppose que tes fonctions sont importées :
-# from mymodule import circle_dist, arc_dist, rect_dist, pie_dist, disk_dist
+    def __len__(self):
+        return 4
+    
+    def _broadcast_t(self, t):
+        """
+        Broadcast parameter t according to (B, T) convention.
 
-def plot_2d(points, title, ax=None, equal=True):
-    if ax is None:
-        fig, ax = plt.subplots()
-    ax.plot(points[:, 0], points[:, 1], '.', markersize=2)
-    ax.set_title(title)
-    ax.grid(True)
-    if equal:
-        ax.set_aspect('equal')
+        If self is_scalar:
+            - t.shape == ()         → result shape: ()
+            - t.shape == (T,)       → result shape: (T,)
+        
+        If self is a batch of B splines:
+            - t.shape == ()         → result shape: (B,)
+            - t.shape == (T,)       → result shape: (B, T)
+            - t.shape == (1, T)     → result shape: (B, T)
+            - t.shape == (B, T)     → result shape: (B, T)
 
-def test_distributions_2d(count=1000):
-    fig, axs = plt.subplots(2, 3, figsize=(12, 8))
+        Returns
+        -------
+        - t: broadcasted array of shape (B, T)
+        - res_shape: tuple to reshape result (e.g., (B, T, 3))
+        """
+        if self.is_scalar:
+            B = 1
+        else:
+            B = len(self)
 
-    # ----- CIRCLE -----
-    d = circle_dist(radius=1.0, count=count, seed=0)
-    plot_2d(d['points'], "circle_dist", axs[0, 0])
+        t = np.asarray(t)
+        if t.shape == ():
+            t = np.broadcast_to(t, (B, 1))
+            res_shape = () if self.is_scalar else (B,)
+        else:
+            try:
+                t = np.broadcast_to(t, (B, t.shape[-1]))
+            except ValueError:
+                if self.is_scalar:
+                    msg = (f"The shape of t {t.shape} is not compatible with a single spline. "
+                          f"Authorized shapes are (1, n) or (n,)")
+                else:
+                    msg = (f"The shape of t {t.shape} is not compatible with {len(self)} spline. "
+                          f"Authorized shapes are (n,) (1, n), or ({len(self)}, n)")
 
-    # ----- ARC -----
-    d = arc_dist(radius=1.0, arc_angle=pi, arc_center=0.0, count=count, seed=1)
-    plot_2d(d['points'], "arc_dist", axs[0, 1])
+                    raise ValueError(msg)
+                
+            if self.is_scalar:
+                res_shape = (t.shape[-1],)
+            else:
+                res_shape = t.shape
 
-    # ----- RECT -----
-    d = rect_dist(a=2.0, b=1.0, count=count, seed=2)
-    plot_2d(d['points'], "rect_dist", axs[0, 2])
-
-    # ----- PIE -----
-    d = pie_dist(radius=0.5, outer_radius=1.0, pie_angle=pi, pie_center=pi/2, count=count, seed=3)
-    plot_2d(d['points'], "pie_dist", axs[1, 0])
-
-    # ----- DISK -----
-    d = disk_dist(radius=1.0, count=count, seed=4)
-    plot_2d(d['points'], "disk_dist", axs[1, 1])
-
-    axs[1, 2].axis('off')
-    plt.tight_layout()
-    plt.show()
-
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import numpy as np
-
-# from mymodule import sphere_dist, dome_dist, cylinder_dist, cube_dist, ball_dist
-
-def plot_3d(points, title, ax=None):
-    if ax is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(projection='3d')
-    ax.scatter(points[:, 0], points[:, 1], points[:, 2], s=2)
-    ax.set_title(title)
-    ax.set_box_aspect([1, 1, 1])
-    ax.grid(True)
-
-def test_distributions_3d(count=1000):
-    fig = plt.figure(figsize=(14, 10))
-
-    # 3x2 subplots
-    axes = [fig.add_subplot(2, 3, i+1, projection='3d') for i in range(5)]
-
-    # ----- SPHERE -----
-    d = sphere_dist(radius=1.0, count=count, seed=0)
-    plot_3d(d['points'], "sphere_dist", axes[0])
-
-    # ----- DOME -----
-    d = dome_dist(radius=1.0, angle=np.pi/2, axis=(0, 1, 0), count=count, seed=1)
-    plot_3d(d['points'], "dome_dist", axes[1])
-
-    # ----- CYLINDER -----
-    d = cylinder_dist(radius=1.0, height=2.0, arc_angle=np.pi, count=count, seed=2)
-    plot_3d(d['points'], "cylinder_dist", axes[2])
-
-    # ----- CUBE -----
-    d = cube_dist(size=(2, 2, 2), center=(0, 0, 0), count=count, seed=3)
-    plot_3d(d['points'], "cube_dist", axes[3])
-
-    # ----- BALL -----
-    d = ball_dist(radius=1.0, angle=np.pi, axis=(0, 0, 1), count=count, seed=4)
-    plot_3d(d['points'], "ball_dist", axes[4])
-
-    plt.tight_layout()
-    plt.show()
+        return t, res_shape + (3,)
+        
 
 
+        
+    def _broadcast_tOLD(self, t):
+        """
+        Broadcast parameter t according to (B, T) convention.
 
-#test_distributions_2d()
-test_distributions_3d()
+        If self is_scalar:
+            - t.shape == ()         → result shape: ()
+            - t.shape == (T,)       → result shape: (T,)
+        
+        If self is a batch of B splines:
+            - t.shape == ()         → result shape: (B,)
+            - t.shape == (T,)       → result shape: (B, T)
+            - t.shape == (1, T)     → result shape: (B, T)
+            - t.shape == (B, T)     → result shape: (B, T)
+
+        Returns
+        -------
+        - t: broadcasted array of shape (B, T)
+        - res_shape: tuple to reshape result (e.g., (B, T, 3))
+        """
+        t = np.asarray(t)
+        B = 1 if self.is_scalar else len(self)
+        res_shape = None
+
+        if t.ndim == 0:
+            t = np.full((B, 1), t)
+            res_shape = () if self.is_scalar else (B,)
+
+        elif t.ndim == 1:
+            T = t.shape[0]
+            if self.is_scalar:
+                t = t[None]  # (1, T)
+                res_shape = (T,)
+            else:
+                t = np.broadcast_to(t, (B, T))  # (B, T)
+                res_shape = (B, T)
+
+        elif t.ndim == 2:
+            B2, T = t.shape
+            if self.is_scalar:
+                if B2 != 1:
+                    raise ValueError(
+                        f"The shape of t {t.shape} is not compatible with a scalar spline. "
+                        f"Perhaps you want to use shape (1, {B2})"
+                        )
+                res_shape = (1, T)
+            else:
+                if B2 in [1, B]:
+                    t = np.broadcast_to(t, (B, T))  # (B, T)
+                    res_shape = (B, T)
+                else:
+                    raise ValueError(
+                        f"The shape of t {t.shape} is not compatible with {B} splines. "
+                        f"First dim must be 1 or the number of splines: (1, {B2}) or ({B}, {B2})."
+                        )
+        else:
+            raise ValueError(f"Unsupported shape for t: {t.shape}")
+
+        assert t.shape == (B, t.shape[-1]), f"t should have shape (B, T), got {t.shape}"
+
+        print(f"DEBUG BC: {self.is_scalar=}, {t.shape=} {res_shape=}")
+
+        return t, res_shape + (3,)
+    
+test = Test(True)
+
+t, rs = test.newbc(.5)
+assert t.shape == (1, 1)
+assert rs == (3,)
+
+
+t, rs = test.newbc([.5]*10)
+assert t.shape == (1, 10)
+assert rs == (10, 3)
+
+
+test = Test(False)
+t, rs = test.newbc(.5)
+assert t.shape == (4, 1)
+assert rs == (4, 3)
+
+t, rs = test.newbc([.5]*10)
+assert t.shape == (4, 10)
+assert rs == (4, 10, 3)
+
+t, rs = test.newbc(np.array([.5]*4)[:, None])
+assert t.shape == (4, 1)
+assert rs == (4, 1, 3)
+
 
 

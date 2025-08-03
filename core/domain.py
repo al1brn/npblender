@@ -41,7 +41,6 @@ if __name__ == "__main__":
 
 else:
     from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    from . maths import distribs
     from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
 
 from scipy.interpolate import BSpline, make_interp_spline, CubicSpline, splder
@@ -633,10 +632,14 @@ class Domain(FieldArray):
 # Point Domain
 # ====================================================================================================
 
+# ----------------------------------------------------------------------------------------------------
+# Mesh Point
+# ----------------------------------------------------------------------------------------------------
+
 class PointDomain(Domain):
     """ Point domain.
 
-    This domain is common to all geometries:
+    This domain is the root class for geometries with Point:
         - Mesh : vertices
         - Curve : control points
         - Cloud : points
@@ -652,7 +655,6 @@ class PointDomain(Domain):
 
     def declare_attributes(self):
         self.new_vector('position', transfer=True)
-        self.new_float('radius', 1., optional=True, transfer=True)
 
     # ====================================================================================================
     # Utilities
@@ -693,6 +695,102 @@ class PointDomain(Domain):
     @z.setter
     def z(self, value):
         self.position[..., 2] = value
+
+# ----------------------------------------------------------------------------------------------------
+# Cloud Point
+# ----------------------------------------------------------------------------------------------------
+
+class CloudPointDomain(PointDomain):
+
+    def declare_attributes(self):
+        super().declare_attributes()
+        self.new_float('radius', default=.05, optional=True, transfer=True)
+
+# ----------------------------------------------------------------------------------------------------
+# Spline Point
+# ----------------------------------------------------------------------------------------------------
+
+class SplinePointDomain(PointDomain):
+
+    def declare_attributes(self):
+        super().declare_attributes()
+
+        self.new_float( 'w',                 optional=True, default=1.)
+
+        self.new_vector('handle_left',       optional=True)
+        self.new_vector('handle_right',      optional=True)
+        self.new_int(   'handle_type_left',  optional=True)
+        self.new_int(   'handle_type_right', optional=True)
+        self.new_float( 'tilt',              optional=True)
+        self.new_float( 'radius',            optional=True, default=1)
+        self.new_float( 'weight',            optional=True, default=1.)
+
+# ----------------------------------------------------------------------------------------------------
+# Instance Domain
+# ----------------------------------------------------------------------------------------------------
+
+class InstanceDomain(PointDomain):
+    """ Instance Domain.
+
+    Instance domain directly inherits from Point domain.
+    In addition to position attribute, it managed two more transformations : Scale and Rotation to
+    be applied to the instances.
+
+    Instances are randomly chosen in a list of models. The index is stored in the model_index attribute.
+
+    The instances capture attributes from other domains.
+
+    Note that Instances Geometry inherits from Instance domain, contrary to the other geometries which
+    store domains as attributes:
+
+    ``` python
+    class Mesh(Geometry):
+        def __init__(self, ...):
+            self.points  = PointDomain.New(...)
+            self.corners = CornerDomain.New(...)
+            self.faces   = FaceDomain.New(...)
+
+    class Instances(InstanceDomain, Geometry):
+        def __init__(self, ...):
+            super().__init__(...) # Instances domain initialization
+
+    v = Mesh().position        # Invalid : raises an error
+    v = Mesh().points.position # Valid
+    v = Instances().position   # Valid
+    '''
+
+    Attributes
+    ----------
+        - position (vector) : instance position
+        - model_index (int) : index in the list of models
+        - Scale (vector, optional) : instance scale
+        - Rotation (vector, optional) : instance rotation
+
+    Arguments
+    ---------
+        - domain_name (str = None) : 'INSTANCE' or None
+        - owner (Instance domain = None) : the selection owner if not None
+        - selector (selection = None) : selection if initialized as domain selection
+        - points (array of vectors = None) : a point domain
+        - models (model spec of list of model specs) : the model to pick into
+        - indices (array of ints = None) : model_index initialization
+        - seed (int = None) : random seed if indices is None
+    """
+
+    domain_name = 'INSTANCE'
+
+    def declare_attributes(self):
+        super().declare_attributes()
+
+        self.new_int("model_index", transfer=False)
+
+        self.new_float("animation",         optional=True)
+        self.new_float("deformation",       optional=True)
+
+        self.new_vector("scale",            optional=True, default=1)
+        self.new_vector("euler",            optional=True)
+        self.new_matrix("transformation",   optional=True, default=np.eye(4))
+        self.new_vector("quaternion",       optional=True, default=(0, 0, 0, 1))
 
 
 # ====================================================================================================
@@ -824,16 +922,16 @@ class FaceSplineDomain(Domain):
         else:
             return np.zeros(0, int)
         
-    def append_faces(self, faces, *fields):
+    def append_sizes(self, sizes, **fields):
 
-        if faces is None:
+        if sizes is None:
             return []
         
         if 'loop_start' in fields:
-            res = self.append(loop_total=faces, *fields)
+            res = self.append(loop_total=sizes, *fields)
         else:
-            loop_start = self.compute_loop_start(faces)
-            res = self.append(loop_start=loop_start, loop_total=faces, *fields)
+            loop_start = self.compute_loop_start(sizes)
+            res = self.append(loop_start=loop_start, loop_total=sizes, **fields)
 
         return res
 
@@ -1177,102 +1275,6 @@ class EdgeDomain(Domain):
         self.delete(mask)
 
 
-
-# ====================================================================================================
-# Control Point Domain
-# ====================================================================================================
-
-class ControlPointDomain(Domain):
-    """ Curve Control Point Domain.
-
-    The control points of curve splines.
-
-    Attributes
-    ----------
-        - position (vector) : control point position
-        - handle_left (vector, optional) : bezier splines left handles
-        - handle_right (vector, optional) : bezier splines right handles
-        - handle_type_left (int, optional) : bezier splines left handle types
-        - handle_type_right (int, optional) : bezier splines right handle types
-        - radius (float, optional) : point radius
-        - tilt (float, optional) : point tilt
-    """
-
-    domain_name = 'POINT'
-
-    def declare_attributes(self):
-        self.new_field('points4', dtype=bfloat, shape=4, transfer=False)
-
-        self.new_vector('handle_left',       optional=True)
-        self.new_vector('handle_right',      optional=True)
-        self.new_int(   'handle_type_left',  optional=True)
-        self.new_int(   'handle_type_right', optional=True)
-        self.new_float( 'tilt',              optional=True)
-        self.new_float( 'radius',            optional=True, default=1)
-
-    # ====================================================================================================
-    # Properties
-
-    @property
-    def x(self):
-        """ x coordinate.
-
-        Shortcut for position[:, 0]
-        """
-        return self.points4[..., 0]
-
-    @x.setter
-    def x(self, value):
-        self.points4[..., 0] = value
-
-    @property
-    def y(self):
-        """ y coordinate.
-
-        Shortcut for position[:, 1]
-        """
-        return self.points4[..., 1]
-
-    @y.setter
-    def y(self, value):
-        self.points4[..., 1] = value
-
-    @property
-    def z(self):
-        """ x coordinate.
-
-        Shortcut for position[:, 2]
-        """
-        return self.points4[..., 2]
-
-    @z.setter
-    def z(self, value):
-        self.points4[..., 2] = value    
-
-    @property
-    def w(self):
-        """ w coordinate.
-
-        Shortcut for position[:, 3]
-        """
-        return self.points4[..., 3]
-
-    @w.setter
-    def w(self, value):
-        self.points4[..., 3] = value    
-
-    @property
-    def position(self):
-        """ xyz vector
-
-        Shortcut for position[:, :3]
-        """
-        return self.points4[..., :3]
-
-    @position.setter
-    def position(self, value):
-        self.points4[..., :3] = value    
-
 # ====================================================================================================
 # Spline Domain
 
@@ -1489,70 +1491,6 @@ class SplineDomain(FaceSplineDomain):
             else:
                 blender.create_attribute(data, name, info['data_type'], domain=self.domain, value=self[name])    
     
-# ====================================================================================================
-# Instance Domain
-# ====================================================================================================
-
-class InstanceDomain(PointDomain):
-    """ Instance Domain.
-
-    Instance domain directly inherits from Point domain.
-    In addition to position attribute, it managed two more transformations : Scale and Rotation to
-    be applied to the instances.
-
-    Instances are randomly chosen in a list of models. The index is stored in the model_index attribute.
-
-    The instances capture attributes from other domains.
-
-    Note that Instances Geometry inherits from Instance domain, contrary to the other geometries which
-    store domains as attributes:
-
-    ``` python
-    class Mesh(Geometry):
-        def __init__(self, ...):
-            self.points  = PointDomain.New(...)
-            self.corners = CornerDomain.New(...)
-            self.faces   = FaceDomain.New(...)
-
-    class Instances(InstanceDomain, Geometry):
-        def __init__(self, ...):
-            super().__init__(...) # Instances domain initialization
-
-    v = Mesh().position        # Invalid : raises an error
-    v = Mesh().points.position # Valid
-    v = Instances().position   # Valid
-    '''
-
-    Attributes
-    ----------
-        - position (vector) : instance position
-        - model_index (int) : index in the list of models
-        - Scale (vector, optional) : instance scale
-        - Rotation (vector, optional) : instance rotation
-
-    Arguments
-    ---------
-        - domain_name (str = None) : 'INSTANCE' or None
-        - owner (Instance domain = None) : the selection owner if not None
-        - selector (selection = None) : selection if initialized as domain selection
-        - points (array of vectors = None) : a point domain
-        - models (model spec of list of model specs) : the model to pick into
-        - indices (array of ints = None) : model_index initialization
-        - seed (int = None) : random seed if indices is None
-    """
-
-    domain_name = 'INSTANCE'
-
-    def declare_attributes(self):
-        super().declare_attributes()
-
-        self.new_int("model_index", transfer=False)
-
-        self.new_vector("scale",            optional=True, default=1)
-        self.new_vector("euler",            optional=True)
-        self.new_vector("transformation",   optional=True)
-        self.new_vector("quaternion",       optional=True)
-
 
 
 

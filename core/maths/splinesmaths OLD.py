@@ -92,6 +92,13 @@ class Spline:
         self.bezier = bezier
 
     @property
+    def points(self):
+        return self.bspline.c
+    
+    def __len__(self):
+        return self.points_count
+
+    @property
     def length(self):
         pts = self.sample_points
         return np.sum(np.linalg.norm(pts[1:] - pts[:-1], axis=-1))
@@ -106,9 +113,17 @@ class Spline:
         if count != self.points_count:
             raise RuntimeError(f"Spline sample_value needs one value per point. Expected: {self.points_count}, got: {count}")
         if self.cyclic:
-            count += 1
-            value = np.resize(value, (count,) + value.shape[1:])
+            #count += 1
+            #value = np.resize(value, (count,) + value.shape[1:])
+            value = np.concatenate([value, value[:1]], axis=0)
+
         return make_interp_spline(np.linspace(0, 1, count), value, k=min(count - 1, 3))
+    
+    @staticmethod
+    def _normalize_vectors(v, axis=-1, eps=1e-3):
+        nrm = np.linalg.norm(v, axis=axis, keepdims=True)
+        nrm[nrm < eps] = 1.0
+        return v / nrm
 
 
 # =============================================================================================================================
@@ -145,18 +160,20 @@ class Poly(Spline):
 
         segms = points[1:] - points[:-1]
 
-        nrms = np.linalg.norm(segms, axis=-1)
-        nrms[nrms < .0001] = 1
-        segms /= nrms[:, None]
+        #nrms = np.linalg.norm(segms, axis=-1)
+        #nrms[nrms < .0001] = 1
+        #segms /= nrms[:, None]
+        segms = Spline._normalize_vectors(segms)
 
         ders = np.empty_like(points)
         ders[0]    = segms[0]
         ders[-1]   = segms[-1]
         ders[1:-1] = (segms[:-1] + segms[1:])/2
 
-        nrms = np.linalg.norm(ders, axis=-1)
-        nrms[nrms < .0001] = 1
-        ders /= nrms[:, None]
+        #nrms = np.linalg.norm(ders, axis=-1)
+        #nrms[nrms < .0001] = 1
+        #ders /= nrms[:, None]
+        ders = Spline._normalize_vectors(ders)
 
         self.tangent_func = make_interp_spline(np.linspace(0, 1, count), ders, k = min(count-1, 3))
 
@@ -224,9 +241,10 @@ class Bezier(Spline):
         der[ 0]   = (points[ 1] - points[0])/2
         der[-1]   = (points[-1] - points[-2])/2
 
-        nrm = np.linalg.norm(der, axis=-1)
-        nrm[abs(nrm) < 0.001] = 1.
-        der /= nrm[:, None]
+        #nrm = np.linalg.norm(der, axis=-1)
+        #nrm[abs(nrm) < 0.001] = 1.
+        #der /= nrm[:, None]
+        der = Spline._normalize_vectors(der)
 
         dists = np.linalg.norm(points[1:] - points[:-1], axis=-1)[:, None]
 
@@ -289,9 +307,10 @@ class Bezier(Spline):
             der[-1]   = (value[-1] - value[-2])/2
 
             if is_vec:
-                nrm       = np.linalg.norm(der, axis=-1)
-                nrm[abs(nrm) < 0.001] = 1.
-                der /= nrm[:, None]
+                #nrm       = np.linalg.norm(der, axis=-1)
+                #nrm[abs(nrm) < 0.001] = 1.
+                #der /= nrm[:, None]
+                der = Spline._normalize_vectors(der)
             else:
                 nrm       = np.abs(der)
                 nrm[nrm < 0.001] = 1.
@@ -397,13 +416,6 @@ class Bezier(Spline):
         count = npoints*self.resolution if self.cyclic else (npoints - 1)*self.resolution + 1
         return self(np.linspace(0, 1, count))
 
-    # ----------------------------------------------------------------------------------------------------
-    # Sample values along the curve
-
-    def sample_value_NO(self, value):
-        return self.build_bspline(value)
-
-
 
 # =============================================================================================================================
 # Nurbs
@@ -433,80 +445,13 @@ class Nurbs(Spline):
 
         super().__init__(0 if points is None else len(points), cyclic=cyclic, resolution=resolution, order=order, endpoint=endpoint, bezier=bezier)
 
+        self._input_points = points
+
         self.nurbs_func = self.build_nurbs_func(points, w=w)
-        return
 
-        if False:
-            self.den_bspline = None
-
-        if points is None:
-            return
-
-        # ----- Points and weights
-
-        if isinstance(points, np.ndarray):
-            self.points = points
-        else:
-            self.points = np.array(points)
-
-        self.w    = np.empty(len(points), float)
-        self.w[:] = w
-
-        # ----- B-Spline parameters
-
-        n = len(points)
-        k = self.order
-
-        pts = self.points
-        w   = self.w
-
-        if self.cyclic:
-
-            nadd = self.order
-            npts = len(points) + 2*nadd
-
-            pts = np.zeros((npts, 3), float)
-            w   = np.zeros(npts, float)
-
-            pts[:nadd]      = self.points[-nadd:]
-            pts[nadd:-nadd] = self.points
-            pts[-nadd:]     = self.points[:nadd]
-
-            w[:nadd]        = self.w[-nadd:]
-            w[nadd:-nadd]   = self.w
-            w[-nadd:]       = self.w[:nadd]
-
-            knots = np.arange(-nadd, len(self.points) + nadd)/len(self.points)
-
-            if self.endpoint:
-                pass
-
-            if self.bezier:
-                pass
-
-        elif self.endpoint:
-
-            knots = np.zeros(n + k)
-            knots[-self.order:] = 1
-            r = n - k + 1
-            knots[k-1:k+r] = np.linspace(0, 1, r+1)
-
-        else:
-            knots = np.linspace(0, 1, n + k)
-
-        # ----- b splines
-
-        if True:
-            self.nurbs_func = NurbsFunction.FromKnots(knots, pts, w, self.order)
-        else:
-            self.nurbs_func = NurbsFunction(
-                bspline = BSpline(knots, pts*w[:, None], self.order - 1, extrapolate=False),
-                den_bspline = BSpline(knots, w, self.order - 1, extrapolate=False),
-                )
-
-        if False:
-            self.bspline = BSpline(knots, pts*w[:, None], self.order - 1, extrapolate=False)
-            self.den_bspline = BSpline(knots, w, self.order - 1, extrapolate=False)
+    @property
+    def points(self):
+        return self._input_points
 
     # ====================================================================================================
     # Build the Nurbs function
@@ -640,13 +585,6 @@ class Nurbs(Spline):
         v_ = self.den_bspline.derivative(t)
 
         return (u_*v[:, None] - v*v_[:, None])/((v**2)[:, None])
-
-    # ----------------------------------------------------------------------------------------------------
-    # Sample values along the curve
-
-    def sample_value_NO(self, value):
-        return self.build_nurbs_func(value, self.nurbs_func.w)
-
 
 
 

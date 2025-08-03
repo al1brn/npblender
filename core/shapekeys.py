@@ -14,6 +14,698 @@ Modified 2024 June 19
 Curve and Mesh shape keys
 """
 
+import numpy as np
+
+# ====================================================================================================
+# Shape keys
+# ====================================================================================================
+
+class ShapeKeys:
+    def __init__(self, rec_array, count=1, relative=True, extrapolation='CLIP', ignore_int=True, ignore_bool=True):
+        """
+        ShapeKeys manages a stack of structured arrays (like FieldArrays),
+        with the same structure and same number of elements in each array.
+
+        Parameters
+        ----------
+        rec_array : np.ndarray (structured) or FieldArray
+            The reference array to replicate.
+        count : int
+            The number of copies to initialize.
+        relative : bool
+            Optional flag, for later use.
+        """
+        rec_array = np.asarray(rec_array)
+        self._ref = rec_array
+        self.relative = relative
+        self.extrapolation = extrapolation
+
+        # Ensure it's a structured 1D array
+        assert rec_array.dtype.names is not None
+        assert rec_array.ndim == 1
+
+        self._build_layout(ignore_int=ignore_int, ignore_bool=ignore_bool)
+
+        count = max(1, count)
+
+        # Initialize by stacking `count` copies
+        a = self._to_flat_array(self._ref)
+        self._mat = np.resize(a, (count, *a.shape))
+        #self._mat = np.stack([a.copy() for _ in range(count)], axis=0)
+
+
+
+    def __str__(self):
+        return f"<ShapeKeys of shape ({self._mat.shape}) keys with attributes {[name for name, _, _, _ in self._layout]}>"
+
+    def __len__(self):
+        return self._mat.shape[0]
+
+    def __getitem__(self, idx):
+        return self._from_flat_array(self._mat[idx])
+
+    def __setitem__(self, idx, value):
+        self._mat[idx] = self._to_flat_array(value)
+
+    def as_array(self):
+        return self._mat
+
+    def append(self, array):
+        a = self._to_flat_array(array)
+        self._mat = np.concatenate([self._mat, [a]])
+
+    def insert(self, index, array):
+        a = self._to_flat_array(array)
+        self._mat = np.insert(self._mat, index, a, axis=0)
+
+    def delete(self, index):
+        self._mat = np.delete(self._mat, index, axis=0)
+
+    # ====================================================================================================
+    # Conversion to array of floats
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Build the conversion layout
+    # ----------------------------------------------------------------------------------------------------
+
+    def _build_layout(self, ignore_int=True, ignore_bool=True):
+        """Analyze self._ref and store layout for flattening."""
+
+        dtype = self._ref.dtype
+        layout = []
+        offset = 0
+
+        for name in dtype.names:
+            dt, _ = dtype.fields[name]
+            base_dtype = dt.base
+            shape = dt.shape or ()
+            kind = np.dtype(base_dtype).kind
+
+            if ignore_bool and kind == 'b':
+                continue
+            if ignore_int and kind in 'iu':
+                continue
+
+            count = int(np.prod(shape or (1,)))
+            sl = slice(offset, offset + count)
+            layout.append((name, base_dtype, shape, sl))
+            offset += count
+
+        self._layout = layout
+        self._total_scalars = offset
+
+    # ----------------------------------------------------------------------------------------------------
+    # Flatten field array
+    # ----------------------------------------------------------------------------------------------------
+
+    def _to_flat_array(self, data):
+        """Flatten structured array using precomputed self._layout."""
+        
+        data = np.asarray(data)
+        flatten = np.empty((len(data), self._total_scalars), dtype=np.float64)
+
+        for name, _, shape, sl in self._layout:
+            values = data[name]
+            if shape == ():
+                flatten[:, sl] = values[:, None]
+            else:
+                flatten[:, sl] = values
+
+        return flatten
+    
+    # ----------------------------------------------------------------------------------------------------
+    # From flatten to array with fields
+    # ----------------------------------------------------------------------------------------------------
+
+    def _from_flat_array(self, flat):
+        """
+        Convert a flat (N, D) or (M, N, D) float array to a recarray with float fields only,
+        using the layout defined at initialization.
+        """
+        flat = np.asarray(flat)
+        single = flat.ndim == 2  # (N, D)
+
+        if single:
+            shape = (flat.shape[0],)  # N
+            flat_2d = flat
+        else:
+            shape = flat.shape[:2]    # (M, N)
+            flat_2d = flat.reshape(-1, flat.shape[-1])  # (M*N, D)
+
+        # Build dtype with only interpolated fields
+        dtype = [(name, dtype, fshape) for name, dtype, fshape, _ in self._layout]
+
+        # Allocate output array
+        out = np.empty(flat_2d.shape[0], dtype=dtype)
+
+        for name, dtype, fshape, sl in self._layout:
+            if fshape == ():  # scalar
+                out[name] = flat_2d[:, sl].reshape(-1)
+            else:
+                out[name] = flat_2d[:, sl].reshape(-1, *fshape)
+
+        out = out.view(np.recarray)
+        return out.reshape(shape)
+
+    # ====================================================================================================
+    # Interpolation
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Absolute interpolation
+    # ----------------------------------------------------------------------------------------------------
+
+    def abs_interpolate(self, t, smooth=1):
+        """Absolute interpolation between keyframes.
+
+        Parameters
+        ----------
+        t : float or array_like
+            Interpolation factor(s) in [0, 1].
+        extrapolation : {'CLIP', 'CYCLIC', 'BACK'}, default 'CLIP'
+            How to handle t values outside [0, 1].
+        smooth : int, str or callable, default 1
+            Smoothing method:
+                - int: degree of BSpline
+                - 'CUBIC': cubic spline
+                - callable: function to apply to t
+                - None: linear interpolation
+
+        Returns
+        -------
+        recarray or array of recarrays
+            Interpolated values with only float fields (others ignored).
+        """
+        if len(self) <= 1:
+            return self[0].copy()
+
+        t = np.asarray(t)
+        single = (t.ndim == 0)
+        if single:
+            t = t[None]
+
+        # --------------------------
+        # Extrapolation handling
+        # --------------------------
+        if self.extrapolation == 'CLIP':
+            factors = np.clip(t, 0., 1.)
+        elif self.extrapolation == 'CYCLIC':
+            factors = np.mod(t, 1.)
+        elif self.extrapolation == 'BACK':
+            f = np.mod(2 * t, 2.)
+            factors = np.where(f > 1., 2. - f, f)
+        else:
+            raise ValueError(f"Invalid extrapolation mode: {self.extrapolation}")
+
+        # --------------------------
+        # Smoothing
+        # --------------------------
+        degree = None
+        use_cubic = False
+
+        if smooth is None:
+            degree = 1
+        elif isinstance(smooth, int):
+            degree = smooth
+        elif hasattr(smooth, '__call__'):
+            factors = smooth(factors)
+        elif isinstance(smooth, str):
+            if smooth.upper() == 'CUBIC':
+                use_cubic = True
+            else:
+                from .utils import maprange
+                factors = maprange(factors, easing=smooth)
+        else:
+            raise TypeError(f"Invalid smooth type: {type(smooth).__name__}")
+
+        # --------------------------
+        # Interpolation
+        # --------------------------
+        data = self._mat  # shape (K, N, D)
+        n_keys = len(data)
+
+        if degree is None:
+            fs = factors * (n_keys - 1)
+            inds = np.floor(fs).astype(int)
+            inds = np.clip(inds, 0, n_keys - 2)
+
+            p = (fs - inds)[..., None, None]  # (..., 1, 1) for broadcast
+            a = data[inds]
+            b = data[inds + 1]
+            interp_flat = a * (1 - p) + b * p  # shape (..., N, D)
+
+        elif use_cubic:
+            from scipy.interpolate import CubicSpline
+            x = np.linspace(0, 1, n_keys)
+            interp_flat = CubicSpline(x, data, axis=0, extrapolate=False)(factors)
+
+        else:
+            from scipy.interpolate import BSpline
+            k = degree
+            dx = 1 / (n_keys - 1)
+            x = np.linspace(-k * dx, 1 + k * dx, n_keys + k + 1)
+            interp_flat = BSpline(x, data, k=k, axis=0, extrapolate=False)(factors)
+
+        # --------------------------
+        # Convert back to structured recarray
+        # --------------------------
+        result = self._from_flat_array(interp_flat)
+        return result[0] if single else result
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Relative interpolation
+    # ----------------------------------------------------------------------------------------------------
+
+    def rel_interpolate(self, weights, smooth=1):
+        """
+        Relative interpolation using deltas from base shape.
+
+        Parameters
+        ----------
+        weights : array_like
+            - shape (K,) for one result
+            - shape (M, K) for multiple results
+            where K = number of shapes - 1
+        smooth : int, str, callable, or None
+            Smoothing method (same as abs_interpolate)
+
+        Returns
+        -------
+        np.recarray or array of recarrays
+            Interpolated result(s) (only float fields)
+        """
+        weights = np.asarray(weights)
+        n_shapes = len(self)
+        n_weights = n_shapes - 1
+
+        # --------------------------
+        # Validate shape of weights
+        # --------------------------
+        single = False
+        if weights.ndim == 1:
+            if weights.shape[0] != n_weights:
+                raise ValueError(f"Expected shape ({n_weights},), got {weights.shape}")
+            weights = weights[None]  # shape (1, K)
+            single = True
+        elif weights.shape[-1] != n_weights:
+            raise ValueError(f"Expected shape (..., {n_weights}), got {weights.shape}")
+
+        # --------------------------
+        # Apply smoothing if needed
+        # --------------------------
+        degree = None
+        use_cubic = False
+
+        if smooth is None:
+            degree = 1
+        elif isinstance(smooth, int):
+            degree = smooth
+        elif hasattr(smooth, '__call__'):
+            weights = smooth(weights)
+        elif isinstance(smooth, str):
+            if smooth.upper() == 'CUBIC':
+                use_cubic = True
+            else:
+                from .utils import maprange
+                weights = maprange(weights, easing=smooth)
+        else:
+            raise TypeError(f"Invalid smooth type: {type(smooth).__name__}")
+
+        weights = np.clip(weights, 0, 1)
+
+        # --------------------------
+        # Perform interpolation
+        # --------------------------
+        base = self._mat[0]  # shape (N, D)
+        deltas = self._mat[1:] - base  # shape (K, N, D)
+        w = weights[..., None, None]  # shape (..., 1, 1)
+        weighted = (w * deltas).sum(axis=-3)  # shape (..., N, D)
+        interp_flat = base + weighted
+
+        # --------------------------
+        # Reconstruct structured recarray
+        # --------------------------
+        result = self._from_flat_array(interp_flat)
+        return result[0] if single else result
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Interpolation
+    # ----------------------------------------------------------------------------------------------------
+
+    def interpolate(self, param, smooth=1):
+        if self.relative:
+            return self.rel_interpolate(param, smooth=smooth)
+        else:
+            return self.abs_interpolate(param, smooth=smooth)
+        
+    # ====================================================================================================
+    # Interface with Blender
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Load mesh shapekeys
+    # ----------------------------------------------------------------------------------------------------
+
+    @classmethod
+    def from_mesh_objet(cls, spec):
+
+        from . import blender
+        from . mesh import Mesh
+
+        obj   = blender.get_object(spec)
+        count = blender.shape_keys_count(obj)
+
+        if count == 0:
+            return None
+        
+        mesh = Mesh.from_object(obj)
+        npoints = len(mesh.points)
+
+        sks = cls(mesh.points, count=count)
+
+        a = np.empty((npoints, 3), np.float32)
+        for name, _, _, sl in sks._layout:
+            if name == 'position':
+                pos_slice = sl
+
+        for index in range(count):
+            kb = blender.get_key_block(obj, index)
+            kb.data.foreach_get('co', a.ravel())
+            sks._mat[index, :, pos_slice] = a
+
+        return sks
+
+    # ----------------------------------------------------------------------------------------------------
+    # Store mesh shapekeys
+    # ----------------------------------------------------------------------------------------------------
+
+    def to_mesh_object(self, spec, clear=True):
+
+        from . import blender
+
+        obj = blender.get_object(spec)
+        assert(len(obj.data.vertices) == self._mat.shape[1])
+
+        if clear:
+            blender.shape_keys_clear(obj)
+
+        for name, _, _, sl in self._layout:
+            if name == 'position':
+                pos_slice = sl
+
+        a = np.empty((self._mat.shape[1], 3), np.float32)
+        for index in range(0, len(self)):
+            kb = blender.get_key_block(obj, index, create=True, name=None)
+            a[:] = self._mat[index, :, pos_slice]
+            kb.data.foreach_set('co', a.ravel())
+
+        return obj
+
+    # ----------------------------------------------------------------------------------------------------
+    # Load curve shapekeys
+    # ----------------------------------------------------------------------------------------------------
+
+    @classmethod
+    def from_curve_object(cls, spec):
+
+        from . import blender
+        from curve import Curve
+
+        obj = blender.get_object(spec)
+
+        count = blender.shape_keys_count(obj)
+
+        # ----------------------------------------------------------------------------------------------------
+        # No shape key
+
+        if count == 0:
+            return None
+
+        # ----------------------------------------------------------------------------------------------------
+        # Read the splines
+
+        curve = Curve.FromObject(obj)
+
+        sks = cls.FromGeometry(curve, count=count)
+
+        is_mix     = curve.has_mix_types
+        has_bezier = curve.has_bezier
+        nverts     = sks.points_count
+
+        if not is_mix:
+            v_array = np.empty(nverts*3, float)
+            f_array = np.empty(nverts, float)
+
+        # ----------------------------------------------------------------------------------------------------
+        # Loop on the shape keys
+
+        for index in range(count):
+
+            key_data = blender.get_key_block(obj, index).data
+
+            # ----- Mix types : we must loop on the splines
+
+            if is_mix:
+                for curve_type, loop_start, loop_total in zip(curve.splines.curve_type, curve.splines.loop_start, curve.splines.loop_total):
+
+                    # ----- Bezier
+
+                    if curve_type == blender.BEZIER:
+
+                        for i in range(loop_total):
+                            sks._data[index, loop_start + i, sks._slices['position']] = key_data[loop_start + i].co
+                            sks._data[index, loop_start + i, sks._slices['handle_left']] = key_data[loop_start + i].handle_left
+                            sks._data[index, loop_start + i, sks._slices['handle_right']] = key_data[loop_start + i].handle_right
+
+                            sks._data[index, loop_start + i, sks._slices['radius']] = key_data[loop_start + i].radius
+                            sks._data[index, loop_start + i, sks._slices['tilt']]   = key_data[loop_start + i].tilt
+
+                    # ----- Non Bezier
+
+                    else:
+                        for i in range(loop_total):
+                            sks._data[index, loop_start + i, sks._slices['position']] = key_data[loop_start + i].co
+                            try:
+                                radius, tilt = key_data[loop_start + i].radius, key_data[loop_start + i].tilt
+                            except:
+                                radius, tilt = 1., 0.
+
+                            sks._data[index, loop_start + i, sks._slices['radius']] = radius
+                            sks._data[index, loop_start + i, sks._slices['tilt']]   = tilt
+
+            # ----- Only BEZIER or non Bezier
+
+            else:
+                key_data.foreach_get('co', v_array)
+                sks.position[index] = np.reshape(v_array, (nverts, 3))
+
+                key_data.foreach_get('radius', f_array)
+                sks.radius[index] = f_array
+
+                key_data.foreach_get('tilt', f_array)
+                sks.tilt[index] = f_array
+
+                if has_bezier:
+                    key_data.foreach_get('handle_left', v_array)
+                    sks.handle_left[index] = np.reshape(v_array, (nverts, 3))
+
+                    key_data.foreach_get('handle_right', v_array)
+                    sks.handle_right[index] = np.reshape(v_array, (nverts, 3))
+
+        return sks
+
+    # -----------------------------------------------------------------------------------------------------------------------------
+    # Write the shapes in an existing curve object
+
+    def to_curve_object(self, spec):
+
+        from npblender.core.curve import Curve
+
+        obj = blender.get_object(spec)
+        curve = Curve.FromObject(obj)
+
+        if self.clear:
+            blender.shape_keys_clear(obj)
+
+        is_mix     = curve.has_mix_types
+        has_bezier = curve.has_bezier
+        nverts     = self.points_count
+
+        if not is_mix:
+            v_array = np.empty(nverts*3, float)
+            f_array = np.empty(nverts, float)
+
+        # ----------------------------------------------------------------------------------------------------
+        # Loop on the shapekeys
+
+        for index in range(len(self)):
+
+            key_data = blender.get_key_block(obj, index, create=True, name=self.key_name).data
+
+            # ----- Mix types : we must loop on the splines
+
+            if is_mix:
+                for curve_type, loop_start, loop_total in zip(curve.splines.curve_type, curve.splines.loop_start, curve.splines.loop_total):
+
+                    # ----- Bezier
+
+                    if curve_type == blender.BEZIER:
+
+                        for i in range(loop_total):
+                            key_data[loop_start + i].co = self._data[index, loop_start + i, self._slices['position']]
+                            key_data[loop_start + i].handle_left = self._data[index, loop_start + i, self._slices['handle_left']]
+                            key_data[loop_start + i].handle_right = self._data[index, loop_start + i, self._slices['handle_right']]
+
+                            key_data[loop_start + i].radius = self._data[index, loop_start + i, self._slices['radius']]
+                            key_data[loop_start + i].tilt   = self._data[index, loop_start + i, self._slices['tilt']]
+
+                    # ----- Non Bezier
+
+                    else:
+
+                        for i in range(loop_total):
+                            key_data[loop_start + i].co = self._data[index, loop_start + i, self._slices['position']]
+                            if hasattr(key_data[loop_start + i], 'radius'):
+                                key_data[loop_start + i].radius = self._data[index, loop_start + i, self._slices['radius']]
+                                key_data[loop_start + i].tilt = self._data[index, loop_start + i, self._slices['tilt']]
+
+            # ----- Only BEZIER or non Bezier
+
+            else:
+                np.reshape(v_array, (nverts, 3))[:] = self.position[index]
+                key_data.foreach_set('co', v_array)
+
+                f_array[:] = self.radius[index]
+                key_data.foreach_set('radius', f_array)
+
+                f_array[:] = self.tilt[index]
+                key_data.foreach_set('tilt', f_array)
+
+                if has_bezier:
+                    np.reshape(v_array, (nverts, 3))[:] = self.handle_left[index]
+                    key_data.foreach_set('handle_left', v_array)
+
+                    np.reshape(v_array, (nverts, 3))[:] = self.handle_right[index]
+                    key_data.foreach_set('handle_right', v_array)
+
+        return obj
+
+
+
+
+
+
+
+
+
+            
+
+
+
+            
+
+class OLD:
+
+
+
+
+
+
+    # ====================================================================================================
+    # Relative interpolation
+
+    def rel_interpolate(self, weights, smooth=1):
+        """ Relative interpolation.
+
+        Use interpolate for absolute interpolation.
+
+        The number of weights must be equal to the number of shapes minus 1.
+        The interpolation mixes the differences of each shape with the first one.
+
+        Smooth define the interpolation on each interval:
+            - integer : Degree of BSpline interpolation
+            - str     : Name of an interpolation function
+            - function : function to use
+
+        Arguments
+        ---------
+            - weights (array of floats or array of arrays of flaotsd) : interpolation factor in [0, 1]
+            - extrapolation (str in 'CLIP', 'CYCLIC', 'BACK' = 'CLIP') : extrapolation mode
+            - smooth (function = None) : smooth function
+
+        Returns
+        -------
+            - array of floats
+        """
+
+        # ---------------------------------------------------------------------------
+        # Check the validity of the array of weights
+
+        ok     = True
+        single = False
+        if np.shape(weights) == ():
+            if len(self) != 2:
+                ok = False
+            single = True
+            weights = np.reshape(weight, (1, 1))
+        else:
+            if np.shape(weights)[-1] != len(self) - 1:
+                ok = False
+
+        if not ok:
+            raise RuntimeError(f"ShapeKeys.rel_interpolate error: the shape of the array of weights is not valid {np.shape(weights)}, expected (n, {len(self)-1})")
+
+        weights = np.clip(weights, 0, 1)
+
+        # ---------------------------------------------------------------------------
+        # Smooth
+
+        degree = None
+        use_cubic = False
+        if smooth is None:
+            degree = 1
+
+        elif isinstance(smooth, (int, np.int64, np.int32)):
+            degree = smooth
+
+        elif hasattr(smooth, '__call__'):
+            weights = smooth(weights)
+
+        elif isinstance(smooth, str):
+            if smooth == 'CUBIC':
+                use_cubic = True
+            else:
+                weights = maprange(weights, easing=smooth)
+
+        else:
+            raise AttributeError(f"ShapeKeys.rel_interpolate error: smooth parameter must be a function or a string, not {type(smooth).__name__}.")
+
+        # ---------------------------------------------------------------------------
+        # Relative interpolation:
+        # basis shape + weights * differences
+
+        verts = self._data[0] + np.sum(
+                    (self._data[1:] - self._data[0])*np.reshape(weights, np.shape(weights) + (1, 1)),
+                    axis = - 3)
+
+        # ---------------------------------------------------------------------------
+        # Done
+
+        if single:
+            return verts[0]
+        else:
+            return verts
+        
+
+
+    
+
+
+
+
+
+
 def maprange(t, *args, **kwargs):
     return t
 
@@ -33,40 +725,11 @@ def maprange(t, *args, **kwargs):
 # A key is either a string (name of the shape) or an int (index in the array)
 
 import numpy as np
-import bpy
-
-from npblender import CubicSpline, BSpline
-from npblender.core import blender
-
-# ====================================================================================================
-# Sub array
-
-class SubArray:
-    def __init__(self, shapekeys, data_slice, item_size):
-        self.shapekeys  = shapekeys
-        self.data_slice = data_slice
-        self.item_size  = item_size
-
-    def __len__(self):
-        return len(self.shapekeys)
-
-    def __getitem__(self, index):
-        a = self.shapekeys._data[index, :, self.data_slice]
-        if self.item_size == 1:
-            return np.reshape(a, len(a))
-        else:
-            return a
-
-    def __setitem__(self, index, value):
-        if self.item_size == 1:
-            self.shapekeys._data[index, :, self.data_slice] = np.reshape(value, np.shape(value) + (1,))
-        else:
-            self.shapekeys._data[index, :, self.data_slice] = value
 
 # ====================================================================================================
 # Float attributes shape keys
 
-class ShapeKeys:
+class ShapeKeys_OLD:
     def __init__(self, points, count=1, key_name="Key", clear=False, **kwargs):
 
         self.key_name = key_name
@@ -407,198 +1070,6 @@ class ShapeKeys:
 
         return obj
 
-    # ====================================================================================================
-    # Interpolation (default is absolute)
-
-    def interpolate(self, t, relative=False, extrapolation='CLIP', smooth=1):
-        """ Interpolation.
-
-        Use rel_interpolate for relative interpolation.
-
-        Smooth define the interpolation on each interval:
-            - integer : Degree of BSpline interpolation
-            - str     : Name of an interpolation function
-            - function : function to use
-
-        Arguments
-        ---------
-            - t (float or array of floats) : interpolation factor in [0, 1]
-            - extrapolation (str in 'CLIP', 'CYCLIC', 'BACK' = 'CLIP') : extrapolation mode
-            - smooth (function = None) : smooth function
-
-        Returns
-        -------
-            - array of floats
-        """
-
-        # ---------------------------------------------------------------------------
-        # Only one shape
-
-        if len(self) == 1:
-            return np.resize(self._data, np.shape(t) + np.shape(self._data)[1:])
-
-        # ---------------------------------------------------------------------------
-        # Compute factors between 0 and 1 depending upon the mode
-
-        t_shape = np.shape(t)
-        single = t_shape == ()
-        if single:
-            t = np.reshape(t, (1,))
-
-        if extrapolation == 'CLIP':
-            factors = np.clip(t, 0, 1).astype(float)
-
-        elif extrapolation == 'CYCLIC':
-            factors = np.array(t) % 1.
-
-        elif extrapolation == 'BACK':
-            factors = (2*np.array(t)) % 2.
-            i_back = factors > 1
-            factors[i_back] = 2 - factors[i_back]
-
-        else:
-            raise AttributeError(f"ShapeKeys.interpolate error: invalid extrapolation '{extrapolation}'.")
-
-        # ---------------------------------------------------------------------------
-        # Smooth
-
-        degree = None
-        use_cubic = False
-        if smooth is None:
-            degree = 1
-
-        elif isinstance(smooth, (int, np.int64, np.int32)):
-            degree = smooth
-
-        elif hasattr(smooth, '__call__'):
-            factors = smooth(factors)
-
-        elif isinstance(smooth, str):
-            if smooth == 'CUBIC':
-                use_cubic = True
-            else:
-                factors = maprange(factors, easing=smooth)
-
-        else:
-            raise AttributeError(f"ShapeKeys.interpolate error: smooth parameter must be a function or a string, not {type(smooth).__name__}.")
-
-        # ---------------------------------------------------------------------------
-        # Interpolation
-
-        if degree is None:
-
-            fs = factors*(len(self) - 1)
-            inds = np.floor(fs).astype(int)
-            inds[inds == len(self) - 1] = len(self) - 2
-            p = np.reshape(fs - inds, np.shape(fs) + (1, 1))
-
-            verts = self._data[inds]*(1 - p) + self._data[inds + 1]*p
-
-        elif use_cubic:
-            verts = CubicSpline(np.linspace(0, 1, self.points_count), self._data, extrapolate=False)(factors)
-
-        else:
-
-            n = len(self)
-            k = smooth
-
-            dx = 1/(n - 1)
-            t = np.linspace(-k*dx, 1 + k*dx, n + k + 1)
-
-            verts = BSpline(t, self._data, k=k, extrapolate=False)(factors)
-
-        # ---------------------------------------------------------------------------
-        # Done
-
-        if single:
-            return verts[0]
-        else:
-            return verts
-
-    # ====================================================================================================
-    # Relative interpolation
-
-    def rel_interpolate(self, weights, smooth=1):
-        """ Relative interpolation.
-
-        Use interpolate for absolute interpolation.
-
-        The number of weights must be equal to the number of shapes minus 1.
-        The interpolation mixes the differences of each shape with the first one.
-
-        Smooth define the interpolation on each interval:
-            - integer : Degree of BSpline interpolation
-            - str     : Name of an interpolation function
-            - function : function to use
-
-        Arguments
-        ---------
-            - weights (array of floats or array of arrays of flaotsd) : interpolation factor in [0, 1]
-            - extrapolation (str in 'CLIP', 'CYCLIC', 'BACK' = 'CLIP') : extrapolation mode
-            - smooth (function = None) : smooth function
-
-        Returns
-        -------
-            - array of floats
-        """
-
-        # ---------------------------------------------------------------------------
-        # Check the validity of the array of weights
-
-        ok     = True
-        single = False
-        if np.shape(weights) == ():
-            if len(self) != 2:
-                ok = False
-            single = True
-            weights = np.reshape(weight, (1, 1))
-        else:
-            if np.shape(weights)[-1] != len(self) - 1:
-                ok = False
-
-        if not ok:
-            raise RuntimeError(f"ShapeKeys.rel_interpolate error: the shape of the array of weights is not valid {np.shape(weights)}, expected (n, {len(self)-1})")
-
-        weights = np.clip(weights, 0, 1)
-
-        # ---------------------------------------------------------------------------
-        # Smooth
-
-        degree = None
-        use_cubic = False
-        if smooth is None:
-            degree = 1
-
-        elif isinstance(smooth, (int, np.int64, np.int32)):
-            degree = smooth
-
-        elif hasattr(smooth, '__call__'):
-            weights = smooth(weights)
-
-        elif isinstance(smooth, str):
-            if smooth == 'CUBIC':
-                use_cubic = True
-            else:
-                weights = maprange(weights, easing=smooth)
-
-        else:
-            raise AttributeError(f"ShapeKeys.rel_interpolate error: smooth parameter must be a function or a string, not {type(smooth).__name__}.")
-
-        # ---------------------------------------------------------------------------
-        # Relative interpolation:
-        # basis shape + weights * differences
-
-        verts = self._data[0] + np.sum(
-                    (self._data[1:] - self._data[0])*np.reshape(weights, np.shape(weights) + (1, 1)),
-                    axis = - 3)
-
-        # ---------------------------------------------------------------------------
-        # Done
-
-        if single:
-            return verts[0]
-        else:
-            return verts
 
     # ====================================================================================================
     # Instantiate with absolute interpolation weights
