@@ -16,7 +16,7 @@ Root class for geometries
 from contextlib import contextmanager
 
 from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
+#from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
 
 
 

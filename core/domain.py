@@ -37,13 +37,13 @@ if __name__ == "__main__":
     sys.path.append(str(Path(__file__).resolve().parents[1]))
 
     from constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    from maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
+    #from maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
 
 else:
     from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
+    #from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
 
-from scipy.interpolate import BSpline, make_interp_spline, CubicSpline, splder
+#from scipy.interpolate import BSpline, make_interp_spline, CubicSpline, splder
 
 
 
@@ -247,10 +247,10 @@ class Domain(FieldArray):
     domain_name = None
 
     # ----------------------------------------------------------------------------------------------------
-    # Dunder
+    # Init
     # ----------------------------------------------------------------------------------------------------
 
-    def __init__(self, a=None, mode='COPY', selector=None):
+    def __init__(self, a=None, mode='COPY', selector=None, **attrs):
         """ Initialize the array with another array
 
         Arguments
@@ -262,6 +262,10 @@ class Domain(FieldArray):
         super().__init__(a, mode=mode, selector=selector)
         if a is None:
             self.declare_attributes()
+
+        if len(attrs):
+            self.append(**attrs)
+
 
     def declare_attributes(self):
         pass
@@ -883,6 +887,7 @@ class FaceSplineDomain(Domain):
             a = np.roll(np.cumsum(self.loop_total), 1)
             a[0] = 0
             self.loop_start = a
+        return self
 
     @property
     def next_loop_start(self):
@@ -1221,6 +1226,10 @@ class EdgeDomain(Domain):
 
     domain_name = 'EDGE'
 
+    def declare_attributes(self):
+        self.new_int('vertex0', transfer=False)
+        self.new_int('vertex1', transfer=False)
+
     @property
     def vertices(self):
         return np.stack((self.vertex0, self.vertex1), axis=-1)
@@ -1233,10 +1242,6 @@ class EdgeDomain(Domain):
         else:
             self.vertex0 = value[:, 0]
             self.vertex1 = value[:, 1]
-
-    def declare_attributes(self):
-        self.new_int('vertex0', transfer=False)
-        self.new_int('vertex1', transfer=False)
 
     def check(self, count, halt=True):
         if not len(self):

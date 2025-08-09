@@ -109,6 +109,11 @@ class FieldArray(object):
                         shape = shape[1:]
                     self._infos[name] = {'dtype': data[name].dtype, 'shape': shape, 'default': 0, 'optional': False}
 
+    def no_scalar(self):
+        if self._data.shape == ():
+            self._data = np.reshape(self._data, (1,))
+        return self
+
 
     @property
     def is_scalar(self):
@@ -179,19 +184,6 @@ class FieldArray(object):
     # ====================================================================================================
     # Fields
     # ====================================================================================================
-
-    @staticmethod
-    def to_py_name_deprecated(name: str) -> str:
-        """
-        Convert any string to a valid Python identifier, preserving case.
-
-        Examples:
-        ---------
-        >>> FieldArray.to_py_name("My Field!")
-        'My_Field_'
-        """
-        import re
-        return re.sub(r'\W|^(?=\d)', '_', name)
     
     @staticmethod
     def _dtype_name(dtype):
@@ -310,15 +302,15 @@ class FieldArray(object):
                 return self._data[index][:self._length]
         
         # ---------------------------------------------------------------------------
-        # A single integer, we return a recarray
+        # A single integer, we return a scalar FieldArray
         # ---------------------------------------------------------------------------
 
         elif isinstance(index, (int, np.int32, np.int64)):
             if index >= self._length:
                 raise IndexError(f"FieldArray has only {self._length} items, {index} index is not valid.")
             
-            #return self._data[index].view(np.recarray)
-            return type(self)(self._data[index], mode='CAPTURE')
+            #return type(self)(self._data[index], mode='CAPTURE')
+            return type(self)(self._data, mode='CAPTURE', selector=index)
 
         # ---------------------------------------------------------------------------
         # Other case : we return a FieldArray on the selection
@@ -352,7 +344,7 @@ class FieldArray(object):
     
     def __setattr__(self, name, value):
 
-        #if name in self._slots or name in type(self).__dict__:
+
         if name in self._slots or name in dir(self):
             super().__setattr__(name, value)
 
@@ -366,7 +358,10 @@ class FieldArray(object):
                 self._data[name][:self._length] = value
 
         else:
-            raise AttributeError(f"{type(self).__name__}> no field named '{name}'. Valid names are {self.all_names}")
+            raise AttributeError(
+                f"{type(self).__name__}> no field named '{name}'. Valid names are {self.all_names}.\n"
+                f"Note that you can't use 'field_array[selection].{name} = ...' when optional field is not created yet."
+                )
 
     # ----------------------------------------------------------------------------------------------------
     # Sub‑selection
@@ -630,8 +625,6 @@ class FieldArray(object):
                 continue
             self._data[name][sl] = self._infos[name].get('default', 0)
 
-
-
     def append(self, **fields):
         """
         Append values to the structured array.
@@ -649,24 +642,42 @@ class FieldArray(object):
         count  = 0
         arrays = {}
         for name, value in fields.items():
-            
+
             if name not in self._infos:
                 raise ValueError(f"{type(self).__name__}.append > Invalid field name: '{name}' not in {list(self._infos.keys())}")
             
             self._ensure_optional_field(name)
             
-            info = self._infos[name]
             a = np.asarray(value)
 
+            # Argument is a scalar: can be broadcasted to whatever field
             if np.shape(a) == ():
                 n = 1
 
+            # Argument is not scalar
             else:
+                # Target item shape
                 shape = self._data.dtype[name].shape
+
+                # The argument is a single item value
                 if shape == a.shape:
                     n = 1
+
+                # The target shape is a scalar
+                # The argument must be (n,)
+                elif shape == ():
+                    if len(a.shape) != 1:
+                        raise ValueError(f"{type(self).__name__}.append > Invalid shape for scalar field '{name}': {np.shape(a)} is not a 1D array")
+                    n = len(a)
+
+                # The target shape is not a scalar
+                # The argument must be (n,) + shape
+                elif len(a.shape) != len(shape) + 1:
+                    raise ValueError(f"{type(self).__name__}.append > Invalid shape for field '{name}': {np.shape(a)} is not {str((-1,) + shape).replace('-1', 'n')}") 
+                
+                # The target shape is a scalar
+                # The argument shape is (n,) + shape
                 else:
-                    bshape = np.broadcast_shapes(a.shape, shape)
                     n = len(a)
 
             arrays[name] = a

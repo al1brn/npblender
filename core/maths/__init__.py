@@ -1,6 +1,6 @@
 from . utils import get_axis
 
-from .splinesmaths import Spline, Poly, Bezier, Nurbs, NurbsFunction, BSplines
+#from .splinesmaths import Spline, Poly, Bezier, Nurbs, NurbsFunction, BSplines
 
 from . itemsarray import ItemsArray
 from . rotation import Rotation

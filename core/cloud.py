@@ -21,7 +21,7 @@ from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 from . constants import bfloat, bint, bbool
 from . constants import PI, TAU
 from . import blender
-from . maths import BSplines, Bezier, Poly, Nurbs
+#from . maths import BSplines, Bezier, Poly, Nurbs
 from . maths import Transformation, Quaternion, Rotation
 from . maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_map
 from . maths.topology import border_edges, edges_between, row_edges, col_edges

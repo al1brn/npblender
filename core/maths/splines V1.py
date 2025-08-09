@@ -1,30 +1,90 @@
-from pprint import pprint
-import numpy as np
+# ==========================================================================================
+# npblender.geometry.spline
+# ==========================================================================================
+# Part of the npblender package — https://github.com/...
+# MIT License — Created on 11/11/2022 by Alain Bernard — Last updated on 02/08/2025
+#
+# This module defines a generic spline system with support for:
+# - Scalar or batched curves
+# - Multiple types (POLY, Bézier, Function-based)
+# - Cyclic curves and curve conversion
+# - Tangent/length/attribute sampling and plotting
+#
+# Core classes:
+#   - Spline (abstract base class)
+#   - FunctionSpline (function-defined splines, no control points)
+#   - PointsSpline (base for splines with control points)
+#   - PolySpline (piecewise linear splines)
+#   - BezierSpline (cubic Bézier splines with handle management)
+#
+# Curve evaluation and sampling follow a consistent interface:
+#   evaluate(t), tangent(t), length(), resample(n), sample_attribute(t, attr), to_poly(), to_bezier()
+#
+# All spline classes support both single curves (shape (N, 3)) and batches (shape (B, N, 3)),
+# with optional cyclic closure.
+#
+# Dependencies:
+#   - numpy
+#   - matplotlib (optional, for ._plot())
+#
+# ==========================================================================================
 
 # Spline (abstract)
-# ├── SplineFunction            # function derivative
+# ├── FunctionSpline            # function & erivative
 # └── PointsSpline (abstract)   # interpolation
-#     ├── Poly
-#     └── Bezier
+#     ├── PolySpline
+#     └── BezierSpline
 #     └── Nurbs (not implemented yet)
+
+# Public API of the spline module
+__all__ = ['FunctionSpline', 'PolySpline', 'BezierSpline']
+
+import numpy as np
 
 # ====================================================================================================
 # Spline
 # ====================================================================================================
 
 class Spline:
+    """
+    Abstract base class for spline curves (scalar or batched).
+
+    This class defines the core interface and common behavior for any type of spline,
+    including polygonal, Bézier, NURBS, or procedural (function-defined) curves.
+
+    Subclasses must implement the following methods:
+        - evaluate(t): compute points on the curve at parameter t ∈ [0, 1]
+        - tangent(t): compute tangent vectors at parameter t
+        - length(): return total arc length of each spline
+        - sample_attribute(t, attribute): interpolate an attribute along the curve
+
+    Shapes and batching conventions:
+        - Scalar spline: points have shape (N, 3), evaluation returns (T, 3) or (3,)
+        - Batched splines: points have shape (B, N, 3), evaluation returns (B, T, 3), etc.
+        - Parameter t can be scalar, 1D, or 2D, and is broadcasted to shape (B, T)
+
+    Key attributes:
+        - cyclic: whether the curve is looped (i.e., P[-1] == P[0])
+        - is_scalar: True if the instance represents a single spline
+
+    Subclasses may extend:
+        - Conversion methods like to_poly(), to_bezier(), etc.
+        - Plotting utilities for visualization and debugging
+        - Caching of derived data like tangents, resampled points, etc.
+
+    This class is not meant to be instantiated directly.
+    """
+
+    curve_type = None
 
     def __init__(self, cyclic=True):
         self.cyclic = cyclic
+        self.is_scalar = None
 
     # ----------------------------------------------------------------------------------------------------
     # To be overloaded
     # ----------------------------------------------------------------------------------------------------
 
-    @property
-    def is_scalar(self):
-        raise Exception(f"Spline.is_scalar must be overloaded")
-    
     def __len__(self):
         raise Exception(f"Spline.__len__ must be overloaded")
 
@@ -79,67 +139,63 @@ class Spline:
     # Default tangent
     # ----------------------------------------------------------------------------------------------------
 
-    def tangent(self, t):
-        dt = 1/1000
-        v0 = self.evaluate(t - dt)
-        v1 = self.evaluate(t + dt)
-        return (v1 - v0)/(2*dt)
+    def tangent(self, t, normalize=False):
+        """
+        Approximate the tangent vector(s) of the spline at parameter t using central difference.
 
+        This is the default fallback implementation, valid for any subclass that
+        defines `evaluate()`. It estimates γ′(t) ≈ (γ(t + δ) - γ(t - δ)) / (2δ).
+
+        Parameters:
+            t : scalar, (T,), (1, T), or (B, T)
+                Parameter(s) at which to evaluate the tangent(s).
+            normalize : bool, default False
+                If True, return unit tangent vectors.
+
+        Returns:
+            Tangent vector(s) of shape:
+                - (T, 3)       for scalar spline
+                - (B, T, 3)    for batch of splines
+        """
+        dt = 1e-3
+        t, res_shape = self._broadcast_t(t)  # (B, T)
+
+        v0 = self.evaluate(t - dt)           # (B, T, 3)
+        v1 = self.evaluate(t + dt)           # (B, T, 3)
+        d = (v1 - v0) / (2 * dt)             # (B, T, 3)
+
+        if normalize:
+            norm = np.linalg.norm(d, axis=-1, keepdims=True)
+            d = np.divide(d, norm, where=(norm > 1e-12), out=np.zeros_like(d))
+
+        return d.reshape(res_shape)
+    
     # ----------------------------------------------------------------------------------------------------
-    # Default attribute
+    # Sample attribute
     # ----------------------------------------------------------------------------------------------------
 
     def sample_attribute(self, t, attribute):
-        """
-        Sample a given attribute along the spline using linear interpolation.
+        raise NotImplementedError("Sample attribute not implemented.")
 
-        Parameters
-        ----------
-        t : float or np.ndarray
-            Sampling locations ∈ [0, 1], shape (), (T,), or (T, B).
-        attribute : np.ndarray
-            Array of shape (n,) or (n, D) with values to interpolate between.
-
-        Returns
-        -------
-        interpolated : np.ndarray
-            Interpolated values at locations t, shape (T, D), (T, B, D), or similar.
-        """
-        attr = np.asarray(attribute)
-        n = attr.shape[0]
-        D = 1 if attr.ndim == 1 else attr.shape[1:]
-
-        t_clipped = self._clip_t(t)
-        s = t_clipped * (n - 1)
-        i = np.floor(s).astype(int)
-        u = s - i  # fractional part
-
-        # Gather values
-        a0 = attr[i]             # shape of t + D
-        a1 = attr[i + 1]         # shape of t + D
-
-        result = (1 - u)[..., None] * a0 + u[..., None] * a1 if attr.ndim == 2 else (1 - u) * a0 + u * a1
-        return result
-    
     # ----------------------------------------------------------------------------------------------------
     # Conversion to poly
     # ----------------------------------------------------------------------------------------------------
 
     def to_poly(self, count=100):
         """
-        Approximate this spline by a Poly spline using sampled points.
+        Approximate this spline by a PolySpline spline using sampled points.
 
         Parameters
         ----------
         count : int
-            Number of control points in the Poly approximation.
+            Number of control points in the PolySpline approximation.
 
         Returns
         -------
-        Poly : a new Poly spline instance
+        PolySpline : a new PolySpline spline instance
         """
         t = np.linspace(0, 1, count, endpoint=not self.cyclic)
-        return Poly(self.evaluate(t), cyclic=self.cyclic, already_closed=False)
+        return PolySpline(self.evaluate(t), cyclic=self.cyclic, already_closed=False)
     
     # ----------------------------------------------------------------------------------------------------
     # Conversion to bezier
@@ -158,7 +214,7 @@ class Spline:
 
         Returns
         -------
-        Bezier : a new Bézier spline instance
+        BezierSpline : a new Bézier spline instance
         """
         count = count + 1 if self.cyclic else count
 
@@ -180,7 +236,7 @@ class Spline:
         left_handles  = anchors - offset
         right_handles = anchors + offset
 
-        return Bezier(
+        return BezierSpline(
             anchors,
             left_handles=left_handles,
             right_handles=right_handles,
@@ -192,31 +248,102 @@ class Spline:
 # Spline Function
 # ====================================================================================================
 
-class SplineFunction(Spline):
+class FunctionSpline(Spline):
+    """
+    Represents a spline curve defined by a parametric function.
+
+    Unlike control-point-based splines (PolySpline, BezierSpline, Nurbs), a FunctionSpline defines its geometry
+    through analytical expressions or callable functions for position and optionally for tangent,
+    arc length, or other derivatives.
+
+    This class supports scalar and batched curves:
+        - Scalar: a single function defines a single spline
+        - Batched: multiple functions can be evaluated in parallel (vectorized over batch dimension)
+
+    Expected interface for subclasses or function providers:
+        - f(t): evaluates the point at parameter t ∈ [0, 1]
+        - df(t): (optional) evaluates the derivative (tangent vector) at t
+        - length(): (optional) returns the total arc length
+        - sample_attribute(t, attribute): (optional) interpolates additional attributes
+
+    Parameters
+    ----------
+    - t : float, array-like
+        Evaluation parameter(s) in [0, 1]. Can be scalar, 1D or 2D and will be broadcasted
+        according to (B, T) convention.
+
+    Returns
+    -------
+    Depending on the method:
+        - evaluate(t) → points of shape (3,), (T, 3), (B, 3), or (B, T, 3)
+        - tangent(t) → unit vectors of same shape
+        - length() → float or (B,) array
+        - sample_attribute(...) → interpolated values
+
+    Notes
+    -----
+    This class is ideal for mathematical or procedural curves, such as:
+        - Circles, spirals, helices
+        - Noise-based or parametric shapes
+        - Custom splines not tied to discrete control points
+
+    Subclasses or users must override `evaluate()` at minimum.
+    """
+
+    curve_type = 'FUNCTION'
 
     def __init__(self, func, derivative=None, cyclic=True):
         super().__init__(cyclic)
+        self.is_scalar = True
+
         self._func = func
         self._derivative = derivative
 
     def __str__(self):
-        return f"<SplineFunction {self._func.__name__}, cyclic: {self.cyclic}>"
-
-    @property
-    def is_scalar(self):
-        return True
+        return f"<FunctionSpline {self._func.__name__}, cyclic: {self.cyclic}>"
+    
+    def copy(self):
+        return FunctionSpline(
+            self._func,
+            self._derivative,
+            cyclic=self.cyclic,
+        )
     
     def __len__(self):
-        raise Exception(f"SplineFunction is scalar.")
+        raise Exception(f"FunctionSpline is scalar.")
 
     def evaluate(self, t):
         return self._func(self._clip_t(t))
     
-    def tangent(self, t):
+    def tangent(self, t, normalize=False):
+        """
+        Compute the tangent vector γ′(t) of the scalar FunctionSpline.
+
+        If an analytical derivative is defined, it is used.
+        Otherwise, fallback to the default central difference approximation.
+
+        Parameters:
+            t : scalar or array-like of shape (T,)
+                Parameter(s) in [0, 1] at which to evaluate the tangent(s).
+            normalize : bool, default False
+                If True, return unit tangent vectors.
+
+        Returns:
+            Tangent vector(s) of shape (T, 3) or (3,) if t is scalar.
+        """
         if self._derivative is None:
-            return super().tangent(t)
-        else:
-            return self._derivative(self._clip_t(t))
+            return super().tangent(t, normalize=normalize)
+
+        t = self._clip_t(t)
+        d = self._derivative(t)  # (T, 3) or (3,)
+
+        if normalize:
+            d = np.asarray(d)
+            norm = np.linalg.norm(d, axis=-1, keepdims=True)
+            d = np.divide(d, norm, where=(norm > 1e-12), out=np.zeros_like(d))
+
+        return d
+
         
     # ====================================================================================================
     # Helpers
@@ -286,12 +413,12 @@ class SplineFunction(Spline):
     
     def _plot(self, resolution=100, display_points='NO', label=None, ax=None, **kwargs):
         """
-        Plot the Poly spline using matplotlib.
+        Plot the PolySpline spline using matplotlib.
 
         Parameters:
             resolution (int): Number of points to evaluate the curve.
             display_points (str): 'NO', 'POINTS', 'HANDLES', or 'ALL'
-                                (only 'POINTS' and 'ALL' are used for Poly).
+                                (only 'POINTS' and 'ALL' are used for PolySpline).
             label (str): Legend label for the spline.
             ax (matplotlib.axes.Axes): Optional matplotlib axis to draw on.
             **kwargs: Additional keyword arguments for `plot()` and `scatter()`.
@@ -314,11 +441,59 @@ class SplineFunction(Spline):
 
 class PointsSpline(Spline):
     """
-    Represents a batch of interpolation splines.
-    Compatible with single spline input (N, 3) or batch (B, N, 3).
-    An additional fourth ccoordinate w is managed for compatibility with Nurbs
+    Abstract base class for splines defined by control points.
+
+    This class provides common infrastructure for spline types such as PolySpline, BezierSpline, or Nurbs,
+    which rely on a set of control points (and optionally other geometry like handles or weights).
+    It handles batching, cyclic closure, and unified access to the `_points` array.
+
+    Features
+    --------
+    - Supports scalar splines (shape: (N, 3)) and batched splines (shape: (B, N, 3))
+    - Supports optional fourth coordinate (w) for compatibility with rational splines (e.g., NURBS)
+    - Manages cyclic splines by optionally appending the first point at the end
+    - Provides helper methods for shape normalization, access, slicing, and serialization
+
+    Parameters
+    ----------
+    points : ndarray
+        Array of shape (N, 3/4) or (B, N, 3/4) defining the control points.
+    cyclic : bool
+        If True, the spline is considered cyclic (looped).
+    already_closed : bool
+        If True, the first point is assumed to already be duplicated at the end for cyclic curves.
+
+    Attributes
+    ----------
+    _points : ndarray
+        Internal representation of the control points (with optional closure).
+    is_scalar : bool
+        True if the spline is a scalar curve (not batched).
+    cyclic : bool
+        Whether the curve is cyclic (closed).
+    dimension : int
+        Dimensionality of points (3 or 4).
+
+    Expected to Implement
+    ---------------------
+    Subclasses must implement:
+        - evaluate(t)
+        - tangent(t)
+        - length()
+        - sample_attribute(t, attribute)
+    
+    Examples
+    --------
+    >>> class MySpline(PointsSpline):
+    ...     def evaluate(self, t):
+    ...         return self._points[0]  # Dummy implementation
+
+    >>> spline = MySpline(np.random.rand(10, 3), cyclic=True)
+    >>> spline._array_of_points.shape
+    (1, 11, 3)  # Includes closure
     """
-    def __init__(self, points, cyclic=False, already_closed=False):
+
+    def __init__(self, points, cyclic=False, already_closed=False, **attributes):
         """
         Initialize the spline(s) from control points.
 
@@ -331,22 +506,108 @@ class PointsSpline(Spline):
         already_closed : bool
             If True, the input points are already closed (i.e., last point = first point),
             and no additional point will be added.
+        attributes (dict): struct array or array of floats
+            Attributes along the splines
         """
-        self.cyclic = cyclic
+        super().__init__(cyclic)
         points = np.asarray(points)
 
+        # ----------------------------------------------------------------------------------------------------
+        # points
+        # ----------------------------------------------------------------------------------------------------
+
         if points.ndim == 2:
+            self.is_scalar = True
             if cyclic and not already_closed:
                 points = np.concatenate([points, points[:1]], axis=0)  # (N+1, 3)
-            self._points = points
+            self._points = points[None]
 
         elif points.ndim == 3:
+            self.is_scalar = False
             if cyclic and not already_closed:
                 points = np.concatenate([points, points[:, :1]], axis=1)  # (B, N+1, 3)
             self._points = points
 
         else:
             raise ValueError("Expected shape (N, 3) or (B, N, 3)")
+        
+        # ----------------------------------------------------------------------------------------------------
+        # attributes
+        # ----------------------------------------------------------------------------------------------------
+
+        self._attributes = None
+        if attributes:
+
+            B, N, _ = self._points.shape
+            fields = []
+            arrays = []
+
+            for name, value in attributes.items():
+                arr = np.asarray(value, dtype=np.float32)
+
+                msg = None
+
+                # One dim, must be (N,)
+                if arr.ndim == 1:
+                    try:
+                        arr = np.broadcast_to(arr, (1, N, 1))
+                    except Exception as e:
+                        msg = str(e)
+                
+                # Two dims, (N, ?) if scalar, (B, N) otherwise (no ambiguity is accepted :-)
+                elif arr.ndim == 2:
+                    # scalar -> need N vectors
+                    if self.is_scalar:
+                        try:
+                            arr = np.broadcast_to(arr, (1, N) + (arr.shape[-1],))
+                        except Exception as e:
+                            msg = str(e)
+
+                    # not scalar -> (B, N) scalars
+                    else:
+                        try:
+                            arr = np.broadcast_to(arr, (B, N, 1))
+                        except:
+                            msg = str(e)
+                
+                # Three dims (B, N, D)
+                elif arr.ndim == 3:
+                    try:
+                        arr = np.broadcast_to(arr, (B, N, arr.shape[-1]))
+                    except:
+                        msg = str(e)
+
+                else:
+                    msg = f"Attribute shape {arr.shape} is not valid"
+                    
+
+
+                arr = np.broadcast_to(arr, ())
+
+                # Accept (N,) → (1, N, 1), (B, N) → (B, N, 1), etc.
+                if arr.ndim == 1 and arr.shape[0] == N:
+                    arr = arr[None, :, None]
+                elif arr.ndim == 2:
+                    if arr.shape == (B, N):
+                        arr = arr[..., None]
+                    elif arr.shape == (N, 1):
+                        arr = arr[None, ...]
+                    else:
+                        raise ValueError(f"Attribute '{name}' must have shape (B,N) or (B,N,D)")
+                elif arr.ndim == 3:
+                    if arr.shape[:2] != (B, N):
+                        raise ValueError(f"Attribute '{name}' shape mismatch with points: {arr.shape} vs {(B, N)}")
+                else:
+                    raise ValueError(f"Attribute '{name}' must be of shape (B,N) or (B,N,D)")
+
+                D = () if arr.shape[-1] == 1 else (arr.shape[-1],)
+                fields.append((name, 'f4', D))
+                arrays.append(arr if D else arr[..., 0])  # collapse last dim if scalar
+
+            dtype = np.dtype(fields)
+            result = np.empty((B, N), dtype=dtype)
+            for i, name in enumerate(dtype.names):
+                result[name] = arrays[i]        
 
     def __str__(self):
         if self.is_scalar:
@@ -362,6 +623,53 @@ class PointsSpline(Spline):
             return self._points
         else:
             return self._points.astype(dtype)
+        
+    # ====================================================================================================
+    # Get back the geometry
+    # ====================================================================================================
+
+    def get_geometry(self):
+        """
+        Return the raw geometry data of the spline, with shape and structure
+        adapted for user-level access (e.g. saving, exporting, etc).
+
+        - Points and handles are returned as (N, D) or (B, N, D)
+        - Attributes are returned as structured arrays with named fields
+        - Cyclic closing point is removed if applicable
+
+        Returns
+        -------
+        dict : {
+            'points': ndarray,
+            'left_handles': ndarray (if present),
+            'right_handles': ndarray (if present),
+            'attributes': structured ndarray (if present)
+        }
+        """
+        def strip(arr):
+            return arr[..., :-1, :] if self.cyclic else arr
+
+        geom = {}
+
+        # Points
+        pts = strip(self._points)
+        geom["points"] = pts[0] if self.is_scalar else pts
+
+        # Optional handles
+        if hasattr(self, '_left_handles'):
+            L = strip(self._left_handles)
+            geom["left_handles"] = L[0] if self.is_scalar else L
+        if hasattr(self, '_right_handles'):
+            R = strip(self._right_handles)
+            geom["right_handles"] = R[0] if self.is_scalar else R
+
+        # Attributes (structured array)
+        if self._attributes is not None:
+            A = self._attributes[:, :-1] if self.cyclic else self._attributes
+            geom["attributes"] = A[0] if self.is_scalar else A
+
+        return geom
+
         
     # ====================================================================================================
     # Properties
@@ -393,6 +701,13 @@ class PointsSpline(Spline):
         self._points = np.asarray(value)
         if len(self._points.shape) < 2 or self._points.shape[-1] != 3:
             raise AttributeError("The points must be an array of vectors 3D")
+        
+    @property
+    def control_points(self):
+        if self.is_cyclic:
+            return self._points[..., :-1, :]
+        else:
+            return self._points
 
     @property
     def w(self):
@@ -481,23 +796,174 @@ class PointsSpline(Spline):
                 res_shape = t.shape
 
         return t, res_shape + (3,)
+    
+    # ====================================================================================================
+    # Ensure attribute to sample has the proper shape
+    # ====================================================================================================
+    
+    def _adjust_attributes(self, attribute):
+        """
+        Ensure attribute has correct length, adding cyclic closing point if needed.
+
+        Parameters
+        ----------
+        attribute : ndarray
+            Array of shape (B, N), (B, N, D), (N,), (N, D), or structured array of shape (B, N) or (N,)
+
+        Returns
+        -------
+        attr : ndarray
+            Possibly extended array with duplicated first point (if cyclic and not already closed),
+            and shape compatible with internal usage.
+        """
+        attr = np.asarray(attribute)
+        n_pts = self._points.shape[0 if self.is_scalar else 1]
+        n_attr = attr.shape[0 if self.is_scalar else 1]
+
+        # Check and adjust
+        if self.cyclic:
+            if n_attr == n_pts:
+                return attr  # already closed
+            elif n_attr == n_pts - 1:
+                if attr.dtype.fields is None:
+                    # non-structured → repeat first entry
+                    if self.is_scalar:
+                        return np.concatenate([attr, attr[:1]], axis=0)
+                    else:
+                        return np.concatenate([attr, attr[:, :1]], axis=1)
+                else:
+                    # structured → same
+                    first = attr[:1] if self.is_scalar else attr[:, :1]
+                    return np.concatenate([attr, first], axis=0 if self.is_scalar else 1)
+            else:
+                raise ValueError(
+                    f"Cyclic spline: attribute.shape[1] = {n_attr}, expected {n_pts-1} or {n_pts}"
+                    if not self.is_scalar else
+                    f"Cyclic spline: attribute.shape[0] = {n_attr}, expected {n_pts-1} or {n_pts}"
+                )
+        else:
+            if n_attr != n_pts:
+                raise ValueError(
+                    f"Non-cyclic spline: attribute.shape mismatch with points: got {n_attr}, expected {n_pts}"
+                )
+            return attr
+        
+    # ====================================================================================================
+    # Sample attribute
+    # ====================================================================================================
+
+    def sample_attribute(self, t, attribute):
+        """
+        Sample a given attribute along the spline using linear interpolation.
+
+        Parameters
+        ----------
+        t : float or np.ndarray
+            Sampling locations ∈ [0, 1], shape (), (T,), or (T, B).
+        attribute : np.ndarray
+            Array of shape (n,) or (n, D) with values to interpolate between.
+
+        Returns
+        -------
+        interpolated : np.ndarray
+            Interpolated values at locations t, shape (T, D), (T, B, D), or similar.
+        """
+        attr = self._adjust_attributes(attribute)
+        n = attr.shape[0]
+        D = 1 if attr.ndim == 1 else attr.shape[1:]
+
+        t_clipped = self._clip_t(t)
+        s = t_clipped * (n - 1)
+        i = np.floor(s).astype(int)
+        u = s - i  # fractional part
+
+        # Gather values
+        a0 = attr[i]             # shape of t + D
+        a1 = attr[i + 1]         # shape of t + D
+
+        result = (1 - u)[..., None] * a0 + u[..., None] * a1 if attr.ndim == 2 else (1 - u) * a0 + u * a1
+        return result        
+
               
 # ====================================================================================================
-# Poly Spline
+# PolySpline Spline
 # ====================================================================================================
 
-class Poly(PointsSpline):
+class PolySpline(PointsSpline):
     """
-    Represents a batch of POLY splines.
-    Compatible with single spline input (N, 3) or batch (B, N, 3).
-    An additional fourth ccoordinate w is managed for compatibility with Nurbs
+    Represents a batch of piecewise-linear (POLY) splines.
+
+    A PolySpline spline is a simple curve defined by linear interpolation between control points.
+    It is commonly used for rough approximations, debugging, or for converting more complex
+    curves into a piecewise-linear form. This class supports both scalar (single) and batched
+    splines, as well as optional cyclic closure.
+
+    Features
+    --------
+    - Supports 3D or 4D points (the 4th coordinate can store weights for NURBS compatibility)
+    - Supports cyclic splines with automatic closure (duplicating the first point at the end)
+    - Efficient evaluation by linear interpolation between control points
+    - Tangents are computed per control point by averaging surrounding segments
+    - Can convert to and from Bezier splines for smooth approximations
+    - Attribute sampling along the curve is supported (e.g., radius, color, weights)
+
+    Parameters
+    ----------
+    points : ndarray
+        Control points of shape (N, 3/4) or (B, N, 3/4)
+    cyclic : bool
+        If True, the curve is treated as cyclic (looped).
+    already_closed : bool
+        If True, the curve is assumed to already include a duplicate of the first point at the end.
+
+    Methods
+    -------
+    evaluate(t)
+        Evaluate the point(s) on the curve at normalized parameter(s) t ∈ [0, 1].
+    tangent(t)
+        Evaluate the unit tangent vector(s) at parameter(s) t.
+    length()
+        Compute the total arc length of each curve.
+    resample(count)
+        Resample the spline to contain `count` evenly spaced control points.
+    sample_attribute(t, attribute)
+        Interpolate an attribute array along the curve using linear interpolation.
+    to_bezier(count, handle_scale)
+        Convert the poly spline to a Bezier spline with `count` control points.
+    to_poly(count)
+        Return a resampled copy of the curve with `count` control points.
+    _plot(...)
+        Visualize the curve using matplotlib (for debugging/testing).
+
+    Examples
+    --------
+    >>> pts = np.random.rand(10, 3)
+    >>> curve = PolySpline(pts)
+    >>> p = curve.evaluate(0.5)       # Evaluate midpoint
+    >>> t = curve.tangent(0.3)        # Tangent vector at t = 0.3
+    >>> b = curve.to_bezier(6)        # Smooth Bezier approximation
+
+    Notes
+    -----
+    - When cyclic=True, the first point is appended at the end to enable continuity.
+    - Tangents at control points are cached if `CACHE_TANGENTS = True`.
+    - The fourth coordinate (w) is preserved for compatibility with NURBS but unused in evaluation.
     """
+
+    curve_type = 'POLY'
 
     CACHE_TANGENTS = False
 
     def __getitem__(self, index):
         if len(self):
-            return Poly(self._points[index], cyclic=self.cyclic, already_closed=True)
+            return PolySpline(self._points[index], cyclic=self.cyclic, already_closed=True)
+        
+    def copy(self):
+        return PolySpline(
+            self._points.copy(),
+            cyclic=self.cyclic,
+            already_closed=True
+        )
         
     # ====================================================================================================
     # Evaluation
@@ -543,85 +1009,50 @@ class Poly(PointsSpline):
     # Tangent
     # ----------------------------------------------------------------------------------------------------
 
-    def _control_point_tangents(self):
+    def tangent(self, t, normalize=False):
         """
-        Compute (or retrieve) the tangent vectors at control points.
-        These are the average of incoming and outgoing segments.
-        The result is stored in `self._points_tangents`.
+        Compute the (piecewise constant) tangent vector(s) of a PolySpline at parameter t.
 
-        Returns
-        -------
-        tangents : ndarray of shape (B, N, 3)
-            Tangent vectors at each control point.
+        For each segment, the tangent is simply the vector from one control point
+        to the next. The tangent is constant within each segment.
+
+        Parameters:
+            t : scalar, (T,), (1, T), or (B, T)
+                Parameter(s) at which to evaluate the tangent(s).
+            normalize : bool, default False
+                Whether to return unit vectors.
+
+        Returns:
+            Tangent vector(s) of shape:
+                - (T, 3)       for scalar spline
+                - (B, T, 3)    for batch of splines
         """
-        if hasattr(self, '_points_tangents'):
-
-            return self._points_tangents
-
-        points = self._array_of_points  # shape (B, N, 3)
+        points = self._array_of_points  # (B, N, 3)
         B, N, _ = points.shape
-        tangents = np.zeros_like(points)
 
-        # Interior points
-        tangents[:, 1:-1] = points[:, 2:] - points[:, :-2]
+        # Compute segment vectors with modular wrapping
+        indices = (np.arange(N) + 1) % N
+        segments = points[:, indices, :] - points  # (B, N, 3)
 
-        if self.cyclic:
-            # First point: avg of [P1 - P0] and [Pn-1 - P0]
-            tangents[:, 0] = points[:, 1] - points[:, -2]
-            # Last point (duplicate of P0): same tangent
-            tangents[:, -1] = tangents[:, 0]
-        else:
-            # Start and end: single-sided
-            tangents[:, 0] = points[:, 1] - points[:, 0]
-            tangents[:, -1] = points[:, -1] - points[:, -2]
+        # Fix last segment if not cyclic
+        if not self.cyclic:
+            segments[:, -1] = points[:, -1] - points[:, -2]  # repeat last segment
 
-        if self.CACHE_TANGENTS:
-            self._points_tangents = tangents
+        # Parametric coordinate to segment index
+        t, res_shape = self._broadcast_t(t)  # (B, T)
+        S = N - 1  # number of segments
+        s = np.clip(t * S, 0, S - 1e-6)
+        i = np.floor(s).astype(int)  # (B, T)
 
-        return tangents
+        # Lookup segment tangents
+        rows = np.arange(B)[:, None]
+        tangents = segments[rows, i]  # (B, T, 3)
 
+        if normalize:
+            norm = np.linalg.norm(tangents, axis=-1, keepdims=True)
+            tangents = np.divide(tangents, norm, where=(norm > 1e-12), out=np.zeros_like(tangents))
 
-    def tangent(self, t):
-        """
-        Evaluate the tangent vector(s) at parametric coordinate(s) t by
-        interpolating the tangents at control points.
-
-        Parameters
-        ----------
-        t : float or array-like
-            Parametric coordinate(s) in [0, 1].
-
-        Returns
-        -------
-        tangents : ndarray of shape (B, T, 3)
-            Normalized tangent vectors at the given parameter(s).
-        """
-        tangents_cp = self._control_point_tangents()   # shape (B, N, 3)
-        B, N, _ = tangents_cp.shape
-
-        t, res_shape = self._broadcast_t(t)            # t: shape (B, T)
-        B_check, T = t.shape
-        assert B_check == B
-
-        num_segments = N - 1
-        s = t * num_segments                          # shape (B, T)
-        s = np.clip(s, 0, num_segments - 1e-6)
-        i = np.floor(s).astype(int)                   # (B, T)
-        u = s - i                                     # (B, T)
-
-        # Fancy indexing for tangents_cp[range(B), i]
-        rows = np.arange(B)[:, None]                  # shape (B, 1)
-        Ti = tangents_cp[rows, i]                     # (B, T, 3)
-        Ti1 = tangents_cp[rows, i + 1]                # (B, T, 3)
-
-        T_interp = (1 - u[..., None]) * Ti + u[..., None] * Ti1  # (B, T, 3)
-
-        # Normalize
-        norm = np.linalg.norm(T_interp, axis=-1, keepdims=True)
-        norm[norm < 1e-8] = 1.0
-        T_interp /= norm
-
-        return T_interp.reshape(res_shape)
+        return tangents.reshape(res_shape)
 
     # ----------------------------------------------------------------------------------------------------
     # Resample
@@ -630,7 +1061,7 @@ class Poly(PointsSpline):
     def resample(self, count):
         """
         Sample evenly spaced points along a smoothed version of the spline(s),
-        using a temporary Bezier interpolation.
+        using a temporary BezierSpline interpolation.
 
         Parameters:
             count: int -- number of samples
@@ -641,7 +1072,7 @@ class Poly(PointsSpline):
         count = count + 1 if self.cyclic else count
 
         if self._points.shape[-2] != count:
-            bezier = Bezier(self._points, cyclic=False)
+            bezier = BezierSpline(self._points, cyclic=False)
             t = np.linspace(0, 1, count)
             self._points = bezier.evaluate(t)
         return self
@@ -676,7 +1107,7 @@ class Poly(PointsSpline):
         Interpolate attribute values along the spline(s) at parameter t ∈ [0, 1].
 
         Parameters:
-            t : scalar, (T,), (B,), (1, T), or (B, T)
+            t : scalar, (T,), (1, T), or (B, T)
             attribute : array of shape (N,), (B,N), (N,D), or (B,N,D)
 
         Returns:
@@ -685,29 +1116,9 @@ class Poly(PointsSpline):
                 - (B,) or (B,D)       if t is scalar
                 - (B,T) or (B,T,D)    otherwise
         """
-        attr = np.asarray(attribute)
+        attr = self._adjust_attributes(attribute)
         coords = self._array_of_points  # (B, N, 3)
         B, N, _ = coords.shape
-
-        # Format attribute to shape (B, N, D)
-        if attr.ndim == 1:
-            attr = attr[None, :, None]  # (1, N, 1)
-        elif attr.ndim == 2:
-            if attr.shape[0] == N:
-                attr = attr[None]  # (1, N, D)
-            elif attr.shape[1] == N:
-                attr = attr[..., None]  # (B, N, 1)
-            else:
-                raise ValueError(f"Invalid attribute shape {attr.shape}")
-        elif attr.ndim == 3:
-            if attr.shape[0] != B or attr.shape[1] != N:
-                raise ValueError(f"Attribute shape {attr.shape} must be (B,N,D)")
-        else:
-            raise ValueError("Attribute must be 1D, 2D, or 3D")
-
-        # Add cyclic attribute value
-        if self.cyclic:
-            attr = np.concatenate([attr, attr[:, :1]], axis=1)  # (B, N+1, D)
 
         t, res_shape = self._broadcast_t(t)  # t: (B, T), res_shape: (B, T, 3) or (T, 3), etc.
         T = t.shape[-1]
@@ -732,27 +1143,27 @@ class Poly(PointsSpline):
 
     def to_poly(self, count=100):
         """
-        Approximate this spline by a Poly spline using sampled points.
+        Approximate this spline by a PolySpline spline using sampled points.
 
         Parameters
         ----------
         count : int
-            Number of control points in the Poly approximation.
+            Number of control points in the PolySpline approximation.
 
         Returns
         -------
-        Poly : a new Poly spline instance
+        PolySpline : a new PolySpline spline instance
         """
-        new_poly = Poly(self._points.copy(), cyclic=self.cyclic, already_closed=True)
+        new_poly = PolySpline(self._points.copy(), cyclic=self.cyclic, already_closed=True)
         return new_poly.resample(count)
         
     # ----------------------------------------------------------------------------------------------------
-    # Conversion to Bezier
+    # Conversion to BezierSpline
     # ----------------------------------------------------------------------------------------------------
 
     def to_bezier(self, count=10, handle_scale=0.3):
         """
-        Approximate a Poly spline with a Bézier spline by sampling `count` points and estimating tangents.
+        Approximate a PolySpline spline with a Bézier spline by sampling `count` points and estimating tangents.
 
         Parameters
         ----------
@@ -763,7 +1174,7 @@ class Poly(PointsSpline):
 
         Returns
         -------
-        Bezier : new Bézier spline instance
+        BezierSpline : new Bézier spline instance
         """
         count = count + 1 if self.cyclic else count
 
@@ -802,7 +1213,7 @@ class Poly(PointsSpline):
             left_handles = left_handles[0]
             right_handles = right_handles[0]
 
-        return Bezier(
+        return BezierSpline(
             control_points,
             left_handles=left_handles,
             right_handles=right_handles,
@@ -816,12 +1227,12 @@ class Poly(PointsSpline):
     
     def _plot(self, resolution=100, display_points='NO', label=None, ax=None, **kwargs):
         """
-        Plot the Poly spline using matplotlib.
+        Plot the PolySpline spline using matplotlib.
 
         Parameters:
             resolution (int): Number of points to evaluate the curve.
             display_points (str): 'NO', 'POINTS', 'HANDLES', or 'ALL'
-                                (only 'POINTS' and 'ALL' are used for Poly).
+                                (only 'POINTS' and 'ALL' are used for PolySpline).
             label (str): Legend label for the spline.
             ax (matplotlib.axes.Axes): Optional matplotlib axis to draw on.
             **kwargs: Additional keyword arguments for `plot()` and `scatter()`.
@@ -834,7 +1245,7 @@ class Poly(PointsSpline):
         curve = self.evaluate(np.linspace(0, 1, resolution))  # (T, 3) or (B, T, 3)
 
         if curve.ndim == 2:  # Scalar spline
-            ax.plot(curve[:, 0], curve[:, 1], label=label or "Poly", **kwargs)
+            ax.plot(curve[:, 0], curve[:, 1], label=label or "PolySpline", **kwargs)
             if display_points in {'POINTS', 'ALL'}:
                 pts = self._array_of_points  # (N, 3)
                 ax.scatter(pts[:, 0], pts[:, 1], color='red', s=40, label='Control Points', **kwargs)
@@ -842,7 +1253,7 @@ class Poly(PointsSpline):
         else:  # Batched splines
             for b in range(curve.shape[0]):
                 pts = self._array_of_points[b]  # (N, 3)
-                lbl = f"{label} {b}" if label else f"Poly {b}"
+                lbl = f"{label} {b}" if label else f"PolySpline {b}"
                 ax.plot(curve[b, :, 0], curve[b, :, 1], label=lbl, **kwargs)
                 if display_points in {'POINTS', 'ALL'}:
                     ax.scatter(pts[:, 0], pts[:, 1], s=30, color='red', **kwargs)
@@ -853,10 +1264,80 @@ class Poly(PointsSpline):
 # Bezier splines
 # ====================================================================================================
 
-class Bezier(PointsSpline):
+class BezierSpline(PointsSpline):
     """
-    Represents a batch of BEZIER splines.
+    Represents a batch of cubic Bézier splines.
+
+    Each segment of the spline is defined by four control points:
+    - An anchor point (P₀)
+    - A right handle from the anchor (R₀)
+    - A left handle toward the next anchor (L₁)
+    - The next anchor point (P₁)
+
+    This structure enables smooth C1-continuous curves, widely used in 2D/3D modeling,
+    animation paths, and shape interpolation. The class supports scalar and batched splines,
+    cyclic curves (with automatic handle closure), and operations like evaluation, tangent
+    computation, resampling, and conversion.
+
+    Features
+    --------
+    - Supports both scalar (N, 3) and batched (B, N, 3) Bézier splines
+    - Handles can be explicitly provided or auto-computed for smoothness
+    - Cyclic curves are supported (with closed-loop geometry and handles)
+    - Evaluation via cubic Bézier interpolation per segment
+    - Exact tangent evaluation using analytical derivatives
+    - Attribute sampling using Bézier-style interpolation
+    - Conversion to `PolySpline` or `BezierSpline` with fixed resolution
+
+    Parameters
+    ----------
+    points : ndarray
+        Anchor points of shape (N, 3) or (B, N, 3)
+    left_handles : ndarray, optional
+        Left handle positions, same shape as `points`
+    right_handles : ndarray, optional
+        Right handle positions, same shape as `points`
+    cyclic : bool, default=False
+        Whether the curve is cyclic (closed loop)
+    already_closed : bool, default=False
+        If True, assumes the last point is a duplicate of the first and skips closure logic
+
+    Methods
+    -------
+    evaluate(t)
+        Evaluate the point(s) on the curve at normalized parameter(s) t ∈ [0, 1]
+    tangent(t)
+        Compute the unit tangent(s) at parameter(s) t using Bézier derivatives
+    length(resolution)
+        Estimate arc length of each curve by sampling
+    resample(count)
+        Resample the curve into `count` evenly spaced segments
+    sample_attribute(t, attribute)
+        Sample a scalar or vector attribute along the curve using cubic interpolation
+    to_bezier(count, handle_scale)
+        Return a copy of the spline with `count` segments and optionally recomputed handles
+    _plot(...)
+        Visualize the curve using matplotlib (with anchors, handles, etc.)
+
+    Examples
+    --------
+    >>> pts = np.random.rand(6, 3)
+    >>> bez = BezierSpline(pts)
+    >>> p = bez.evaluate(0.25)        # Evaluate position at 25%
+    >>> t = bez.tangent(0.8)          # Get tangent vector at 80%
+    >>> bez2 = bez.resample(20)       # Increase control points for more precision
+
+    Notes
+    -----
+    - Handles can be left unspecified; they will be auto-generated for smooth interpolation.
+    - Auto-generated handles are based on tangent estimation using surrounding points.
+    - Evaluation is segment-based: `t=0` is at the first anchor, `t=1` at the last.
+    - When cyclic=True, an extra segment joins the last and first anchor.
+    - Bézier interpolation and tangent formulas follow the standard cubic basis.
     """
+
+    curve_type = 'BEZIER'
+
     def __init__(self, points, left_handles=None, right_handles=None, cyclic=False, already_closed=False):
         """
         Initialize the Bezier spline(s).
@@ -904,7 +1385,7 @@ class Bezier(PointsSpline):
         
     def __getitem__(self, index):
         if len(self):
-            return Bezier(
+            return BezierSpline(
                 self._points[index], 
                 left_handles = self._left[index],
                 right_handles = self._right[index],
@@ -923,6 +1404,13 @@ class Bezier(PointsSpline):
     @property
     def handles(self):
         return self._left, self._right
+    
+    @property
+    def control_handles(self):
+        if self.cyclic:
+            return self._left[..., :-1, :], self._right[...,:-1, :]
+        else:
+            return self._left, self._right
 
     @property
     def _array_of_handles(self):
@@ -932,7 +1420,7 @@ class Bezier(PointsSpline):
             return self._left, self._right
         
     def copy(self):
-        return Bezier(
+        return BezierSpline(
             self._points.copy(),
             left_handles=self._left.copy(),
             right_handles=self._right.copy(),
@@ -1045,12 +1533,18 @@ class Bezier(PointsSpline):
     # Tangent
     # ----------------------------------------------------------------------------------------------------
 
-    def tangent(self, t):
+    def tangent(self, t, normalize=False):
         """
-        Evaluate unit tangents of the Bezier spline(s) at normalized parameter(s) t ∈ [0, 1].
+        Evaluate the tangent vector(s) of the Bezier spline(s) at parameter(s) t ∈ [0, 1].
+
+        The tangent corresponds to the derivative γ′(t) of the Bézier curve.
+        If `normalize=True`, the tangent is returned as a unit vector.
 
         Parameters:
-            t: scalar, (T,), (1, T), or (B, T)
+            t : scalar, (T,), (1, T), or (B, T)
+                Evaluation parameter(s).
+            normalize : bool, default False
+                Whether to normalize the tangent(s) to unit length.
 
         Returns:
             Array of shape:
@@ -1071,10 +1565,11 @@ class Bezier(PointsSpline):
         u = s - i                                     # (B, T)
 
         # Batched indexing
-        P0 = points[np.arange(B)[:, None], i]         # (B, T, 3)
-        R0 = right[np.arange(B)[:, None], i]          # (B, T, 3)
-        L1 = left[np.arange(B)[:, None], i + 1]       # (B, T, 3)
-        P1 = points[np.arange(B)[:, None], i + 1]     # (B, T, 3)
+        rows = np.arange(B)[:, None]
+        P0 = points[rows, i]      # (B, T, 3)
+        R0 = right[rows, i]       # (B, T, 3)
+        L1 = left[rows, i + 1]    # (B, T, 3)
+        P1 = points[rows, i + 1]  # (B, T, 3)
 
         u2 = u * u
         omu = 1 - u
@@ -1086,11 +1581,12 @@ class Bezier(PointsSpline):
             3 * u2[..., None] * (P1 - L1)
         )  # (B, T, 3)
 
-        norm = np.linalg.norm(dP, axis=-1, keepdims=True)  # (B, T, 1)
-        norm[norm < 1e-8] = 1.0
+        if normalize:
+            norm = np.linalg.norm(dP, axis=-1, keepdims=True)
+            dP = np.divide(dP, norm, where=(norm > 1e-12), out=np.zeros_like(dP))
 
-        res = dP / norm  # (B, T, 3)
-        return res.reshape(res_shape)
+        return dP.reshape(res_shape)
+
     
     # ----------------------------------------------------------------------------------------------------
     # Resample
@@ -1141,7 +1637,7 @@ class Bezier(PointsSpline):
             return lengths[0]
         else:
             return lengths
-
+        
     # ----------------------------------------------------------------------------------------------------
     # Sample an attribute along the splines
     # ----------------------------------------------------------------------------------------------------
@@ -1160,20 +1656,9 @@ class Bezier(PointsSpline):
                 - (B,) or (B, D)     if scalar t
                 - (B, T) or (B, T, D) if t.shape == (B, T)
         """
-        attr = np.asarray(attribute)
+        attr = self._adjust_attributes(attribute)
         points = self._array_of_points  # (B, N, 3)
         B, N, _ = points.shape
-
-        if attr.ndim == 2:
-            attr = attr[..., None]  # (B, N, 1)
-        elif attr.ndim != 3:
-            raise ValueError("Attribute must have shape (B, N) or (B, N, D)")
-
-        if attr.shape[:2] != (B, N):
-            raise ValueError(f"Attribute shape {attr.shape} does not match spline shape {(B, N)}")
-
-        if self.cyclic:
-            attr = np.concatenate([attr, attr[:, :1]], axis=1)  # (B, N+1, D)
 
         t, res_shape = self._broadcast_t(t)  # (B, T)
         T = t.shape[1]
@@ -1210,7 +1695,7 @@ class Bezier(PointsSpline):
     # ----------------------------------------------------------------------------------------------------
 
     def to_bezier(self, count=20, handle_scale=0.3):
-        new_bezier = Bezier(
+        new_bezier = BezierSpline(
             self._points.copy(),
             left_handles=self._left.copy(),
             right_handles=self._right.copy(),
@@ -1244,7 +1729,7 @@ class Bezier(PointsSpline):
         lefts, rights = self._array_of_handles  # each (B, N, 3)
 
         if curve.ndim == 2:  # scalar spline
-            ax.plot(curve[:, 0], curve[:, 1], label=label or "Bezier", **kwargs)
+            ax.plot(curve[:, 0], curve[:, 1], label=label or "BezierSpline", **kwargs)
 
             if display_points in {'POINTS', 'ALL'}:
                 ax.scatter(anchors[0, :, 0], anchors[0, :, 1], c='red', s=40, label='Anchors')
@@ -1259,7 +1744,7 @@ class Bezier(PointsSpline):
         else:  # batched splines
             B = curve.shape[0]
             for b in range(B):
-                lbl = f"{label} {b}" if label else f"Bezier {b}"
+                lbl = f"{label} {b}" if label else f"BezierSpline {b}"
                 ax.plot(curve[b, :, 0], curve[b, :, 1], label=lbl, **kwargs)
 
                 if display_points in {'POINTS', 'ALL'}:
@@ -1294,12 +1779,12 @@ def test_evaluate_spline_shapes():
 
     # Cas scalaire : un seul spline avec 5 points
     points_scalar = np.random.rand(5, 3)
-    S_scalar = Poly(points_scalar)
+    S_scalar = PolySpline(points_scalar)
     print(S_scalar)
 
     # Cas batch : 4 splines avec 5 points chacun
     points_batch = np.random.rand(4, 5, 3)
-    S_batch = Poly(points_batch)
+    S_batch = PolySpline(points_batch)
     print(S_batch)
 
     # --- Tests scalaires ---
@@ -1345,14 +1830,14 @@ def test_spline_evaluate_plot():
     
     import matplotlib.pyplot as plt
 
-    # Poly scalaire : une sinusoïde simple
+    # PolySpline scalaire : une sinusoïde simple
     x = np.linspace(0, 2 * np.pi, 10)
     y = np.sin(x)
     points_scalar = np.stack([x, y, np.zeros_like(x)], axis=-1)
-    spline_scalar = Poly(points_scalar)
+    spline_scalar = PolySpline(points_scalar)
     spline_scalar.resample(50)
 
-    # Poly batchée : 4 sinusoïdes avec décalages de phase
+    # PolySpline batchée : 4 sinusoïdes avec décalages de phase
     B = 4
     offsets = np.linspace(0, np.pi, B, endpoint=False)
     points_batch = np.stack([
@@ -1363,7 +1848,7 @@ def test_spline_evaluate_plot():
         ], axis=-1)
         for offset in offsets
     ], axis=0)
-    spline_batch = Poly(points_batch)
+    spline_batch = PolySpline(points_batch)
     spline_batch.resample(50)
 
     # Évaluation des splines
@@ -1373,13 +1858,13 @@ def test_spline_evaluate_plot():
 
     # Tracé
     fig, axs = plt.subplots(1, 2, figsize=(12, 5))
-    axs[0].plot(eval_scalar[:, 0], eval_scalar[:, 1], label='Scalar Poly')
-    axs[0].set_title("Poly scalaire")
+    axs[0].plot(eval_scalar[:, 0], eval_scalar[:, 1], label='Scalar PolySpline')
+    axs[0].set_title("PolySpline scalaire")
     axs[0].axis("equal")
     axs[0].legend()
 
     for i in range(B):
-        axs[1].plot(eval_batch[i, :, 0], eval_batch[i, :, 1], label=f"Poly {i}")
+        axs[1].plot(eval_batch[i, :, 0], eval_batch[i, :, 1], label=f"PolySpline {i}")
     axs[1].set_title("Batch de 4 splines")
     axs[1].axis("equal")
     axs[1].legend()
@@ -1398,8 +1883,8 @@ def test_spline_all_t_shapes():
     # 1. Scalar spline
     y = np.sin(x)
     points_scalar = np.stack([x, y, np.zeros_like(x)], axis=-1)
-    spline_scalar = Poly(points_scalar)
-    spline_scalar.resample(100)  # Smooth using temporary Bezier
+    spline_scalar = PolySpline(points_scalar)
+    spline_scalar.resample(100)  # Smooth using temporary BezierSpline
 
     t_cases_scalar = {
         "scalar": 0.5,
@@ -1417,7 +1902,7 @@ def test_spline_all_t_shapes():
         ], axis=-1)
         for offset in offsets
     ], axis=0)
-    spline_batch = Poly(points_batch)
+    spline_batch = PolySpline(points_batch)
     spline_batch.resample(100)
 
     t_cases_batch = {
@@ -1442,12 +1927,12 @@ def test_spline_all_t_shapes():
         if points.ndim == 1:  # (3,)
             x, y = points[0], points[1]
             dx, dy = tangents[0], tangents[1]
-            ax.scatter(x, y, label="Poly")
+            ax.scatter(x, y, label="PolySpline")
             ax.quiver(x, y, dx, dy, angles='xy', scale=20)
         else:  # (T, 3)
             x, y = points[:, 0], points[:, 1]
             dx, dy = tangents[:, 0], tangents[:, 1]
-            ax.plot(x, y, label="Poly")
+            ax.plot(x, y, label="PolySpline")
             ax.quiver(x, y, dx, dy, angles='xy', scale=20)
 
         ax.set_title(f"Scalar spline, t = {label}")
@@ -1464,13 +1949,13 @@ def test_spline_all_t_shapes():
             for b in range(B):
                 x, y = points[b, 0], points[b, 1]
                 dx, dy = tangents[b, 0], tangents[b, 1]
-                ax.scatter(x, y, label=f"Poly {b}")
+                ax.scatter(x, y, label=f"PolySpline {b}")
                 ax.quiver(x, y, dx, dy, angles='xy', scale=20)
         elif points.ndim == 3:  # (B, T, 3)
             for b in range(B):
                 x, y = points[b, :, 0], points[b, :, 1]
                 dx, dy = tangents[b, :, 0], tangents[b, :, 1]
-                ax.plot(x, y, label=f"Poly {b}")
+                ax.plot(x, y, label=f"PolySpline {b}")
                 ax.quiver(x, y, dx, dy, angles='xy', scale=20)
         else:
             raise RuntimeError(f"Unexpected shape: {points.shape}")
@@ -1485,13 +1970,13 @@ def test_spline_all_t_shapes():
 def test_to_bezier_fit():
     import matplotlib.pyplot as plt
 
-    # Create a sinuous Poly spline
+    # Create a sinuous PolySpline spline
     x = np.linspace(0, 5 * np.pi, 60)
     y = np.sin(x)
     points = np.stack([x, y, np.zeros_like(x)], axis=-1)
-    poly = Poly(points)
+    poly = PolySpline(points)
 
-    # Convert to Bezier using sample-based approximation
+    # Convert to BezierSpline using sample-based approximation
     bezier = poly.to_bezier(reduction=0.3, handle_scale=0.3)
 
     # Prepare plot
@@ -1499,8 +1984,8 @@ def test_to_bezier_fit():
 
     # Draw both splines
 
-    poly._plot(resolution=200, display_points='NO', ax=ax, label='Poly', color='blue')
-    bezier._plot(resolution=200, display_points='POINTS', ax=ax, label='Bezier', linestyle='--', color='orange')
+    poly._plot(resolution=200, display_points='NO', ax=ax, label='PolySpline', color='blue')
+    bezier._plot(resolution=200, display_points='POINTS', ax=ax, label='BezierSpline', linestyle='--', color='orange')
 
     # Draw dashed handle lines
     anchors = bezier._array_of_points       # (1, N, 3)
@@ -1514,7 +1999,7 @@ def test_to_bezier_fit():
         ax.plot([a[i, 0], l[i, 0]], [a[i, 1], l[i, 1]], 'k--', lw=0.5)
         ax.plot([a[i, 0], r[i, 0]], [a[i, 1], r[i, 1]], 'k--', lw=0.5)
 
-    ax.set_title("Conversion Poly → Bézier (sampled)")
+    ax.set_title("Conversion PolySpline → Bézier (sampled)")
     ax.axis('equal')
     ax.legend()
     plt.tight_layout()
@@ -1529,7 +2014,7 @@ def test_to_bezier_fit_closed():
     x = np.cos(theta)
     y = np.sin(theta)
     points = np.stack([x, y, np.zeros_like(x)], axis=-1)
-    poly = Poly(points, cyclic=True)
+    poly = PolySpline(points, cyclic=True)
 
     # Approximation en Bézier par échantillonnage
     bezier = poly.to_bezier(reduction=0.25, handle_scale=0.4)
@@ -1537,9 +2022,9 @@ def test_to_bezier_fit_closed():
     # Préparer le tracé
     fig, ax = plt.subplots(figsize=(6, 6))
 
-    # Tracer la courbe Poly et la Bézier
-    poly._plot(resolution=300, display_points='NO', ax=ax, label='Poly', color='blue')
-    bezier._plot(resolution=300, display_points='POINTS', ax=ax, label='Bezier', linestyle='--', color='orange')
+    # Tracer la courbe PolySpline et la Bézier
+    poly._plot(resolution=300, display_points='NO', ax=ax, label='PolySpline', color='blue')
+    bezier._plot(resolution=300, display_points='POINTS', ax=ax, label='BezierSpline', linestyle='--', color='orange')
 
     # Récupérer les points et poignées
     anchors = bezier._array_of_points[0]
@@ -1562,7 +2047,7 @@ def test_circle_splinefunction():
     import matplotlib.pyplot as plt
 
     # Create a circle spline
-    circle = SplineFunction.circle(radius=1.5)
+    circle = FunctionSpline.circle(radius=1.5)
 
     # Plot the curve
     fig, ax = plt.subplots(figsize=(6, 6))
@@ -1574,7 +2059,7 @@ def test_circle_splinefunction():
     tan = circle.tangent(t)
     ax.quiver(pts[:, 0], pts[:, 1], tan[:, 0], tan[:, 1], angles='xy', scale=20, color='orange', label='Tangents')
 
-    ax.set_title("Circle from SplineFunction")
+    ax.set_title("Circle from FunctionSpline")
     ax.axis('equal')
     ax.legend()
     plt.tight_layout()
@@ -1586,7 +2071,7 @@ def test_spiral_splinefunction_3d():
     import numpy as np
 
     # Create a 3D spiral spline
-    spiral = SplineFunction.spiral(
+    spiral = FunctionSpline.spiral(
         radius0=0.5, radius1=2.0,
         angle0=0, angle1=6 * np.pi,
         z0=0.0, z1=5.0
@@ -1610,7 +2095,7 @@ def test_spiral_splinefunction_3d():
         length=0.3, normalize=True, color='red', label='Tangents'
     )
 
-    ax.set_title("3D Spiral from SplineFunction")
+    ax.set_title("3D Spiral from FunctionSpline")
     ax.legend()
     ax.set_box_aspect([1, 1, 1])
     plt.tight_layout()
@@ -1682,8 +2167,8 @@ def test_conversion_pipeline():
     bezier_count = 4
     poly_count = 100
 
-    # Étape 1 : créer un cercle comme SplineFunction
-    sf = SplineFunction.circle(radius=1.0)
+    # Étape 1 : créer un cercle comme FunctionSpline
+    sf = FunctionSpline.circle(radius=1.0)
 
     def func(t):
         x = t*np.pi*2
@@ -1691,7 +2176,7 @@ def test_conversion_pipeline():
         z = np.zeros_like(x)
         return np.stack((x, y, z), axis=-1)
     
-    #sf = SplineFunction(func=func, cyclic=False)
+    #sf = FunctionSpline(func=func, cyclic=False)
 
     # Étapes de conversion
     bez1 = sf.to_bezier(count=bezier_count, handle_scale=0.05)
@@ -1716,36 +2201,36 @@ def test_conversion_pipeline():
             ax.plot([a[i, 0], l[i, 0]], [a[i, 1], l[i, 1]], 'k--', lw=0.5)
             ax.plot([a[i, 0], r[i, 0]], [a[i, 1], r[i, 1]], 'k--', lw=0.5)
 
-    # Plot 1: SplineFunction
-    sf._plot(ax=axes[0], resolution=300, label="SplineFunction", color='black', linestyle='--')
-    axes[0].set_title("SplineFunction")
+    # Plot 1: FunctionSpline
+    sf._plot(ax=axes[0], resolution=300, label="FunctionSpline", color='black', linestyle='--')
+    axes[0].set_title("FunctionSpline")
 
     # Plot 2: Bézier from function
-    bez1._plot(ax=axes[1], resolution=300, label="Bezier (from Function)", color='orange')
+    bez1._plot(ax=axes[1], resolution=300, label="BezierSpline (from Function)", color='orange')
     draw_bezier_handles(bez1, axes[1])
-    axes[1].set_title("Bezier (from Function)")
+    axes[1].set_title("BezierSpline (from Function)")
 
-    # Plot 3: Poly from function
-    poly1._plot(ax=axes[2], resolution=300, label="Poly (from Function)", color='blue')
+    # Plot 3: PolySpline from function
+    poly1._plot(ax=axes[2], resolution=300, label="PolySpline (from Function)", color='blue')
     axes[2].scatter(poly1._points[:, 0], poly1._points[:, 1], c='black', s=10, label='Control Points')
-    axes[2].set_title("Poly (from Function)")
+    axes[2].set_title("PolySpline (from Function)")
 
-    # Plot 4: Poly from bezier
-    poly2._plot(ax=axes[3], resolution=300, label="Poly (from Bezier)", color='green')
+    # Plot 4: PolySpline from bezier
+    poly2._plot(ax=axes[3], resolution=300, label="PolySpline (from BezierSpline)", color='green')
     axes[3].scatter(poly2._points[:, 0], poly2._points[:, 1], c='black', s=10, label='Control Points')
-    axes[3].set_title(f"Poly (from Bezier) {poly2.shape=}")
+    axes[3].set_title(f"PolySpline (from BezierSpline) {poly2.shape=}")
 
-    # Plot 5: Bezier from poly
-    bez2._plot(ax=axes[4], resolution=300, label="Bezier (from Poly)", color='red')
+    # Plot 5: BezierSpline from poly
+    bez2._plot(ax=axes[4], resolution=300, label="BezierSpline (from PolySpline)", color='red')
     draw_bezier_handles(bez2, axes[4])
-    axes[4].set_title("Bezier (from Poly)")
+    axes[4].set_title("BezierSpline (from PolySpline)")
 
     # Final cleanup
     for ax in axes:
         ax.axis('equal')
         ax.legend()
 
-    fig.suptitle("Conversion Pipeline: SplineFunction ↔ Bézier ↔ Poly", fontsize=16)
+    fig.suptitle("Conversion Pipeline: FunctionSpline ↔ Bézier ↔ PolySpline", fontsize=16)
     plt.tight_layout()
     plt.show()
 

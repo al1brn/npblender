@@ -1126,7 +1126,7 @@ class Rotation(ItemsArray):
     # ----------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def from_vectors(v_src, v_dst):
+    def from_vectors(v_src, v_dst, normalized=False):
         """
         Constructs a rotation (as a quaternion) that rotates v_src onto v_dst.
         
@@ -1151,8 +1151,9 @@ class Rotation(ItemsArray):
         v_src, v_dst = np.broadcast_arrays(v_src, v_dst)
 
         # Normalize vectors
-        v_src = v_src / np.linalg.norm(v_src, axis=-1, keepdims=True)
-        v_dst = v_dst / np.linalg.norm(v_dst, axis=-1, keepdims=True)
+        if not normalized:
+            v_src = v_src / np.linalg.norm(v_src, axis=-1, keepdims=True)
+            v_dst = v_dst / np.linalg.norm(v_dst, axis=-1, keepdims=True)
 
         dot = np.einsum('...i,...i->...', v_src, v_dst)  # shape (...)
 
@@ -1191,143 +1192,72 @@ class Rotation(ItemsArray):
 
         return Quaternion(q, copy=False)
 
-    # ----------------------------------------------------------------------------------------------------
-    # Look at
-    # ----------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def look_at_NEW_BOF(v_src, v_dst, up=None, upward=(0, 0, 1)):
+    def look_at(v_src, v_dst, up=None, upward=(0, 0, 1), normalized=False):
         """
-        Build a Rotation that sends (v_src, up) → (v_dst, upward)
-        while preserving a right-handed orthonormal frame.
+        Build a Rotation that aligns the local frame (v_src, up) to (v_dst, upward),
+        preserving right-handedness.
+
+        If `up` is None, only the forward direction is used (i.e. v_src → v_dst),
+        and roll is undefined. The returned rotation minimizes the angular difference.
 
         Parameters
         ----------
         v_src : array_like, shape (..., 3)
-            Source direction vector(s)
+            Source forward vector(s).
         v_dst : array_like, shape (..., 3)
-            Target direction vector(s)
-        up : array_like or None, shape (..., 3), optional
-            Source up vector(s). If None, roll is ignored.
-        upward : array_like, shape (..., 3), optional
-            Target up vector(s). Default is (0, 0, 1).
+            Target forward vector(s).
+        up : array_like, shape (..., 3), optional
+            Up vector(s) in the source frame. If None, only direction is used.
+        upward : array_like, shape (..., 3), default (0, 0, 1)
+            Up vector(s) in the destination frame.
+        normalized : bool, default False
+            If True, assume v_src and v_dst are already unit vectors.
 
         Returns
         -------
         Rotation
-            A rotation that maps the (v_src, up) frame onto the (v_dst, upward) frame.
+            Rotation matrix (3×3 or batch of matrices) aligning v_src to v_dst.
         """
-        # If roll doesn't matter: use direct rotation
+        from .rotation import Rotation
+
         if up is None:
-            return Rotation.from_vectors(v_src, v_dst)
+            return Rotation.from_vectors(v_src, v_dst, normalized=normalized)
 
-        v_src   = np.asarray(v_src, dtype=np.float32)
-        v_dst   = np.asarray(v_dst, dtype=np.float32)
-        up      = np.asarray(up, dtype=np.float32)
-        upward  = np.asarray(upward, dtype=np.float32)
-
-        # Broadcast to common shape
-        v_src, v_dst, up, upward = np.broadcast_arrays(v_src, v_dst, up, upward)
-
-        # Detect scalar input
-        is_scalar = v_src.ndim == 1
-        if is_scalar:
-            v_src   = v_src[None, :]
-            v_dst   = v_dst[None, :]
-            up      = up[None, :]
-            upward  = upward[None, :]
-
-        def make_basis(forward, up_hint):
-            forward = forward / np.linalg.norm(forward, axis=-1, keepdims=True)
-            right = np.cross(forward, up_hint)
-            norm = np.linalg.norm(right, axis=-1, keepdims=True)
-
-            # Detect degenerate up vectors
-            bad = (norm < 1e-6)[..., 0]
-            if np.any(bad):
-                alt_up = np.broadcast_to([1.0, 0.0, 0.0], up_hint.shape)
-                up_hint = np.where(bad[:, None], alt_up, up_hint)
-                right = np.cross(forward, up_hint)
-                norm = np.linalg.norm(right, axis=-1, keepdims=True)
-
-            right = right / norm
-            up = np.cross(right, forward)
-            return np.stack((right, up, forward), axis=-1)  # shape (..., 3, 3)
-
-        B_src = make_basis(v_src, up)
-        B_dst = make_basis(v_dst, upward)
-
-        R = B_dst @ np.swapaxes(B_src, -1, -2)
-
-        if is_scalar:
-            R = R[0]
-
-        return Rotation(R, copy=False)
-
-
-
-
-    @staticmethod
-    def look_at(v_src, v_dst, up=None, upward=(0, 0, 1)):
-        """
-        Build a Rotation that sends (v_src, up) → (v_dst, upward)
-        while keeping a right‑handed frame.
-        Returns a Rotation (matrix 3×3).
-        """
-
-        # If roll doesn't matter: use direct rotation
-        if up is None:
-            return Rotation.from_vectors(v_src, v_dst)
-
+        # Arrays and types
         v_src   = np.asarray(v_src,   dtype=np.float32)
         v_dst   = np.asarray(v_dst,   dtype=np.float32)
-        up      = np.asarray(up,      dtype=np.flooat32)
-        upward  = np.asarray(upward,  dtype=np.flooat32)
+        up      = np.asarray(up,      dtype=np.float32)
+        upward  = np.asarray(upward,  dtype=np.float32)
 
-        # Same shape for everybody
+        # Broadcast all
         v_src, v_dst, up, upward = np.broadcast_arrays(v_src, v_dst, up, upward)
-
         is_scalar = v_src.shape == (3,)
         if is_scalar:
-            v_src = v_src[None, :]
-            v_dst = v_dst[None, :]
-            up    = up[None, :]
-            upward= upward[None, :]
+            v_src    = v_src[None, :]
+            v_dst    = v_dst[None, :]
+            up       = up[None, :]
+            upward   = upward[None, :]
+
+        if not normalized:
+            def normalize(v):
+                norm = np.linalg.norm(v, axis=-1, keepdims=True)
+                return np.divide(v, norm, where=(norm > 1e-12), out=np.zeros_like(v))
+
+            v_src  = normalize(v_src)
+            v_dst  = normalize(v_dst)
 
         def make_basis(forward, up_hint):
-            forward = forward / np.linalg.norm(forward, axis=-1, keepdims=True)
-            right   = np.cross(forward, up_hint)
-            right   = right / np.linalg.norm(right, axis=-1, keepdims=True)
-            up      = np.cross(right, forward)
-            return np.stack([right, up, forward], axis=-1)       # (..., 3, 3)
-        
-        def make_basis_NEW_BOF(forward, up_hint):
-            forward = forward / np.linalg.norm(forward, axis=-1, keepdims=True)
-
-            # Si forward ⊥ up_hint → produit vectoriel nul ⇒ choisir un autre up_hint
             right = np.cross(forward, up_hint)
-            norm_right = np.linalg.norm(right, axis=-1, keepdims=True)
-
-            # Cas dégénéré : norm_right ≈ 0 → choisir un up_hint alternatif
-            mask = norm_right.squeeze(-1) < 1e-6
-            print("ERREUR", norm_right.squeeze(-1), mask)
-            if np.any(mask):
-                # Un vecteur arbitrairement non-colinéaire à forward
-                alt_up = np.array([1.0, 0.0, 0.0], dtype=forward.dtype)
-                alt_up = np.broadcast_to(alt_up, up_hint.shape)
-                up_hint = np.where(mask[:, None], alt_up, up_hint)
-                right = np.cross(forward, up_hint)
-                norm_right = np.linalg.norm(right, axis=-1, keepdims=True)
-
-            right = right / norm_right
+            right = right / np.linalg.norm(right, axis=-1, keepdims=True)
             up = np.cross(right, forward)
-
-            return np.stack([right, up, forward], axis=-1)
+            return np.stack([right, up, forward], axis=-1)  # (..., 3, 3)
 
         B_src = make_basis(v_src, up)
         B_dst = make_basis(v_dst, upward)
 
-        # R = B_dst · B_srcᵀ   (car B_src est orthonormale ⇒ inverse = transpose)
+        # R = B_dst · B_src.T
         R = B_dst @ np.swapaxes(B_src, -2, -1)
 
         if is_scalar:
@@ -1335,57 +1265,5 @@ class Rotation(ItemsArray):
 
         return Rotation(R, copy=False)
 
-
-    @staticmethod
-    def look_at_OLD(v_src, v_dst, up=None, upward=(0, 0, 1)):
-        """
-        Returns quaternions aligning v_src to v_dst while rotating up towards upward.
-
-        Parameters
-        ----------
-        v_src : array_like, shape (..., 3)
-            Input direction(s) to be aligned.
-        v_dst : array_like, shape (..., 3)
-            Target direction(s).
-        up : array_like, shape (..., 3), optional
-            Up vector(s) defining orientation. Defaults to (0, 1, 0).
-        upward : array_like, shape (..., 3), optional
-            Target upward vector(s). Defaults to (0, 0, 1).
-
-        Returns
-        -------
-        Quaternion
-            Quaternion(s) rotating each (v_src, up) to align with (v_dst, upward).
-        """
-        from . quaternion import Quaternion
-
-        v_src = np.asarray(v_src)
-        v_dst = np.asarray(v_dst)
-
-        if up is None:
-            up = np.array([0, 1, 0], dtype=v_src.dtype)
-        if upward is None:
-            upward = np.array([0, 0, 1], dtype=v_src.dtype)
-
-        up = np.asarray(up)
-        upward = np.asarray(upward)
-
-        # Broadcast all inputs to common shape
-        v_src, v_dst, up, upward = np.broadcast_arrays(v_src, v_dst, up, upward)
-
-        def make_basis(fwd, up_hint):
-            fwd = fwd / np.linalg.norm(fwd, axis=-1, keepdims=True)
-            right = np.cross(up_hint, fwd)
-            right = right / np.linalg.norm(right, axis=-1, keepdims=True)
-            up = np.cross(fwd, right)
-            return np.stack([right, up, fwd], axis=-2)  # (..., 3, 3)
-
-        basis_src = make_basis(v_src, up)
-        basis_dst = make_basis(v_dst, upward)
-
-        # Rotation matrix R that maps basis_src → basis_dst
-        R = basis_dst @ np.swapaxes(basis_src, -2, -1)  # (..., 3, 3)
-
-        return Rotation(R)
 
 
