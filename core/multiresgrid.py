@@ -15,9 +15,10 @@ A multires grid is a grid with a variable resolution, adapted to the camera.
 
 import numpy as np
 
-from .blender import bfloat, bint, bbool, merge_by_distance, merge_by_distance_2D
+from .constants import bfloat, bint, bbool
+from .blender import merge_by_distance, merge_by_distance_2D
 from .mesh import Mesh
-from .attributes import DynamicRecArray
+from .fieldarray import FieldArray
 
 # ====================================================================================================
 # Multi resolution grid
@@ -163,7 +164,7 @@ class MultiResGrid(Mesh):
         U, V = np.meshgrid(u, v)
         vecs = self.call_func(U, V)
 
-        verts = DynamicRecArray()
+        verts = FieldArray()
         verts.new_field("position", bfloat, 3)
         verts.new_field("size",     bfloat)
         verts.new_field("u",        bfloat)
@@ -175,7 +176,7 @@ class MultiResGrid(Mesh):
         size = np.sqrt((self.ufac/(self.uv_shape[0] - 1))**2 + (self.vfac/(self.uv_shape[1] - 1))**2)
         du /= 2
         dv /= 2
-        verts.append_attributes(
+        verts.append(
             position = vecs.reshape(n, 3),
             size     = size,
             u        = U.reshape(n),
@@ -186,7 +187,8 @@ class MultiResGrid(Mesh):
         # ----------------------------------------------------------------------------------------------------
         # Loop on depth
 
-        final = verts.clone(empty=True)
+        #final = verts.clone(empty=True)
+        final = FieldArray().join_fields(verts)
         for idepth in range(depth):
 
             normals = None
@@ -202,8 +204,9 @@ class MultiResGrid(Mesh):
                 vis &= p_size[:, camera.SIZE] >= max_size
                 del p_vis, p_size
 
-                final.append_other(verts[np.logical_not(vis)])
-                verts = verts.extract(vis)
+                final.extend(verts[np.logical_not(vis)])
+                #verts = verts.extract(vis)
+                verts = FieldArray(verts, selector=vis)
 
             count = len(verts)
             if not count:
@@ -215,31 +218,32 @@ class MultiResGrid(Mesh):
 
             verts.du, verts.dv = du, dv
 
-            new_verts = verts.clone(empty=True)
+            #new_verts = verts.clone(empty=True)
+            new_verts = FieldArray().join_fields(verts)
             new_verts.set_buffer_size(count*4)
 
-            new_verts.append_attributes(
+            new_verts.append(
                 size = size,
                 u = verts.u - du,
                 v = verts.v - dv,
                 du = du,
                 dv = dv
             )
-            new_verts.append_attributes(
+            new_verts.append(
                 size = size,
                 u = verts.u + du,
                 v = verts.v - dv,
                 du = du,
                 dv = dv
             )
-            new_verts.append_attributes(
+            new_verts.append(
                 size = size,
                 u = verts.u + du,
                 v = verts.v + dv,
                 du = du,
                 dv = dv
             )
-            new_verts.append_attributes(
+            new_verts.append(
                 size = size,
                 u = verts.u - du,
                 v = verts.v + dv,
@@ -258,7 +262,7 @@ class MultiResGrid(Mesh):
         # ----------------------------------------------------------------------------------------------------
         # Compute the vertices in the quads centered on the points
 
-        final.append_other(verts)
+        final.extend(verts)
         del verts
         nfinal = len(final)
 
@@ -280,17 +284,24 @@ class MultiResGrid(Mesh):
 
         # ----- To mesh
 
-        self.clear()
+        self.clear_geometry()
 
-        self.points.add_points(vertices)
-        self.corners.add_corners(corners, UVMap=np.stack((U4.flatten(), V4.flatten()), axis=1)),
-        self.faces.add_faces([4]*nfinal)
+        self.add_geometry(
+            points = vertices,
+            corners = corners,
+            faces = 4,
+            UVMap = np.stack((U4.flatten(), V4.flatten()), axis=1),
+        )
+
+        #self.points.add_points(vertices)
+        #self.corners.add_corners(corners, UVMap=np.stack((U4.flatten(), V4.flatten()), axis=1)),
+        #self.faces.add_faces([4]*nfinal)
 
     # ====================================================================================================
     # Demo function
 
     @classmethod
-    def Demo(cls, seed=0):
+    def sphere_demo(cls):
 
         def sphere(theta, phi):
             ct = np.cos(theta)
@@ -301,6 +312,27 @@ class MultiResGrid(Mesh):
             return np.stack((cp*ct, cp*st, sp), axis=-1)
 
         return cls(func=sphere, shape=(16, 8), u_space=(-np.pi, np.pi), v_space=(-np.pi/2, np.pi/2))
+    
+    @classmethod
+    def demo(cls, depth=6):
+
+        from .camera import Camera
+        from .engine import engine
+
+        sphere = cls.sphere_demo()
+
+        def update():
+            sphere.update_grid(
+                depth=depth,
+                camera=Camera(), 
+                max_vertices=10_000_000, 
+                max_size=.05)
+            
+            sphere.to_object("MR Sphere", shade_smooth=False)
+            
+        engine.go(update)
+
+
         
 
 

@@ -570,7 +570,6 @@ class Mesh(Geometry):
         if not readonly:
             self.capture(Mesh.FromMeshData(data))
 
-
     # ====================================================================================================
     # From something
     # ====================================================================================================
@@ -1462,8 +1461,8 @@ class Mesh(Geometry):
 
         mesh = cls(points=verts, corners=corners, faces=faces, materials=materials, UVMap=uvs)
 
-        if size != 2:
-            mesh.points.position *= size/2
+        size = np.asarray(size)
+        mesh.points.position *= size/2
 
         return mesh
 
@@ -2436,6 +2435,21 @@ class Mesh(Geometry):
             bmesh.ops.triangulate(bm, faces=faces)
 
         return copy
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Simplify
+    # ----------------------------------------------------------------------------------------------------
+
+    def simplified(self, scale, dist=.001):
+
+        copy = Mesh.from_mesh(self)
+        copy.remove_doubles(dist=dist/scale)
+
+        if len(copy.points) < 8:
+            copy = self.get_cubic_envelop()
+
+        return copy
+
     
     # ====================================================================================================
     # BVHTree

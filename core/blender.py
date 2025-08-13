@@ -72,7 +72,9 @@ def get_collection(spec, halt=True):
         return spec
 
     else:
-        raise Exception(f"Collection name expected, not '{spec}'")
+        if halt:
+            raise Exception(f"Collection name expected, not '{spec}'")
+        return None
 
 # ----------------------------------------------------------------------------------------------------
 # Create a collection
@@ -183,7 +185,9 @@ def get_object(spec, halt=True):
         obj = spec
 
     else:
-        raise Exception(f"Object or object name expected, not '{spec}'")
+        if halt:
+            raise Exception(f"Object or object name expected, not '{spec}'")
+        return None
 
     return obj
 

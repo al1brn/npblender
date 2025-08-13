@@ -31,21 +31,12 @@ ensure_modules_installed()
 
 from numba import njit
 
-if __name__ == "__main__":
-    import sys
-    from pathlib import Path
-    sys.path.append(str(Path(__file__).resolve().parents[1]))
+from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
+from . maths import Rotation, Quaternion, Transformation
+from . fieldarray import FieldArray
+from . constants import TYPES, DOMAINS, BL_TYPES, bfloat, bint, bbool
 
-    from constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    #from maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
-
-else:
-    from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-    #from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
-
-#from scipy.interpolate import BSpline, make_interp_spline, CubicSpline, splder
-
-
+USE_JIT = True
 
 # ====================================================================================================
 # numba optimized calls
@@ -165,18 +156,6 @@ def get_face_position(loop_start, loop_total, vertex_index, position):
     return pos
 
 
-if __name__ == "__main__":
-    #import blender
-    from fieldarray import FieldArray
-    from constants import TYPES, DOMAINS, BL_TYPES, bfloat, bint, bbool
-else:
-    #from . import blender
-    from . fieldarray import FieldArray
-    from . constants import TYPES, DOMAINS, BL_TYPES, bfloat, bint, bbool
-
-#from numba import njit, prange
-
-USE_JIT = True
 
 # =============================================================================================================================
 # reduce indices
@@ -404,7 +383,7 @@ class Domain(FieldArray):
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_quaternion(self, name, default=(1, 0, 0, 0), optional=False, transfer=True):
+    def new_quaternion(self, name, default=(0., 0., 0., 1.), optional=False, transfer=True):
         """ Create a new attribute of type QUATERNION -> array (4) of floats.
 
         Arguments
@@ -661,7 +640,7 @@ class PointDomain(Domain):
         self.new_vector('position', transfer=True)
 
     # ====================================================================================================
-    # Utilities
+    # Properties
     # ====================================================================================================
 
     @property
@@ -700,6 +679,37 @@ class PointDomain(Domain):
     def z(self, value):
         self.position[..., 2] = value
 
+    # ====================================================================================================
+    # Transformations
+    # ====================================================================================================
+
+    def translate(self, translation):
+        self.position += translation
+        return self
+    
+    def apply_scale(self, scale, pivot=None):
+        if pivot is not None:
+            self.position -= pivot
+        
+        self.position *= scale
+        
+        if pivot is not None:
+            self.position -= pivot
+
+        return self
+
+    def transform(self, transfo, pivot=None):
+
+        if pivot is not None:
+            self.position -= pivot
+        
+        self.position = transfo @ self.position
+        
+        if pivot is not None:
+            self.position -= pivot
+
+        return self
+
 # ----------------------------------------------------------------------------------------------------
 # Cloud Point
 # ----------------------------------------------------------------------------------------------------
@@ -729,6 +739,27 @@ class SplinePointDomain(PointDomain):
         self.new_float( 'radius',            optional=True, default=1)
         self.new_float( 'weight',            optional=True, default=1.)
 
+    def apply_scale(self, scale, pivot=None):
+
+        super().apply_scale(scale, pivot=pivot)
+
+        if "handle_left" in self.actual_names:
+            self.handle_left  *= scale
+            self.handle_right *= scale
+
+        return self
+
+    def transform(self, transfo, pivot=None):
+
+        super().transform(transfo, pivot=pivot)
+
+        if "handle_left" in self.actual_names:
+            rot = transfo.rotation if isinstance(transfo, Transformation) else transfo
+            self.handle_left  = rot @ self.handle_left
+            self.handle_right = rot @ self.handle_right
+
+        return self
+
 # ----------------------------------------------------------------------------------------------------
 # Instance Domain
 # ----------------------------------------------------------------------------------------------------
@@ -737,38 +768,21 @@ class InstanceDomain(PointDomain):
     """ Instance Domain.
 
     Instance domain directly inherits from Point domain.
-    In addition to position attribute, it managed two more transformations : Scale and Rotation to
+    In addition to position attribute, it managed two more transformations : scale and rotation (euler and quaternion) to
     be applied to the instances.
 
     Instances are randomly chosen in a list of models. The index is stored in the model_index attribute.
 
     The instances capture attributes from other domains.
 
-    Note that Instances Geometry inherits from Instance domain, contrary to the other geometries which
-    store domains as attributes:
-
-    ``` python
-    class Mesh(Geometry):
-        def __init__(self, ...):
-            self.points  = PointDomain.New(...)
-            self.corners = CornerDomain.New(...)
-            self.faces   = FaceDomain.New(...)
-
-    class Instances(InstanceDomain, Geometry):
-        def __init__(self, ...):
-            super().__init__(...) # Instances domain initialization
-
-    v = Mesh().position        # Invalid : raises an error
-    v = Mesh().points.position # Valid
-    v = Instances().position   # Valid
-    '''
-
     Attributes
     ----------
         - position (vector) : instance position
+        - scale (vector, optional) : instance scale
+        - euler (vector, optional) : instance rotation
+        - quat (vector (4,), optional) : instance rotation
+        - rot (matrix (3x3), optional) : instance rotation
         - model_index (int) : index in the list of models
-        - Scale (vector, optional) : instance scale
-        - Rotation (vector, optional) : instance rotation
 
     Arguments
     ---------
@@ -788,13 +802,67 @@ class InstanceDomain(PointDomain):
 
         self.new_int("model_index", transfer=False)
 
-        self.new_float("animation",         optional=True)
-        self.new_float("deformation",       optional=True)
+        self.new_vector("scale",    optional=True, default=1, transfer=False)
+        self.new_vector("euler",    optional=True, transfer=False)
+        self.new_quaternion("quat", optional=True, transfer=False)
 
-        self.new_vector("scale",            optional=True, default=1)
-        self.new_vector("euler",            optional=True)
-        self.new_matrix("transformation",   optional=True, default=np.eye(4))
-        self.new_vector("quaternion",       optional=True, default=(0, 0, 0, 1))
+    @property
+    def has_rotation(self):
+        return "quat" in self.actual_names or "euler" in self.actual_names
+
+    @property
+    def rotation(self):
+        if "euler" in self.actual_names:
+            rot = Rotation.from_euler(self.euler)
+        else:
+            rot = None
+
+        if "quat" in self.actual_names:
+            quat = Quaternion(self.quat)
+        else:
+            quat = None
+
+        if rot is None:
+            if quat is None:
+                return Quaternion.identity(shape=self.position.shape)
+            else:
+                return quat
+        else:
+            if quat is None:
+                return rot
+            else:
+                return quat @ rot
+            
+    def apply_scale(self, scale, pivot=None):
+
+        super().apply_scale(scale, pivot=pivot)
+
+        if "scale" in self.actual_names:
+            self.scale  *= scale
+
+        return self
+
+            
+    def transform(self, transfo, pivot=None):
+
+        super().transform(transfo, pivot=pivot)
+
+        if "euler" in self.actual_names or "quat" in self.actual_name:
+            use_euler = "euler" in self.actual_names
+            if use_euler:
+                r = Rotation.from_euler(self.euler)
+            else:
+                r = Quaternion(self.quat)
+
+            rot = transfo.rotation if isinstance(transfo, Transformation) else transfo
+            r = rot @ r
+
+            if use_euler:
+                self.euler = r.as_euler()
+            else:
+                self.quat = r.as_quaternion()
+
+        return self
 
 
 # ====================================================================================================

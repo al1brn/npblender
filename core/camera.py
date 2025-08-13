@@ -1,17 +1,51 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Oct 19 07:38:55 2022
+# ====================================================================================================
+# npblender — Camera visibility & projection utilities
+# Part of the npblender package
+# License: MIT
+# Created: 11/11/2022
+# Last Updated: 12/08/2025
+# Author: Alain Bernard
+#
+# Description:
+#     High-performance camera-space projection and visibility tests for Blender meshes.
+#     Provides a Numba-accelerated path and a NumPy fallback, plus a convenience Camera class.
+#
+# Dependencies:
+#     - numpy, numba
+#     - bpy, mathutils (Blender Python API)
+#
+# File:
+#     camera.py
+# ====================================================================================================
 
-@author: alain
+"""
+Camera projection & visibility helpers for Blender.
+
+This module offers:
+- `camera_projection_jit(...)`: Numba-accelerated per-point projection and visibility.
+- `camera_projection(...)`: NumPy reference implementation of the same API.
+- `Camera`: convenience class wrapping Blender camera data and providing:
+    * pixel density vs distance (`pixels_per_meter`)
+    * distance computations
+    * visibility of points, edges, faces, and islands
+
+Conventions:
+- Coordinates are transformed into the camera frame using `camera.matrix_world.inverted()`.
+- Projection is onto the plane `z = cam_z` defined by Blender's `view_frame`.
+- Visibility flags are returned as a (N, 7) boolean array with indices:
+    0: VISIBLE, 1: BACK_FACE, 2: BEHIND, 3: LEFT, 4: RIGHT, 5: BELOW, 6: ABOVE
+- Distances/size are returned as a (N, 2) float array with indices:
+    0: DISTANCE (Euclidean), 1: SIZE (apparent size from `radius`)
+
+Notes:
+- Prefer float32 contiguous arrays for best JIT performance.
+- Back-face test uses dot(normal, point - cam_loc) > 0 as "facing away".
 """
 
 import numpy as np
 
 import bpy
 from mathutils import Vector
-
-from npblender.core import engine
 
 from numba import njit, prange
 from time import time
@@ -41,7 +75,7 @@ def camera_projection_jit(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radiu
     -------
     - visibility : array(n, 7) of bools
     - distance : array(n, 2) of floats
-    - pts : array(n, 3) of vectors
+    - pts : array(n, 2) of vectors
     """
 
     # ----------------------------------------------------------------------------------------------------
@@ -86,7 +120,6 @@ def camera_projection_jit(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radiu
             nx, ny, nz = normals[i]
             px, py, pz = verts[i] - cam_loc
             dot = nx*px + ny*py + nz*pz
-            back_face = False
             back_face = dot > 0.0
 
         visible = not (behind or left or right or below or above)
@@ -128,7 +161,7 @@ def camera_projection(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius=0.
     -------
     - visibility : array(n, 7) of bools
     - distance : array(n, 2) of floats
-    - pts : array(n, 3) of vectors
+    - pts : array(n, 2) of vectors
     """
 
     VISIBLE   = 0
@@ -139,7 +172,7 @@ def camera_projection(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius=0.
     RIGHT     = 4
     BELOW     = 5
     ABOVE     = 6
-    LAST      = 6
+    SLICE_END = 7
 
     DISTANCE = 0
     SIZE     = 1
@@ -201,8 +234,9 @@ def camera_projection(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius=0.
 
     return vis, dist, pts
 
-# =============================================================================================================================
+# ====================================================================================================
 # Camera
+# ====================================================================================================
 
 class Camera:
 
@@ -221,7 +255,7 @@ class Camera:
 
     def __init__(self, camera=None):
 
-        if camera is None:
+        if camera is None or camera == True:
             self._bcamera = None
 
         elif isinstance(camera, str):
@@ -237,6 +271,7 @@ class Camera:
 
     # ----------------------------------------------------------------------------------------------------
     # The Blender camera
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def bcamera(self):
@@ -247,6 +282,7 @@ class Camera:
 
     # ----------------------------------------------------------------------------------------------------
     # Camera world location
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def location(self):
@@ -254,6 +290,7 @@ class Camera:
 
     # ----------------------------------------------------------------------------------------------------
     # Focal angle of the camera
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def focal_angle(self):
@@ -261,6 +298,7 @@ class Camera:
     
     # ----------------------------------------------------------------------------------------------------
     # Clip
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def clip_start(self):
@@ -272,6 +310,7 @@ class Camera:
 
     # ----------------------------------------------------------------------------------------------------
     # Normalized vector representing the direction of the camera
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def direction(self):
@@ -279,6 +318,7 @@ class Camera:
 
     # ----------------------------------------------------------------------------------------------------
     # Scene resolution
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def resolution_x(self):
@@ -345,8 +385,13 @@ class Camera:
         else:
             return np.linalg.norm(location - self.location, axis=-1)
         
-    # =============================================================================================================================
-    # Compute a set of vertices
+    # ====================================================================================================
+    # Compute visibility, distance and apparent size
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Visible points
+    # ----------------------------------------------------------------------------------------------------
 
     def visible_points(self, verts, radius=0., margin=0., normals=None, return_proj=False):
         """ Compute the visibility of vertices.
@@ -426,19 +471,7 @@ class Camera:
         cam_loc = np.array(self.location, dtype=np.float32)
 
         if USE_JIT:
-            if True:
-                vis, dist, pts = camera_projection_jit(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius, cam_loc, normals)
-
-            else:
-                t0 = time()
-                vis_, dist_, pts_ = camera_projection(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius, normals)
-                t1 = time() - t0
-
-                t0 = time()
-                vis, dist, pts = camera_projection_jit(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius, normals)
-                t2 = time() - t0
-
-                print(f"JIT Perfs ({count}): numpy: {t1:.2f} s, jit={t2:.2f} s, {np.sum(np.logical_xor(vis, vis_))}, {np.max(np.abs(dist-dist_)):.3f}, {np.max(np.abs(pts-pts_)):.3f}, ")
+            vis, dist, pts = camera_projection_jit(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius, cam_loc, normals)
         else:
             vis, dist, pts = camera_projection(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius, cam_loc, normals)
 
@@ -450,8 +483,9 @@ class Camera:
         else:
             return vis, dist
     
-    # =============================================================================================================================
-    # Compute the visibility of edges
+    # ----------------------------------------------------------------------------------------------------
+    # Visible edges
+    # ----------------------------------------------------------------------------------------------------
 
     def visible_edges(self, mesh, radius=0., margin=0.):
         """ Mesh edges visibility
@@ -490,8 +524,9 @@ class Camera:
 
         return vis, size
     
-    # =============================================================================================================================
-    # Compute the visibility of edges
+    # ----------------------------------------------------------------------------------------------------
+    # Visible faces
+    # ----------------------------------------------------------------------------------------------------
 
     def visible_faces(self, mesh, margin=0., back_face_culling=False):
         """ Mesh faces visibility
@@ -543,7 +578,7 @@ class Camera:
             # ----- Nothing to do if back face
 
             if back_face_culling:
-                if not n_vis[i_face, self.BACK]:
+                if not n_vis[i_face, self.BACK_FACE]:
                     continue
 
             # ----- Visibility of corners : (n, 7)
@@ -554,7 +589,7 @@ class Camera:
             c_vis = v_vis[mesh.corners.vertex_index[index:index + n]]
             diff_side = np.all(c_vis, axis=0)
 
-            vis_faces[i_face] = ~np.any(diff_side[1:6])
+            vis_faces[i_face] = ~np.any(diff_side[1:self.SLICE_END])
 
             if False:
                 print("Camera c_vis\n", c_vis)
@@ -569,8 +604,9 @@ class Camera:
 
         return vis_faces, size
     
-    # =============================================================================================================================
-    # Compute the visibility of edges
+    # ----------------------------------------------------------------------------------------------------
+    # Visible islands
+    # ----------------------------------------------------------------------------------------------------
 
     def visible_islands(self, mesh, islands, attribute="Island", margin=0.):
         """ Mesh islands visibility
@@ -623,177 +659,90 @@ class Camera:
 
         return self.visible_points(positions, radius, margin=margin)
     
+    # ====================================================================================================
+    # Scaling
+    # ====================================================================================================
 
-        # ----------------------------------------------------------------------------------------------------
-        # Alternate algorithm, same as faces
-        
-        # ----- Project the points
+    def distance_for_scale(self, size_max, scale=1.0, margin=0.0, fit_axis="auto"):
+        """
+        Compute:
+        - d0: distance at which an unscaled object of real size `size_max` exactly fits
+                the camera frame along `fit_axis` (largest dimension touches the borders).
+        - d : distance such that the UNscaled object at distance d has the same apparent size
+                as the SCALED object (size_max * scale) at distance d0. (i.e. d = d0 / scale)
+        - meters_per_pixel: world-space length at distance d that projects to exactly 1 pixel
+                (so two vertices closer than this fall onto the same pixel).
 
-        v_vis, v_dist, proj = self.visible_points(mesh.points.position, margin=margin, return_proj=True)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Loop on the islands
-
-        vis_islands = np.zeros(count, bool)
-        size = np.zeros(count, float)
-        for i_island, island in enumerate(islands):
-
-            # ----- Points belonging to the island
-
-            sel = mesh.points.attributes[attribute] == island
-
-            # ----- Visibility of islands points : (sel, 7)
-
-            c_vis = v_vis[sel]
-            diff_side = np.all(c_vis, axis=0)
-
-            vis_islands[i_island] = ~np.any(diff_side[1:6])
-
-            if False:
-                print("Camera c_vis\n", c_vis)
-                print("Camera diff_side\n", diff_side)
-                print("Camera vis_faces\n", vis_faces)
-
-            # ----- Island Size
-
-            f_proj = proj[sel]
-            xmin, xmax = np.min(f_proj, axis=0), np.max(f_proj, axis=0)
-            size[i_island] = np.linalg.norm(xmax - xmin)
-
-        return vis_islands, size
-
-
-    # =============================================================================================================================
-    # Compute the visibility of vertices
-
-    def visible_verts_OLD(self, verts, radius=None, close_distance=None, max_distance=None, margin=1., normals=None):
-        """ Compute the visibility of vertices.
-
-        Arguments
-        ---------
-            - verts (array of vectors) : vertex locations
-            - radius (float or array of floats = None) : size at the locations
-            - close_distance (float = None) : vertices closer than this distance are visible
-            - max_distance (float = None) : vertices father that this distance are not visibles
-            - margin (float, default=1.) : margin factor around the camera
-            - normals (array of vectors = None) : normal pointing outwards are not visible
+        Parameters
+        ----------
+        size_max : float
+            Largest real dimension of the mesh (Blender units).
+        scale : float
+            Geometry scale (> 0) applied at distance d0.
+        margin : float, optional
+            Extra margin around the frame (same convention as elsewhere).
+        fit_axis : {"auto", "width", "height"}
+            Which frame span to use to define "exactly fits".
+            - "auto": min(width, height)
+            - "width": frame width
+            - "height": frame height
 
         Returns
         -------
-            - visibles (array of bools)   : visible vertices
-            - distances (array of floats) : The distance to the camera
+        d : float
+            Distance where the UNscaled object matches the apparent size
+            of the SCALED one at d0 (d = d0 / scale).
+        meters_per_pixel : float
+            World-space size corresponding to 1 pixel at distance d.
+
+        Notes
+        -----
+        - Uses Blender's view_frame on plane z = cam_z.
+        width  = cam_x1 - cam_x0
+        height = cam_y1 - cam_y0
+        - Perspective: apparent_size ∝ size / distance
+        equality ⇒ size_max / d = (size_max * scale) / d0 ⇒ d = d0 / scale.
         """
+        if scale <= 0:
+            raise ValueError("`scale` must be > 0.")
 
         camera = self.bcamera
-
-        # ----------------------------------------------------------------------------------------------------
-        # The projection rectangle
-        # The plane is horizontal. All z<0 are identical
-
         c0, c1, c2, c3 = camera.data.view_frame(scene=bpy.context.scene)
 
-        cam_x0 = min(c0.x, c1.x, c2.x, c3.x)*margin
-        cam_x1 = max(c0.x, c1.x, c2.x, c3.x)*margin
-        cam_y0 = min(c0.y, c1.y, c2.y, c3.y)*margin
-        cam_y1 = max(c0.y, c1.y, c2.y, c3.y)*margin
+        cam_x0, cam_y0 = c2.x - margin, c2.y - margin
+        cam_x1, cam_y1 = c0.x + margin, c0.y + margin
+        cam_z = c0.z  # typically negative in Blender
 
-        cam_z = c0.z
+        frame_w = (cam_x1 - cam_x0)
+        frame_h = (cam_y1 - cam_y0)
 
-        if False:
-            print("-"*80)
-            print(f"CAMERA SHAPE: plane z = {cam_z:.1f}")
-            print(f"   x: {cam_x0:5.1f} {cam_x1:5.1f}")
-            print(f"   y: {cam_y0:5.1f} {cam_y1:5.1f}")
-            print()
+        if fit_axis == "width":
+            frame_span = frame_w
+        elif fit_axis == "height":
+            frame_span = frame_h
+        else:  # "auto"
+            frame_span = frame_w if frame_w < frame_h else frame_h
 
-        # ----------------------------------------------------------------------------------------------------
-        # Rotate the points in the camera frame
+        if frame_span <= 0:
+            raise RuntimeError("Invalid camera frame span (width/height <= 0).")
 
-        M = np.array(camera.matrix_world.inverted())
-        pts = np.array(np.einsum('...jk, ...k', M, np.insert(verts, 3, 1, axis=-1))[..., :3])
+        # d0: unchanged logic — object (unscaled) exactly fits the frame
+        d0 = (-cam_z) * float(size_max) / float(frame_span)
 
-        # ----------------------------------------------------------------------------------------------------
-        # Compute the distances
+        # Distance so that UNscaled@d matches SCALED@d0
+        d = d0 / float(scale)
 
-        distances = np.linalg.norm(pts, axis=-1)
+        # Pixel size at distance d:
+        # pixels_per_meter(d) -> px/m, so 1 px corresponds to 1 / (px/m) meters
+        px_per_m = float(self.pixels_per_meter(d))
+        meters_per_pixel = 1.0 / px_per_m if px_per_m > 0.0 else float("inf")
 
-        # ----------------------------------------------------------------------------------------------------
-        # Projected radius
-
-        if radius is None:
-            r = 0
-        else:
-            r = (radius*cam_z)/distances
-
-        # ----------------------------------------------------------------------------------------------------
-        # Points must be in front of the camera
-
-        visibles = pts[..., 2] <= cam_z
-
-        # ---------------------------------------------------------------------------
-        # Project the points on the plane z = cam_z
-
-        pts = cam_z*(pts/np.expand_dims(pts[..., 2], axis=-1))[..., :2]
-
-        # ---------------------------------------------------------------------------
-        # Must be projected into the rectangle
-
-        visibles &= (
-            (pts[..., 0] - r >= cam_x0)  &
-            (pts[..., 0] + r <= cam_x1)  &
-            (pts[..., 1] - r >= cam_y0)  &
-            (pts[..., 1] + r <= cam_y1)
-            )
-
-        # ---------------------------------------------------------------------------
-        # Not too far
-
-        if max_distance is not None:
-            visibles &= distances < max_distance
-
-        # ---------------------------------------------------------------------------
-        # Visible when close to the camera
-
-        if close_distance is not None:
-            visibles |= distances <= close_distance
-
-        # ----------------------------------------------------------------------------------------------------
-        # And when properly oriented
-
-        if normals is not None:
-            vs = verts - self.location
-            visibles &= np.einsum('...i, ...i', vs, normals) < 0
-
-        # ----------------------------------------------------------------------------------------------------
-        # Return visibility and distances
-
-        return visibles, distances
-
-    # =============================================================================================================================
-    # Demonstration
-
-    @staticmethod
-    def demo(count=100000, size=1000, seed=0):
-
-        from npblender.core.instances import Instances
-        from npblender.core.mesh import Mesh
-
-        rng = np.random.default_rng(seed)
-
-        verts = rng.uniform(-size, size, (count, 3))
-        verts[..., 2] = 0
-
-        radius = rng.uniform(.1, 3, count)
-
-        def update(eng):
-            visibles, _ = Camera().visible_verts(verts, radius, close_distance=None, max_distance=500)
-            scale = np.empty_like(verts[visibles])
-            scale[:] = radius[visibles, None]
-            insts = Instances(verts[visibles], models=Mesh.IcoSphere(), Scale=scale)
-            insts.to_object("Camera Culling")
-
-        engine.go(update)
+        return d, meters_per_pixel
 
 
+
+
+
+        
 
 

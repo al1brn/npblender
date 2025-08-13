@@ -10,247 +10,367 @@ Created on Fri Nov 10 11:50:13 2023
 Mesh geometry
 """
 
-from contextlib import contextmanager
-
 import numpy as np
-import bpy
 
-from npblender.maths.transformations import Transformations
+from . constants import bfloat, bint, bbool
+from . import blender
+from . maths import Transformation, Quaternion, Rotation
+from . maths import splinemaths
 
-from npblender.core import blender
-from npblender.core.domain import InstanceDomain
-from npblender.core.geometry import Geometry
-from npblender.core.mesh import Mesh
-from npblender.core.curve import Curve
-from npblender.core.cloud import Cloud
-
-
+from . geometry import Geometry
+from . domain import InstanceDomain
 
 DATA_TEMP_NAME = "npblender_TEMP"
 
-class Instances(InstanceDomain, Geometry):
+class Instances(Geometry):
 
-    def __init__(self, points=None, models=None, indices=None, seed=0, **attributes):
-        """ Create a new cloud of points.
+    def __init__(self, points=None, models=None, model_index=0, **attributes):
+        """ Create new instances.
 
         Arguments
         ---------
-            - points (array of vectors = None) : the points
+            - points (array of vectors = None) : instances locations
             - models (geometry or list of geometries = None) : the geometries to instantiate
-            - indices (array of ints = None) : indices in the array of models
-            - seed (int=0) : random seed to create the indices if required
+            - model_index (int = 0) : model index of instances
             - **attributes (dict) : other geometry attributes
         """
+        self.points  = InstanceDomain()
 
-        if isinstance(points, np.ndarray):
-            cloud = Cloud()
-            cloud.add_points(points)
-            points = cloud.points
+        if models is None:
+            self.models = []
+        else:
+            self.models = self.load_models(models)
+        self.low_resols = []
+        
+        self.points.append(position=points, model_index=model_index, **attributes)
 
-        super().__init__(domain_name='INSTANCE', points=points, models=models, indices=indices, seed=seed)
-
-        # ----- Attributes
-
-        for k, v in attributes.items():
-            setattr(self, k, v)
-
+    def check(self, halt=True):
+        n = np.max(self.points.model_index)
+        if n >= len(self.models):
+            print(f"Model index {n} greater than the number {len(self.models)} of models.")
+            if halt:
+                assert(False)
+            return False
+        return True
 
     def __str__(self):
         return f"<Instances: {len(self)}, models: {len(self.models)}>"
+    
+    def __len__(self):
+        return len(self.points)
+    
+    # ====================================================================================================
+    # Low scale models
+    # ====================================================================================================
 
-    def get_transformations(self):
+    def add_low_resol(self, dist, models):
 
-        scale    = self.Scale    if self.attributes.exists("Scale") else None
-        rotation = self.Rotation if self.attributes.exists("Rotation") else None
+        ls_models = self.load_models(models)
+        if len(ls_models) != len(self.models):
+            raise ValueError(
+                f"Instances.add_low_resol: the number of low scale models ({len(ls_models)}) "
+                f"is not equal to the number of models ({len(self.models)})")
+        
+        self.low_resols.append({"dist": dist, "models": ls_models})
 
-        return Transformations(position=self.position, scale=scale, rotation=rotation)
+    def compute_low_resols(self, start_scale=.1, scale=.8, detail=1.):
 
-    # =============================================================================================================================
-    # =============================================================================================================================
-    # I/O wit Blender
-    # =============================================================================================================================
+        from .camera import Camera
+        from .mesh import Mesh
+        from .curve import Curve
 
-    # -----------------------------------------------------------------------------------------------------------------------------
-    # To Mesh and Curve
+        cam = Camera()
 
-    def realize(self):
+        scale = np.clip(scale, .01, .99)
+
+        # Start scale
+        cur_scale = min(start_scale, 1.)
+
+        for _ in range(10):
+            max_count = None
+            min_dist = None
+            ls_models = []
+            for model in self.models:
+                d, ps = cam.distance_for_scale(model.max_size, scale=cur_scale)
+                if min_dist is None:
+                    min_dist = d
+                else:
+                    min_dist = min(d, min_dist)
+
+                if isinstance(model, Mesh):
+                    ls_models.append(model.simplified(cur_scale, ps/detail))
+                    if max_count is None:
+                        max_count = len(ls_models[-1].points)
+                    else:
+                        max_count = max(max_count, len(ls_models[-1].points))
+                else:
+                    ls_models.append(Curve.from_curve(model))
+
+            self.add_low_resol(min_dist, ls_models)
+            cur_scale *= scale
+
+            if max_count is None or max_count <= 8:
+                break
+
+
+    def _sort_low_resols(self):
+
+        dist = np.array([item['dist'] for item in self.low_resols])
+        s = np.flip(np.argsort(dist))
+
+        return dist[s], [self.low_resols[i]['models'] for i in s]
+    
+    # ====================================================================================================
+    # To Blender objects
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Realize as Mesh and Curve
+    # ----------------------------------------------------------------------------------------------------
+
+    def realize(self, camera_culling=False):
+
+        from . mesh import Mesh
+        from . curve import Curve
+        from . camera import Camera
+
+        # ---------------------------------------------------------------------------
+        # Camera
+        # ---------------------------------------------------------------------------
+
+        if camera_culling == False:
+            camera = None
+        else:
+            camera = Camera(camera_culling)
+            camera_culling = True
+
+        if camera_culling:
+            mdl_radius = np.zeros(len(self.models), bfloat)
+            for i, model in enumerate(self.models):
+                vmin = np.min(model.points.position, axis=0)
+                vmax = np.max(model.points.position, axis=0)
+                mdl_radius[i] = max(vmax[0] - vmin[0], vmax[1] - vmin[1], vmax[2] - vmin[2])
+
+            vis, dist = camera.visible_points(self.points.position, radius=mdl_radius[self.points.model_index])
+            
+            vis = vis[:, camera.VISIBLE]
+            dist = dist[:, camera.DISTANCE]
+
+            if len(self.low_resols):
+                ls_dist, ls_all_models = self._sort_low_resols()
+
         mesh  = Mesh()
         curve = Curve()
-        cloud = Cloud()
-        insts = Instances()
+        insts = self.points
+
+        # ---------------------------------------------------------------------------
+        # Add a model on a selection
+        # ---------------------------------------------------------------------------
+
+        def _add_model(sel, model):
+
+            n = np.sum(sel)
+            if n == 0:
+                return
+
+            # --------------------------------------------------
+            # Instantiate the model
+            # --------------------------------------------------
+
+            geo = model*n
+
+            # --------------------------------------------------
+            # Transformation
+            # --------------------------------------------------
+
+            pts = insts[sel]
+
+            if "scale" in self.points.actual_names:
+                scale = pts.scale
+            else:
+                scale = None
+
+            if self.points.has_rotation:
+                rot = pts.rotation
+            else:
+                rot = None
+
+            geo.transformation(rotation=rot[:, None], scale=scale[:, None], translation=pts.position[:, None])
+
+            # --------------------------------------------------
+            # Add to realized geometry
+            # --------------------------------------------------
+
+            if isinstance(model, Mesh):
+                mesh.join(geo)
+
+            elif isinstance(model, Curve):
+                curve.join(geo)
+
+            else:
+                raise TypeError(f"Instances.realize> Unsupported model type: '{type(model).__name__}'")
+
+        # ---------------------------------------------------------------------------
+        # Loop on models
+        # ---------------------------------------------------------------------------
 
         for model_index, model in enumerate(self.models):
 
-            if len(self.models) == 1:
-                sel = slice(None)
-                n = len(self)
-            else:
-                sel = self.model_index == model_index
-                n = np.sum(sel)
+            # Selection on instances of the current model
+            sel = insts.model_index == model_index
 
-            if not n:
+            # Visible instances
+            if camera_culling:
+                sel = np.logical_and(sel, vis)
+
+            # Low scale
+            if camera_culling and len(self.low_resols):
+                for d, ls_models in zip(ls_dist, ls_all_models):
+                    sel_dist = dist > d
+                    ls_sel = np.logical_and(sel, sel_dist)
+                    _add_model(ls_sel, ls_models[model_index])
+                    sel = np.logical_and(sel, np.logical_not(sel_dist))
+
+            # Normal scale
+            _add_model(sel, model)
+            
+        return {
+            'mesh': mesh if len(mesh.points) else None,
+            'curve': curve if len(curve.points) else None,
+            }
+    
+    # ----------------------------------------------------------------------------------------------------
+    # To object
+    # ----------------------------------------------------------------------------------------------------
+    
+    def to_object(self, name, profile=None, caps=True, use_radius=True, shade_smooth=True, camera_culling=False):
+
+        # Realize to mesh and curve
+        geos = self.realize(camera_culling=camera_culling)
+
+        # Curve to mesh
+        if geos['curve'] is not None and ((profile is not None) or camera_culling):
+            meshed = geos['curve'].to_mesh(profile=profile, caps=caps, use_radius=use_radius, camera_culling=camera_culling)
+            if geos['mesh'] is None:
+                geos['mesh'] = meshed
+            else:
+                geos['mesh'].join(meshed)
+            geos['curve'] = None
+
+        # Geometries to objects
+        both = (geos['mesh'] is not None) and (geos['curve'] is not None)
+
+        objects = {}
+
+        if geos['mesh'] is not None:
+            suffix = " - (M)" if both else ""
+            objects['mesh'] = geos['mesh'].to_object(f"{name}{suffix}", shade_smooth=shade_smooth)
+
+        if geos['curve'] is not None:
+            if both:
+                suffix = " - (C)" if both else ""
+            objects['curve'] = geos['curve'].to_object(f"{name}{suffix}")
+
+        return objects
+    
+    # ====================================================================================================
+    # Dump 
+    # ====================================================================================================
+
+    def models_to_object(self, name="Models"):
+        from .mesh import Mesh
+        from .curve import Curve
+
+        mesh = Mesh()
+
+        if len(self.low_resols):
+            _, lr_all_models = self._sort_low_resols()
+
+        x = 0.
+        for i_model, model in enumerate(self.models):
+            bbox = model.bounding_box_dims
+
+            if isinstance(model, Mesh):
+                m = Mesh.from_mesh(model)
+            else:
+                m = model.to_mesh()
+
+            m.translate((x, 0, 0))
+            mesh.join(m)
+
+            # ----- Low resols
+
+            if not len(self.low_resols):
                 continue
-            geo = model * n
 
-            if True:
-                geo.points.transform(self.get_transformations())
+            z = bbox[2] + 1
+            for i in reversed(range(len(lr_all_models))):
+                mdl = lr_all_models[i][i_model]
 
-            else:
-                if self.attributes.exists('Scale'):
-                    geo.points.scale(self.Scale[sel])
+                if isinstance(mdl, Mesh):
+                    m = Mesh.from_mesh(mdl)
+                else:
+                    m = mdl.to_mesh()
 
-                if self.attributes.exists('Rotation'):
-                    geo.points.rotate(self.Rotation[sel])
+                m.translate((x, 0, z))
+                mesh.join(m)
+                z += 1 + bbox[2]
 
-                geo.points.translate(self.position[sel])
+            x += 1 + bbox[0]
 
-            if isinstance(geo, Mesh):
-                mesh.join(geo)
 
-            elif isinstance(geo, Curve):
-                curve.join(geo)
+        return mesh.to_object(name, shade_smooth=False)
 
-            elif isinstance(geo, Cloud):
-                cloud.join(geo)
-
-            elif isinstance(geo, Instances):
-                instances.join(geo)
-
-            else:
-                assert(False)
-
-        geos = {}
-        if len(mesh.points) > 0:
-            geos['mesh'] = mesh
-
-        if len(curve.points) > 0:
-            geos['curve'] = curve
-
-        if len(cloud.points) > 0:
-            geos['cloud'] = cloud
-
-        if len(insts) > 0:
-            geos['instances'] = insts
-
-        return geos
-
-    # -----------------------------------------------------------------------------------------------------------------------------
-    # Create / update an object
-
-    def to_object(self, name, collection=None):
-        """ Create or update a blender object.
-
-        The method 'to_object' creates the whole geometry. It creates a new object if it doesn't already exist.
-        If the object exists, it must be a mesh, there is no object type conversion.
-
-        Once the object is created, use the method 'update_object' to change the vertices.
-
-        Arguments
-        ---------
-            - name (str) : the name of the object to create
-
-        Returns
-        -------
-            - dict of blender mesh objects
-        """
-
-        geos = self.realize()
-        objs = {}
-        for k, geo in geos.items():
-
-            if len(geos) == 1:
-                suffix = ""
-            else:
-                letter = {'mesh': 'M', 'curve': 'C', 'cloud': 'P', 'instances': 'I'}[k]
-                suffix = f" ({letter})"
-
-            objs[k] = geo.to_object(f"{name}{suffix}", collection=collection)
-
-        return objs
-
-    # =============================================================================================================================
-    # Combining
+    # ====================================================================================================
+    # Joining instances
+    # ====================================================================================================
 
     def join(self, *others):
-        """ Join another Instances.
-
-        Arguments
-        ---------
-            - other* (Instances) : the Points to append
-        """
-
-        assert(False)
 
         for other in others:
-            assert(isinstance(other, Instances))
-            self.add_from_domain(other)
+            insts_count = len(self.points)
+            models_count = len(self.models)
+
+            self.models.extend(other.models)
+            self.points.extend(other.points, join_fields=True)
+            self.points[insts_count:] += models_count
 
         return self
-
-
-    # =============================================================================================================================
+    
+    # ====================================================================================================
     # Multiply
+    # ====================================================================================================
+
+    def multiply(self, count, in_place=True):
+
+        count = int(count)
+
+        if count == 0:
+            return None
+        
+        if count == 1:
+            if in_place:
+                return self
+            else:
+                return type(self)().join(self)
+            
+        if not in_place:
+            return type(self)().join(self).multiply(count, in_place=True)
+        
+        self.points.mmultiply(count)
+
+        return self
 
     def __mul__(self, count):
-        if not isinstance(count, (int, np.int32, np.int64)):
-            print("count:", type(count))
-            raise Exception(f"A Mesh can be multiplied only by an int, not '{count}'")
-
-        return self.multiply(count)
+        return self.multiply(count, in_place=False)
 
     def __imul__(self, count):
-        if not isinstance(count, (int, np.int32, np.int64)):
-            raise Exception(f"A Mesh can be multiplied only by an int, not '{count}'")
+        return self.multiply(count, in_place=True)
+    
+    # ====================================================================================================
+    # Operations
+    # ====================================================================================================
 
-        if count <= 1:
-            return
+    def clear_geometry(self):
+        self.points.clear()
 
-        self.attributes.multiply(count)
-
-        return self
-
-
-    def multiply(self, count=10, **attributes):
-        """ Duplicate the geometry.
-
-        Multiplying is a way to efficiently duplicate the geometry a great number of times.
-        One duplicated, the vertices can be reshapped to address each instance individually.
-
-        Arguments
-        ---------
-            - count (int=10) : number of instances
-            - attributes (name=value) : value for named attributes
-
-        Returns
-        -------
-            - MeshBuilder
-        """
-
-        insts = Instances()
-        insts.join(self)
-
-        insts.attributes.multiply(count)
-
-        return insts
-
-    # =============================================================================================================================
-    # =============================================================================================================================
-    # Build
-    # =============================================================================================================================
-
-    # =============================================================================================================================
-    # Add points
-
-    def add_instances(self, position, **attributes):
-        index = len(self)
-        self.add_points(len(position), position=position, **attributes)
-        return index, len(self.points) - index
-
-    # =============================================================================================================================
-    # Delete points
-
-    def clear(self):
-        self.attributes.clear()
-
-    def delete(self, selection):
-        self.attributes.delete(selection)

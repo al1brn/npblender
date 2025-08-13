@@ -14,14 +14,17 @@ Root class for geometries
 """
 
 from contextlib import contextmanager
+import numpy as np
+
+import bpy
 
 from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-#from . maths.splinesmaths import BSplines, Bezier, Poly, Nurbs
 
+from . import blender
 
-
-# =============================================================================================================================
+# ----------------------------------------------------------------------------------------------------
 # Root class for geometries
+# ----------------------------------------------------------------------------------------------------
 
 class Geometry:
 
@@ -32,8 +35,12 @@ class Geometry:
     def check(self, halt=True):
         return True
 
+    # ====================================================================================================
+    # Load a Mesh or a Curve
+    # ====================================================================================================
+
     @staticmethod
-    def LoadObject(name):
+    def load_object(name):
         """ Load a Blender object and returns either a Mesh or a Curve.
 
         Arguments
@@ -45,85 +52,80 @@ class Geometry:
             - Mesh or Curve
         """
 
-        from . import Mesh
-        from . import Curve
+        from .mesh import Mesh
+        from .curve import Curve
 
         obj = blender.getobject(name)
+        if obj is None:
+            return None
+
         if isinstance(obj.data, bpy.types.Mesh):
-            return Mesh.FromObject(oj)
+            return Mesh.from_object(obj)
 
         elif isinstance(obj.data, bpy.types.Curve):
-            return Curve.FromObject(obj)
+            return Curve.from_object(obj)
 
         else:
-            raise Exception(f"Geometry.LoadObject error: impossible to load the objet '{obj.name}' of type '{type(obj.data).__name__}'")
+            raise Exception(f"Geometry.load_object error: impossible to load the objet '{obj.name}' of type '{type(obj.data).__name__}'")
 
+    # ====================================================================================================
+    # Load a Mesh or a Curve
+    # ====================================================================================================
 
     @staticmethod
-    def LoadModel(model):
-        """ Load a geometry or geometries from specification.
+    def load_models(*specs):
+        """ Load a geometry or geometries from specifications.
 
-        The model can be:
-            - a string : the name of a Blender object
-            - a Blender object : the object to load
-            - a Blender collection : the object to load
-            - a list of these items : the list of objects to load
-
-        Note that if model is a list or a collection, the method return Instances with models
-        initialized with this list.
+        The specs can be:
+            - a Blender collection
+            - a Blender object
+            - a Geometry
 
         Arguments
         ---------
-            - model (any)
+            - specs (list of objects / collections) : the models to load
 
         Returns
         -------
-            - Mesh or Curve or arrays of Meshes and Curves
+            - list of geometries
         """
 
-        from . import Mesh
-        from . import Curve
-        from . import Cloud
-        from . import Instances
+        from .mesh import Mesh
+        from .curve import Curve
 
-        if isinstance(model, (Mesh, Curve, Cloud, Instances)):
-            return model
+        models = []
 
-        elif isinstance(model, bpy.types.Collection):
-            subs = [Geometry.FromModel(obj) for obj in model.objects]
-            insts = Instances(np.zeros((len(subs), 3), float), subs)
-            return insts
+        for spec in specs:
+            # A list
+            if isinstance(spec, (list, tuple)):
+                models.extend(Geometry.load_models(*spec))
+                continue
 
-        elif isinstance(model, list):
-            subs = [Geometry.FromModel(obj) for obj in model]
-            insts = Instances(np.zeros((len(subs), 3), float), subs)
-            return insts
+            # A collection
+            coll = blender.get_collection(spec, halt=False)
+            if coll is not None:
+                for obj in coll.objects:
+                    geo = Geometry.load_object(obj)
+                    if isinstance(geo, (Mesh, Curve)):
+                        models.append(geo)
+                continue
 
-        obj = blender.get_object(model)
-        if isinstance(obj.data, bpy.types.Mesh):
-            return Mesh.FromObject(obj)
+            # An object
+            obj = blender.get_object(spec, halt=False)
+            if obj is not None:
+                geo = Geometry.load_object(obj)
+                if isinstance(geo, (Mesh, Curve)):
+                    models.append(geo)
+                continue
 
-        elif isinstance(obj.data, bpy.types.Curve):
-            return Curve.FromObject(obj)
+            # A valide geometry
+            if isinstance(spec, (Mesh, Curve)):
+                models.append(spec)
+                continue
 
-        else:
-            raise Exception(f"Geometry.FromObject error: impossile to load the objet '{obj.name}' of type '{type(obj.data).__name__}'")
-
-    # =============================================================================================================================
-    # Save / restore configuration
-
-    @property
-    def domains(self):
-        return {}
-
-    def save(self):
-        return {'domains': {domain_name: None if domain is None else domain.as_dict() for domain_name, domain in self.domains.items()}}
-
-    def restore(self, data):
-        domains = self.domains
-        for domain_name, data in data['domains'].items():
-            if data is not None:
-                domains[domain_name].from_dict(data)
+            raise ValueError(f"Unknown model (type '{type(spec).__name__}'): {spec}")
+        
+        return models
 
     # ====================================================================================================
     # Object edition
@@ -214,28 +216,130 @@ class Geometry:
         if isinstance(materials, str):
             self.materials.append(materials)
         else:
-            self.materials.extend(materials)     
+            self.materials.extend(materials)
 
-    # =============================================================================================================================
+    # ====================================================================================================
     # Transformation
-    # =============================================================================================================================
+    # ====================================================================================================
 
-    def transform(self, transfo):
-        self.points.position = transfo @ self.points.position
-        return self
+    def get_points_selection(self):
+        return slice(None)
     
+    def _check_transformation_shape(self, t_shape, npoints, label="Transformation"):
+        if t_shape == ():
+            return (npoints, 3)
+
+        elif len(t_shape) == 1:
+            if t_shape[0] not in [1, npoints]:
+                return (npoints, 3)
+
+        else:
+            n = int(np.prod(t_shape))
+            if npoints % n == 0:
+                return t_shape[:-1] + (-1, 3)
+
+        raise AttributeError(f"{label} shape {t_shape} is not valid to transform {npoints} points.")
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Apply one or more basic transformation
+    # ----------------------------------------------------------------------------------------------------
+    
+    def transformation(self, rotation=None, scale=None, translation=None, pivot=None):
+
+        # Curve splines can be a subset of the points 
+        pts_sel = self.get_points_selection()
+        pos = self.points.position[pts_sel]
+        npoints = len(pos)
+        all_vecs = [pos]
+
+        has_handles = "handle_left" in self.points.actual_names
+        if has_handles:
+            left = self.points.handle_left[pts_sel]
+            right = self.points.handle_right[pts_sel]
+            all_vecs.extend([left, right])
+
+        # First pivot
+        if pivot is not None:
+            pivot = np.asarray(pivot)
+            pivot_shape = self._check_transformation_shape(pivot.shape[:-1], npoints, label="Pivot")
+            for v in all_vecs:
+                v.reshape(pivot_shape)[:] -= pivot
+
+        # Scale
+        if scale is not None:
+            scale = np.asarray(scale)
+            scale_shape = self._check_transformation_shape(scale.shape[:-1], npoints, label="Scale")
+            for v in all_vecs:
+                v.reshape(scale_shape)[:] *= scale
+                
+        # Rotation
+        if rotation is not None:
+            rot_shape = self._check_transformation_shape(rotation.shape, npoints, label="Rotation")
+            for v in all_vecs:
+                v.reshape(rot_shape)[:] = rotation @ v.reshape(rot_shape)
+
+        # Pivot back
+        if pivot is not None:
+            for v in all_vecs:
+                v.reshape(pivot_shape)[:] += pivot
+
+        # Translation
+        if translation is not None:
+            translation = np.asarray(translation)
+            tr_shape = self._check_transformation_shape(translation.shape[:-1], npoints, label="Pivot")
+            for v in all_vecs:
+                v.reshape(tr_shape)[:] += translation
+
+        # Back
+        self.points[pts_sel].position = pos
+        if has_handles:
+            self.points[pts_sel].handle_left = all_vecs[1]
+            self.points[pts_sel].handle_right = all_vecs[2]
+
+        return self
+
     def translate(self, translation):
-        self.points.position += translation
-        return self
+        return self.transformation(translation=translation)
 
-    def scale(self, scale, pivot = None):
-        if pivot is not None:
-            self.points.position -= pivot
-        self.points.position *= scale
-        if pivot is not None:
-            self.points.position += pivot
+    def apply_scale(self, scale, pivot=None):
+        return self.transformation(scale=scale, pivot=pivot)
+    
+    def rotate(self, rotation, pivot=None):
+        return self.transformation(rotation=rotation, pivot=pivot)
+    
+    def transform(self, transformation):
+        return self.transformation(rotation=transformation)
+    
+    # ====================================================================================================
+    # Envelop
+    # ====================================================================================================
 
-        return self
+    @property
+    def bounding_box(self):
+        pos = self.points.position
+        if len(pos):
+            return np.min(pos, axis=0), np.max(pos, axis=0)
+        else:
+            return np.zeros(3, float), np.zeros(3, float)
+        
+    @property
+    def bounding_box_dims(self):
+        v0, v1 = self.bounding_box
+        return v1 - v0
+        
+    @property
+    def max_size(self):
+        return max(self.bounding_box_dims)
+    
+    def get_cubic_envelop(self):
+        from . mesh import Mesh
+
+        size = self.bounding_box_dims
+        return Mesh.cube(size=size, materials=getattr(self, "materials", None))
+        
+
+
+
 
 
 

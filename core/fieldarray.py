@@ -572,6 +572,10 @@ class FieldArray(object):
         ----------
         other : FieldArray
             Another FieldArray instance whose fields will be checked for missing fields.
+
+        Returns
+        -------
+        self        
         """
         if isinstance(other, FieldArray):
             for name in other._infos:
@@ -588,6 +592,8 @@ class FieldArray(object):
                     continue
 
                 self.new_field(name, dtype=other[name].dtype, shape=other[name].shape)
+        
+        return self
 
     # ====================================================================================================
     # add & append

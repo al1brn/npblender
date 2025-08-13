@@ -17,21 +17,16 @@ Curve geometry.
 from contextlib import contextmanager
 import numpy as np
 
+import bpy
+
 from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 from . constants import bfloat, bint, bbool
-from . constants import FillCap
 from . import blender
 from . maths import Transformation, Quaternion, Rotation
-from . maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_map
-from . maths.topology import border_edges, edges_between, row_edges, col_edges
 from . maths import splinemaths
 
 from . geometry import Geometry
 from . domain import SplinePointDomain, SplineDomain
-
-
-import bpy
-
 
 DATA_TEMP_NAME = "npblender_TEMP"
 
@@ -60,7 +55,7 @@ class Curve(Geometry):
         else:
             self.materials = [mat for mat in materials]
 
-        # ----- The two domains are alerady built
+        # ----- The two domains are already built
         # can be a view on a larger curve
         if ( points is not None and isinstance(points, SplinePointDomain) and
              splines is not None and isinstance(splines, SplineDomain) ):
@@ -81,6 +76,29 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
     # Utilities
     # ----------------------------------------------------------------------------------------------------
+
+    def get_points_selection(self):
+        """ Get selection on points associated to the splines.
+
+        If the Curve is not a view on splines, if return [:], otherwise
+        it returns a selection on the points.
+
+        Returns
+        -------
+            - sel (slice) : indices of splines points
+        """
+        if not self.is_view:
+            return slice(None)
+        
+        all_indices = np.arange(len(self.points))
+        sel = np.zeros(len(self.points), dtype=bool)
+
+        totals, rev_index = np.unique(self.splines.loop_total, return_inverse=True)
+        for index, total in enumerate(totals):
+            indices = self.splines.loop_total[rev_index == index][None, :] + np.arange(total)
+            sel[indices.flatten()] = True
+
+        return sel
 
     def no_view(self):
         """
@@ -123,36 +141,6 @@ class Curve(Geometry):
         self.points = points
         self.splines = splines.update_loop_start()
         self.is_view = False
-        return self
-
-
-    def no_view_OLD(self):
-        if not self.is_view:
-            return self
-
-        # Splines copy            
-        splines = SplineDomain(self.splines, mode='COPY')
-
-        # How many buckets
-        loop_totals = np.unique(splines.loop_total)
-
-        # ----- Only one size, let's do it quickly
-        if len(loop_totals) == 1:
-            pts = np.asarray(self.points)[splines.loop_start[:, None] + np.arange(loop_totals[0])]
-            self.points = SplinePointDomain(pts.flatten(), mode='COPY')
-
-        # ----- Several sizes : loop on different sizes
-        else:
-            points = SplinePointDomain()
-            for loop_total in loop_totals:
-                pts = np.asarray(self.points)[splines.loop_start[splines.loop_total == loop_total, None] + np.arange(loop_total)]
-                points.extend(pts.flatten(), join_fields=False)
-
-            self.points = points
-            
-        self.splines = splines.update_loop_start()
-        self.is_view = False
-
         return self
 
     def check(self, halt=True):
@@ -537,7 +525,7 @@ class Curve(Geometry):
         # ----- Back
 
         if not readonly:
-            self.capture(Curve.FromCurveData(data))    
+            self.capture(Curve.FromCurveData(data))   
 
     # ====================================================================================================
     # Add splines
@@ -1182,7 +1170,7 @@ class Curve(Geometry):
     
     def select(self, indices):
         """Explicit alias for subsetting splines; same semantics as curve[indices]."""
-        return self[indices]    
+        return self[indices]   
     
     # ====================================================================================================
     # Loop on buckets
@@ -1267,14 +1255,14 @@ class Curve(Geometry):
                 r = max(1, int(resol))
                 
                 if is_cyclic:
-                    t = np.linspace(0, 1, loop_total*r, endpoint=False, dtype=np.float32)
+                    t = np.linspace(0, 1, loop_total*r, endpoint=False, dtype=bfloat)
                 else:
-                    t = np.linspace(0, 1, (loop_total - 1)*r + 1, endpoint=True, dtype=np.float32)
+                    t = np.linspace(0, 1, (loop_total - 1)*r + 1, endpoint=True, dtype=bfloat)
             else:
                 if ctype == POLY and resolution == loop_total:
                     return curve.no_view()
                 
-                t = np.linspace(0, 1, resolution, endpoint=not is_cyclic, dtype=np.float32)
+                t = np.linspace(0, 1, resolution, endpoint=not is_cyclic, dtype=bfloat)
 
             pos = curve.evaluate(t).reshape(-1, 3)
             attrs = {}
@@ -1340,7 +1328,7 @@ class Curve(Geometry):
                 return out
 
             # Parameter grid for anchors
-            t = np.linspace(0.0, 1.0, N, endpoint=not is_cyclic, dtype=np.float32)
+            t = np.linspace(0.0, 1.0, N, endpoint=not is_cyclic, dtype=bfloat)
 
             # Evaluate anchors
             P = curve.evaluate(t)                  # (S, N, 3) or (S,3) if N==1
@@ -1389,12 +1377,12 @@ class Curve(Geometry):
         new_curve.splines.update_loop_start()
         new_curve.splines.resolution = resolution
         return new_curve
-    
+
     # ----------------------------------------------------------------------------------------------------
     # To mesh
     # ----------------------------------------------------------------------------------------------------
 
-    def to_mesh(self, profile=None, caps=True, use_radius=True):
+    def to_mesh(self, profile=None, caps=True, use_radius=True, camera_culling=False):
         """ > Transform curve to mesh
 
         If profile is None, the mesh contains only edges
@@ -1411,17 +1399,29 @@ class Curve(Geometry):
         - Mesh
         """
 
+        from . camera import Camera
         from . mesh import Mesh
         from .maths.topology import grid_corners, grid_uv_map, disk_uv_map
 
+        if camera_culling != False:
+            camera = Camera(camera_culling)
+            camera_culling = True
 
-        if profile is not None:
-            prof_mesh = profile[0].to_mesh()
-            prof_pts = prof_mesh.points.position
-            nprof = len(prof_pts)
+        # Circle as default profile
+        if profile is None:
+            profile_size = .001
+        else:
+            full_prof_mesh = profile[0].to_mesh()
+            full_prof_pts = full_prof_mesh.points.position
+            full_nprof = len(full_prof_pts)
             prof_closed = profile.splines.cyclic[0]
+            profile_size = profile.max_size
 
-        def _to_mesh(curve, ctype, N, cyclic, resol):
+        # ---------------------------------------------------------------------------
+        # Add a set of splines of the same type, number of points and cyclic
+        # ---------------------------------------------------------------------------
+
+        def _to_mesh(curve, ctype, N, cyclic, resol, profile_scale=None):
 
             if ctype == BEZIER:
                 curve = curve.to_poly()
@@ -1450,13 +1450,13 @@ class Curve(Geometry):
                 # Edges
                 inds = np.arange(npoints).reshape(nsplines, N)
                 if cyclic:
-                    edges = np.empty((nsplines, N, 2), dtype=np.int32)
+                    edges = np.empty((nsplines, N, 2), dtype=bint)
                     edges[:, :-1, 0] = inds[:, :-1]
                     edges[:, :-1, 1] = inds[:, 1:]
                     edges[:, -1, 0] = inds[:, -1]
                     edges[:, -1, 1] = inds[:, 0]
                 else:
-                    edges = np.empty((nsplines, N-1, 2), dtype=np.int32)
+                    edges = np.empty((nsplines, N-1, 2), dtype=bint)
                     edges[..., 0] = inds[:, :-1]
                     edges[..., 1] = inds[:, 1:]
 
@@ -1471,8 +1471,17 @@ class Curve(Geometry):
 
             ok_caps = caps and not cyclic and prof_closed
 
+            # Let's adapt to the scale
+            if profile_scale is None:
+                nprof = full_nprof
+                prof_mesh = full_prof_mesh
+            else:
+                nprof = max(4, int(profile_scale*full_nprof))
+                prof_mesh = profile[0].to_poly(nprof).to_mesh()
+                ok_caps = ok_caps and (profile_scale > .8)
+
             # One profile per center
-            all_points = np.empty((nsplines, N, nprof, 3), dtype=np.float32)
+            all_points = np.empty((nsplines, N, nprof, 3), dtype=bfloat)
             all_points[...] = prof_mesh.points.position
 
             # Radius
@@ -1527,35 +1536,70 @@ class Curve(Geometry):
                 mesh.add_geometry(corners=cap_inds.flatten(), faces=nprof, UVMap=uvmap)
 
             return mesh
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         
+        # ---------------------------------------------------------------------------
+        # Add a set of splines of the same type, number of points and cyclic
+        # ---------------------------------------------------------------------------
 
+        def _cam_culling(curve, ctype, N, cyclic, resol):
+
+            if ctype == BEZIER:
+                curve = curve.to_poly()
+                N = curve.splines.loop_total[0]
+            else:
+                curve.no_view()
+
+            # No camera culling, this is simple
+            if not camera_culling:
+                return _to_mesh(curve, ctype, N, cyclic, resol)
+            
+            mesh = Mesh()
+            
+            # Visible points
+            vis, dist = camera.visible_points(curve.points.position, radius=profile_size)
+            vis = vis[:, camera.VISIBLE]
+
+            # Spline is visible if any point is visible
+            sel = np.any(vis.reshape(-1, N), axis=1)
+            curve = curve[sel].no_view()
+            if len(curve) == 0:
+                return mesh
+            
+            # One p_size per spline
+            p_size = dist[:, camera.SIZE].reshape(-1, N)[sel][:, 0]
+
+            # On distance per spline
+            dist = dist[:, camera.DISTANCE].reshape(-1, N)[sel][:, 0]
+
+            # Curve length
+            length = curve.length
+
+            # profile_size is seen as p_size, ratio = p_size/profile_size
+            #ratio = p_size/profile_size
+            #app_length = ratio*length
+            app_length = length*camera.pixels_per_meter(dist)
+
+            # around 5 pixel per segment
+            npix = np.clip(app_length/5, 4, N).astype(int)
+
+            # We loop per npix
+            new_Ns, rev_index = np.unique(npix, return_inverse=True)
+            for i_new, new_N in enumerate(new_Ns):
+                c = curve[rev_index == i_new].no_view().to_poly(new_N)
+                mesh.join(_to_mesh(c, POLY, new_N, cyclic, resol, profile_scale=new_N/N))
+
+            # Done !!!
+            return mesh
         
         # ---------------------------------------------------------------------------
         # Main
+        # ---------------------------------------------------------------------------
         
         mesh = Mesh()
-        for _, m in self.for_each_bucket(_to_mesh):
-            print("DEBUG", m)
+        for _, m in self.for_each_bucket(_cam_culling):
             mesh.join(m)
 
-        return mesh
-
+        return mesh    
     
     # ====================================================================================================
     # Primitives
@@ -1661,6 +1705,12 @@ class Curve(Geometry):
             curve_type = POLY,
             cyclic = True,
         )
+    
+    @classmethod
+    def xyfunction(cls, func, x0=0., x1=1., resolution=100, materials=None):
+        x = np.linspace(x0, x1, resolution, dtype=bfloat)
+        y = func(x)
+        return cls(points=np.stack((x, y, np.zeros_like(x)), axis=-1), materials=materials)
 
     # ====================================================================================================
     # Field of vectors
