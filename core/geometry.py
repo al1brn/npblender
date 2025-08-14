@@ -32,7 +32,7 @@ class Geometry:
     # Check geometry consistency
     # ====================================================================================================
 
-    def check(self, halt=True):
+    def check(self, title="Geometry Check", halt=True):
         return True
 
     # ====================================================================================================
@@ -258,43 +258,79 @@ class Geometry:
             right = self.points.handle_right[pts_sel]
             all_vecs.extend([left, right])
 
-        # First pivot
-        if pivot is not None:
-            pivot = np.asarray(pivot)
-            pivot_shape = self._check_transformation_shape(pivot.shape[:-1], npoints, label="Pivot")
-            for v in all_vecs:
-                v.reshape(pivot_shape)[:] -= pivot
+        if False:
+            # First pivot
+            if pivot is not None:
+                pivot = np.asarray(pivot)
+                for v in all_vecs:
+                    v -= pivot
 
-        # Scale
-        if scale is not None:
-            scale = np.asarray(scale)
-            scale_shape = self._check_transformation_shape(scale.shape[:-1], npoints, label="Scale")
-            for v in all_vecs:
-                v.reshape(scale_shape)[:] *= scale
-                
-        # Rotation
-        if rotation is not None:
-            rot_shape = self._check_transformation_shape(rotation.shape, npoints, label="Rotation")
-            for v in all_vecs:
-                v.reshape(rot_shape)[:] = rotation @ v.reshape(rot_shape)
+            # Scale
+            if scale is not None:
+                scale = np.asarray(scale)
+                for v in all_vecs:
+                    v *= scale
+                    
+            # Rotation
+            if rotation is not None:
+                for v in all_vecs:
+                    v = rotation @ v
 
-        # Pivot back
-        if pivot is not None:
-            for v in all_vecs:
-                v.reshape(pivot_shape)[:] += pivot
+            # Pivot back
+            if pivot is not None:
+                for v in all_vecs:
+                    v += pivot
 
-        # Translation
-        if translation is not None:
-            translation = np.asarray(translation)
-            tr_shape = self._check_transformation_shape(translation.shape[:-1], npoints, label="Pivot")
-            for v in all_vecs:
-                v.reshape(tr_shape)[:] += translation
+            # Translation
+            if translation is not None:
+                translation = np.asarray(translation)
+                for v in all_vecs:
+                    v += translation
 
-        # Back
-        self.points[pts_sel].position = pos
-        if has_handles:
-            self.points[pts_sel].handle_left = all_vecs[1]
-            self.points[pts_sel].handle_right = all_vecs[2]
+            # Back
+            self.points[pts_sel].position = pos
+            if has_handles:
+                self.points[pts_sel].handle_left = all_vecs[1]
+                self.points[pts_sel].handle_right = all_vecs[2]
+
+        else:
+            # First pivot
+            if pivot is not None:
+                pivot = np.asarray(pivot)
+                pivot_shape = self._check_transformation_shape(pivot.shape[:-1], npoints, label="Pivot")
+                for v in all_vecs:
+                    v.reshape(pivot_shape)[:] -= pivot
+
+            # Scale
+            if scale is not None:
+                scale = np.asarray(scale)
+                scale_shape = self._check_transformation_shape(scale.shape[:-1], npoints, label="Scale")
+                for v in all_vecs:
+                    v.reshape(scale_shape)[:] *= scale
+                    
+            # Rotation
+            if rotation is not None:
+                rot_shape = self._check_transformation_shape(rotation.shape, npoints, label="Rotation")
+                for v in all_vecs:
+                    v.reshape(rot_shape)[:] = rotation @ v.reshape(rot_shape)
+
+            # Pivot back
+            if pivot is not None:
+                for v in all_vecs:
+                    v.reshape(pivot_shape)[:] += pivot
+
+            # Translation
+            if translation is not None:
+                translation = np.asarray(translation)
+                tr_shape = self._check_transformation_shape(translation.shape[:-1], npoints, label="Pivot")
+                for v in all_vecs:
+                    v.reshape(tr_shape)[:] += translation
+
+            # Back
+            self.points[pts_sel].position = pos
+            if has_handles:
+                self.points[pts_sel].handle_left = all_vecs[1]
+                self.points[pts_sel].handle_right = all_vecs[2]
 
         return self
 

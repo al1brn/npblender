@@ -896,9 +896,11 @@ class CornerDomain(Domain):
             return True
         
         if np.max(self.vertex_index) > count:
+            msg = f"CornerDomain check fail: {np.max(self.vertex_index)=}, {count=}"
             if halt:
-                raise RuntimeError(f"CornerDomain check fail: {np.max(self.vertex_index)=}, {count=}")
+                raise RuntimeError(msg)
             else:
+                print(msg)
                 return False
         return True
 
@@ -932,9 +934,11 @@ class FaceSplineDomain(Domain):
             return True
         
         if np.sum(self.loop_total) != count:
+            msg = f"FaceDomain check fail: {np.sum(self.loop_total)=}, {count=}"
             if halt:
-                raise RuntimeError(f"FaceDomain check fail: {np.sum(self.loop_total)=}, {count=}")
+                raise RuntimeError(msg)
             else:
+                print(msg)
                 return False
         return True
     
@@ -1314,16 +1318,21 @@ class EdgeDomain(Domain):
     def check(self, count, halt=True):
         if not len(self):
             return True
+        
         if np.max(self.vertex0) >= count or np.max(self.vertex1) >= count:
+            msg = f"Edge domain contains vertex index out of range: {np.max(self.vertex0)=}, {np.max(self.vertex0)=}, {count=}"
             if halt:
-                raise Exception(f"Edge domain contains vertex index out of range: {np.max(self.vertex0)=}, {np.max(self.vertex0)=}, {count=}")
+                raise Exception(msg)
             else:
+                print(msg)
                 return False
             
         if np.any(self.vertex0 == self.vertex1):
+            msg = f"Some edges use the same vertex ! {np.sum(self.vertex0 == self.vertex1)}"
             if halt:
-                raise Exception(f"Some edges use the same vertex ! {np.sum(self.vertex0 == self.vertex1)}")
+                raise Exception(msg)
             else:
+                print(msg)
                 return False
 
         return True
@@ -1529,6 +1538,7 @@ class SplineDomain(FaceSplineDomain):
 
             try:
                 self[name] = blender.get_attribute(data, name)
+
             except Exception as e:
                 raise Exception(f"Failed to read attribute '{name}' from Blender: {e}")
 

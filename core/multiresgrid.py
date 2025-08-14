@@ -314,7 +314,7 @@ class MultiResGrid(Mesh):
         return cls(func=sphere, shape=(16, 8), u_space=(-np.pi, np.pi), v_space=(-np.pi/2, np.pi/2))
     
     @classmethod
-    def demo(cls, depth=6):
+    def demo_sphere(cls, depth=6):
 
         from .camera import Camera
         from .engine import engine
@@ -332,6 +332,29 @@ class MultiResGrid(Mesh):
             
         engine.go(update)
 
+    @classmethod
+    def demo_terrain(cls, depth=8):
+
+        from .camera import Camera
+        from .engine import engine
+        from .maths.perlin import noise
+
+        def altitude(x, y):
+            coords = np.stack((x, y), axis=-1)
+            return noise(coords, scale=3, octaves=8, lacunarity=4, algo='hetero')
+        
+        surface = cls(altitude, shape=(10, 10), u_space=(-10, 10), v_space=(-10, 10), is_altitude=True)
+
+        def update():
+            surface.update_grid(
+                depth=depth,
+                camera=Camera(), 
+                max_vertices=10_000_000, 
+                max_size=.01)
+            
+            surface.to_object("Terrain", shade_smooth=False)
+            
+        engine.go(update)
 
         
 

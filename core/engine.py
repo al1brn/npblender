@@ -122,7 +122,7 @@ class Engine:
         else:
             frame = self.frame - 1 + self.subframe/(self.subframes + 1)
 
-        return self.time_offset + self.time_scale*frame/self.fps()
+        return self.time_offset + self.time_scale*frame/self.fps
     
     @property
     def duration(self):

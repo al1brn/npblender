@@ -99,10 +99,16 @@ class Mesh(Geometry):
 
         return cls(points=verts, corners=corners, faces=loops, edges=edges,**attrs)
 
-    def check(self, halt=True):
-        return self.corners.check(len(self.points), halt=halt) and \
-               self.faces.check(len(self.corners), halt=halt) and \
-               self.edges.check(len(self.points), halt=halt)
+    def check(self, title="Mesh Check", halt=True):
+        ok = self.corners.check(len(self.points), halt=False) and \
+               self.faces.check(len(self.corners), halt=False) and \
+               self.edges.check(len(self.points), halt=False)
+        if ok:
+            return True
+        elif halt:
+            raise Exception(f"{title} check failed")
+        else:
+            print(f"{title} check failed")
         
 
     def __str__(self):
@@ -171,7 +177,6 @@ class Mesh(Geometry):
         -------
             - Mesh
         """
-
         mesh = cls(materials=other.materials)
         mesh.points  = PointDomain(other.points,  mode='COPY')
         mesh.corners = CornerDomain(other.corners, mode='COPY')
@@ -619,7 +624,6 @@ class Mesh(Geometry):
         ---------
             - others (Mesh) : the Mesh to append
         """
-
         for other in others:
 
             # ----------------------------------------------------------------------------------------------------
@@ -1194,12 +1198,19 @@ class Mesh(Geometry):
             edges : array selection, optional
                 Edges owning vertices to delete.
         """
+        go = False
         if points is not None:
             p_sel = set(np.arange(len(self.points))[points])
+            go = True
         if faces is not None:
             f_sel = set(np.arange(len(self.faces))[faces])
+            go = True
         if edges is not None:
             e_sel = set(np.arange(len(self.edges))[edges])
+            go = True
+
+        if not go:
+            return 
 
         with self.bmesh() as bm:
             verts_to_delete = set()
@@ -1322,7 +1333,7 @@ class Mesh(Geometry):
                 bmesh.ops.subdivide_edges(
                     bm,
                     edges         = edges_to_cut,
-                    cuts          = segments - 1,
+                    cuts          = side_segments - 1,
                     use_grid_fill = False
                 )
 
@@ -1821,48 +1832,174 @@ class Mesh(Geometry):
         -------
             - Mesh Object
         """
+        locations = np.atleast_2d(locations)
+        vectors = np.atleast_2d(vectors)
 
-        locations = np.asarray(locations)
-        vectors = np.asarray(vectors)
+        # ---------------------------------------------------------------------------
+        # Vector lengths
+        # ---------------------------------------------------------------------------
 
-        cyl_height  = 1.
+        n = len(locations)
+
+        lengths = np.linalg.norm(vectors, axis=-1)
+        lengths[lengths < .00001] = 1
+        v_dir = vectors / lengths[:, None]
+        if type(adjust_norm).__name__ == 'function':
+            lengths = adjust_norm(lengths)
+        elif adjust_norm is not None:
+            lengths = np.minimum(adjust_norm, lengths)
+        vectors = v_dir*lengths[:, None]
+
+        # ---------------------------------------------------------------------------
+        # Arrow head
+        # ---------------------------------------------------------------------------
+
         head_radius = 3*radius
         head_height = head_radius/np.tan(np.radians(angle))
 
-        # ----------------------------------------------------------------------------------------------------
-        # Base models
+        if head is None:
+            cone = cls.cone(
+                vertices = segments, 
+                side_segments = 1, 
+                fill_segments = 1, 
+                radius_top = 0, 
+                radius_bottom = head_radius, 
+                depth = head_height, 
+                fill_type = 'FANS', 
+                materials = materials)
+            cone.points[-1].z += head_height/10
+        else:
+            cone = head
+            head_height = cone.bounding_box_dims[2]
 
-        # ----- Cylinder model
+        # Head top point is z=0
+        v0, v1 = cone.bounding_box
+        cone.points.z -= v1[2]
+
+        # Minimum length
+        # Below this length, the arrow is scaled
+
+        min_length = 2*head_height
+
+        # Small and long arrows if any
+        small_arrows = cls()
+        long_arrows = cls()
+
+        # ---------------------------------------------------------------------------
+        # Small arrows: Vectors whose length < min_length
+        # ---------------------------------------------------------------------------
+
+        small = lengths < min_length
+        nsmalls = np.sum(small)
+
+        if nsmalls:
+            # shaft height = head height
+            cyl_height = min_length/2 + .01
+            arrow = cls.cylinder(vertices=segments, side_segments=1, radius=radius, depth=cyl_height, materials=materials)
+            arrow.points.z += cyl_height/2
+
+            # Join the head
+            c = cls.from_mesh(cone)
+            c.points.z += min_length
+
+            arrow.join(c)
+
+            # Duplicate the geometry            
+            small_arrows = arrow*nsmalls
+            small_arrows.points.reshape(nsmalls, len(arrow.points))
+
+            # Rotate, scale and translate
+            lg = lengths[small]
+            scale = np.stack((np.ones_like(lg), np.ones_like(lg), lg), axis=-1)
+            small_arrows.transformation(
+                rotation = Rotation.look_at((0, 0, 1), vectors[small])[:, None], 
+                scale = scale[:, None], 
+                translation = locations[small, None],
+                )
+            small_arrows.points.reshape(-1)
+
+            
+        # ---------------------------------------------------------------------------
+        # Long arrows
+        # ---------------------------------------------------------------------------
+
+        long = np.logical_not(small)
+        nlongs = len(locations) - nsmalls
+        if nlongs:
+
+            # Shaft model with a normalized height = 1
+            shaft = cls.cylinder(vertices=segments, side_segments=1, radius=radius, depth=1, materials=materials)
+            shaft.points.z += .5
+
+            # We duplicate and transform the shafts with a scale long z
+            long_arrows = shaft*nlongs
+            long_arrows.points.reshape(nlongs, len(shaft.points))
+
+            lg = lengths[long] - head_height + .01
+            scale = np.stack((np.ones_like(lg), np.ones_like(lg), lg), axis=-1)
+            long_arrows.transformation(
+                rotation = Rotation.look_at((0, 0, 1), vectors[long])[:, None], 
+                scale = scale[:, None], 
+                translation = locations[long, None],
+                )
+            long_arrows.points.reshape(-1)
+            
+            # We duplicate and tranform the heads with no scale
+            heads = cone*nlongs
+            heads.points.reshape(nlongs, len(cone.points))
+            heads.transformation(
+                rotation = Rotation.look_at((0, 0, 1), vectors[long])[:, None], 
+                translation = locations[long, None] + vectors[long, None],
+                )
+            heads.points.reshape(-1)
+    
+            long_arrows.join(heads)
+
+        # Let's join the result
+        arrows = cls()
+        arrows.join(small_arrows, long_arrows)
+
+        return arrows
+
+
+
+
+
+
+
+
+
+        cyl_height  = 1.
+
+        # ---------------------------------------------------------------------------
+        # Base models
+        # ---------------------------------------------------------------------------
+
+        # Cylinder
 
         cyl = cls.cylinder(vertices=segments, side_segments=2, radius=radius, depth=cyl_height, materials=materials)
         top_cyl = cyl.points.z > 0
         cyl.points.z += cyl_height/2
         cyl.points.position[top_cyl] -= (0, 0, cyl_height/2 - .01)
 
-        # ----- Head model
+        # Head
 
-        if head is None:
-            cone = cls.cone(vertices=segments, side_segments=2, fill_segments=1, radius_top=0, radius_bottom=head_radius, depth=head_height, fill_type='FANS', materials=materials)
-            cone.points[-1].z += head_height/10
-        else:
-            cone = head
 
-        # ----------------------------------------------------------------------------------------------------
-        # Vectors lengths
 
-        n = len(locations)
+        # ---------------------------------------------------------------------------
+        # Adjust cylinder height
+        # ---------------------------------------------------------------------------
 
-        lengths = np.linalg.norm(vectors, axis=-1)
-        if type(adjust_norm).__name__ == 'function':
-            lengths = adjust_norm(lengths)
-        elif adjust_norm is not None:
-            lengths = np.minimum(adjust_norm, lengths)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Duplicate the models
 
         cyls  = cyl * n
         cones = cone * n
+
+        to_scale = lengths < min_size
+        
+
+
+
+
 
         cyls_pos  = np.reshape(cyls.points.position, (n, len(cyl.points),   3))
         cones_pos = np.reshape(cones.points.position,(n, len(cone.points),  3))

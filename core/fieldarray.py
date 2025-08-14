@@ -109,15 +109,49 @@ class FieldArray(object):
                         shape = shape[1:]
                     self._infos[name] = {'dtype': data[name].dtype, 'shape': shape, 'default': 0, 'optional': False}
 
+    # ====================================================================================================
+    # Shape management
+    # ====================================================================================================
+
+    @property
+    def is_shaped(self):
+        return len(self._data.shape) > 1
+    
+    def _check_no_shape(self, label="Operation"):
+        if self.is_shaped:
+            raise Exception(f"{label} can not be applied to a shaped array {self.shape}.")
+        return True
+    
+    @property
+    def shape(self):
+        if self.is_shaped:
+            return self._data.shape
+        elif self._data.shape == ():
+            return ()
+        else:
+            return (self._length,)
+
     def no_scalar(self):
         if self._data.shape == ():
             self._data = np.reshape(self._data, (1,))
         return self
-
-
+    
     @property
     def is_scalar(self):
         return self._data.shape == ()
+    
+    @property
+    def _data_view(self):
+        if self._data is None:
+            return None
+        elif self.is_shaped or self._data.shape == ():
+            return self._data
+        else:
+            return self._data[:self._length]
+    
+    # ====================================================================================================
+    # Utilities
+    # ====================================================================================================
 
     def __len__(self):
         if self._data is None:
@@ -125,29 +159,31 @@ class FieldArray(object):
         
         if self._data.shape == ():
             raise ValueError(f"{type(self).__name__} > data is scalar.")
-
-        return self._length
+        
+        return len(self._data_view)
     
     def __iter__(self):
-        return (self[index] for index in range(self._length))
-        #return iter(self._data[:self._length])
+        if self.is_scalar:
+            raise Exception(f"Impossible to iterate on a scalar array.")
+        return (self[index] for index in range(len(self)))
     
     def __contains__(self, item):
-        return item in self._data[:self._length]
+        return item in self._data_view
     
     def __array__(self, dtype=None):
         """Allow implicit conversion to np.ndarray"""
-        if self._data.shape == ():
-            arr = self._data
-        else:
-            arr = self._data[:self._length]
+        arr = self._data_view    
         return arr.astype(dtype) if dtype else arr
 
     def __str__(self):
         if self._data is None:
             return f"<{type(self).__name__} None>"
-        len_str = "scalar" if self.is_scalar else len(self)
-        return f"<{type(self).__name__}: names: {self.all_names}, len: {len_str} >"
+        
+        if self.is_shaped:
+            sh_str = f"shape {self._data.shape}"
+        else:
+            sh_str = "scalar" if self.is_scalar else len(self)
+        return f"<{type(self).__name__}: names: {self.all_names}, len: {sh_str} >"
     
     def __repr__(self):
         if self._data is None:
@@ -158,11 +194,7 @@ class FieldArray(object):
 
         lines = [f"<{type(self).__name__}: len={self._length}, fields=["]
         for name, info in self._infos.items():
-            #dtype = self._data.dtype[name]
-            #shape = dtype.shape if dtype.shape else ()
             dtype, shape = info['dtype'], info['shape']
-            #type_str = getattr(dtype.base, '__name__', str(dtype))
-            #type_str = dtype.__name__
             type_str = FieldArray._dtype_name(dtype)
 
             # Shape display
@@ -251,22 +283,31 @@ class FieldArray(object):
     # ====================================================================================================
 
     def set_buffer_size(self, size):
-        if len(self._data) >= size:
+        if self._data.size >= size:
             return
         
         new_data = np.empty(size, self._data.dtype)
-        new_data[:self._length] = self._data[:self._length]
+        new_data[:self._length] = self._data[:self._length].reshape(-1)
         self._data = new_data
     
     def _data_check(self, new_length):
-        size = len(self._data)
+        size = self._data.size
         if new_length > size:
             self.set_buffer_size(size=int(1.5*new_length))
 
     def clear(self):
         self._length = 0
+        self._data = self._data.reshape(-1)
 
-    def resize(self, length):
+    def resize(self, shape):
+
+        if isinstance(shape, (int, np.int32, np.int64)):
+            shape = (shape,)
+        length = int(np.prod(shape))
+
+        if self.is_shaped:
+            self._data = self._data.reshape(-1)
+
         self._data_check(length)
         if length > self._length:
 
@@ -284,6 +325,39 @@ class FieldArray(object):
 
         self._length = length
 
+        if len(shape) > 1:
+            self.reshape(shape)
+
+    def reshape(self, *shape):
+
+        if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
+            shape = tuple(shape[0])
+
+        if shape.count(-1) > 1:
+            raise ValueError(f"A shape can contain only one -1, not {shape}")
+
+        known_size = 1
+        for s in shape:
+            if not isinstance(s, (int, np.int32, np.int64)):
+                raise TypeError(f"All shape dimensions must be int, not {s} in {shape}")
+            if s < -1 or s == 0:
+                raise ValueError("Shape dimensions must be -1 or > 0, not {s} in {shape}")
+            if s != -1:
+                known_size *= s
+
+        ok = True
+        if -1 in shape:
+            ok = self._length % known_size == 0
+        else:
+            ok = self._length == known_size
+
+        if not ok:
+            raise ValueError(f"Impossible to reshape array of length {self._length} to shape {shape}.")
+        
+        if len(shape) > 1:
+            self._data = np.array(self._data[:self._length])
+        self._data = np.reshape(self._data, shape)    
+
     # ====================================================================================================
     # Items
     # ====================================================================================================
@@ -299,12 +373,23 @@ class FieldArray(object):
             if self._data.shape == ():
                 return self._data[index]
             else:
-                return self._data[index][:self._length]
+                return self._data_view[index]
+
+        # ---------------------------------------------------------------------------
+        # Otherwise we return a FieldArray on the selection
+        # ---------------------------------------------------------------------------
+
+        else:
+            arr = self._data_view[index]
+            return type(self)(arr, mode='CAPTURE')
         
+
+        # OLD OLD OLD
+
         # ---------------------------------------------------------------------------
         # A single integer, we return a scalar FieldArray
         # ---------------------------------------------------------------------------
-
+        """
         elif isinstance(index, (int, np.int32, np.int64)):
             if index >= self._length:
                 raise IndexError(f"FieldArray has only {self._length} items, {index} index is not valid.")
@@ -318,12 +403,12 @@ class FieldArray(object):
 
         else:
             return type(self)(self._data[:self._length], mode='CAPTURE', selector=index)
+        """
 
     def __setitem__(self, index, value):
 
         self._ensure_optional_field(index)
-
-        self._data[:self._length][index] = np.asarray(value)
+        self._data_view[index] =np.asarray(value)
 
     # ----------------------------------------------------------------------------------------------------
     # Names as attributes
@@ -332,18 +417,12 @@ class FieldArray(object):
     def __getattr__(self, name):
 
         if name in self._infos:
-
             self._ensure_optional_field(name)
-
-            if self._data.shape == ():
-                return self._data[name]
-            else:
-                return self._data[name][:self._length]
+            return self._data_view[name]
 
         raise AttributeError(f"{type(self).__name__}> no field named '{name}'")
     
     def __setattr__(self, name, value):
-
 
         if name in self._slots or name in dir(self):
             super().__setattr__(name, value)
@@ -355,7 +434,7 @@ class FieldArray(object):
             if self.is_scalar:
                 self._data[name] = value
             else:
-                self._data[name][:self._length] = value
+                self._data_view[name][:] = value
 
         else:
             raise AttributeError(
@@ -403,6 +482,15 @@ class FieldArray(object):
         mode = 'COPY' if copy else 'CAPTURE'
 
         # Build the new instance
+        data = self._data_view[selector]
+
+        fa = type(self)(self, copy='EMPTY')
+        if copy:
+            fa._data = np.array(data)
+        else:
+            fa._data = data
+        return fa
+
         return type(self)(self, mode=mode, selector=selector)
     
     # ====================================================================================================
@@ -420,7 +508,7 @@ class FieldArray(object):
     # ----------------------------------------------------------------------------------------------------
 
     def _create_field_in_data(self, name):
-        """ Add actueallu a field to the structured array.
+        """ Add actueally a field to the structured array.
 
         The name argument must be a valid key in _infos
 
@@ -615,6 +703,8 @@ class FieldArray(object):
         if count <= 0:
             return
         
+        self._check_no_shape("Add records")
+        
         old_length = self._length
         self.resize(self._length + count)
         sl = slice(old_length, self._length)
@@ -643,6 +733,7 @@ class FieldArray(object):
         fields : dict
             Keyword arguments mapping field names to values.
         """
+        self._check_no_shape("Append")
 
         # Determine the number of items to append
         count  = 0
@@ -729,6 +820,8 @@ class FieldArray(object):
             The array of records to append. Must have named fields matching
             a subset of the current array's fields.
         """
+        self._check_no_shape("Extend")
+
         if other is None:
             return
 
@@ -794,18 +887,15 @@ class FieldArray(object):
         """
         if count <= 1 or self._length == 0:
             return
+        
+        shape = self.shape
+        
+        self.resize(count*self._length)
 
-        self.resize(self._length*count)
-        return
+        if len(shape) > 1:
+            self.reshape((count,) + shape)
 
-
-        original = self._data[:self._length]
-        new_length = self._length * count
-
-        # Use NumPy's resize — safe because new_length is a strict multiple
-        self._data = np.resize(original, new_length)
-        self._length = new_length
-
+        return self
 
     # ====================================================================================================
     # Delete items
@@ -825,6 +915,7 @@ class FieldArray(object):
         This operates only on the valid range `[0:self._length]`.
         The internal buffer is preserved (no reallocation).
         """
+        self._check_no_shape("Delete")
 
         # Normalize the index to a boolean mask
         mask = np.ones(self._length, dtype=bool)
@@ -1179,6 +1270,39 @@ if __name__ == "__main__":
     fa.clear()
     fa.append(v=(1, 2, 3))
     dump(fa, "Set a vector scalar")
+
+    # shaped
+    print("Test shapped arrays")
+
+    fa = FieldArray()
+    fa.new_field("i", dtype=int)
+    fa.new_field("v", dtype=int, shape=(3,))
+    fa.new_field("m", dtype=int, shape=(3, 3))
+
+    fa.append(i = np.arange(12))
+    fa.reshape((4, 3))
+
+    print("i:", fa.i.shape)
+    print("v:", fa.v.shape)
+    print("m:", fa.m.shape)
+    print(fa)
+
+    fa.i = np.arange(12).reshape(4, 3)
+    fa.v = np.arange(36).reshape(4, 3, 3)
+    fa.m = np.arange(108).reshape(4, 3, 3, 3)
+
+    print()
+    print("Sub arrays")
+    print("Row 0:      ", fa[0])
+    print("Col 1:      ", fa[:, 1])
+    print("Item [1, 2]:", fa[1, 2])
+
+    print()
+    print("Attribute i")
+    print("Row 0:      ", fa[0].i)
+    print("Col 1:      ", fa[:, 1].i)
+    print("Item [1, 2]:", fa[1, 2].i)
+
 
     print("Tests completed")
 

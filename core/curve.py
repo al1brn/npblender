@@ -143,8 +143,14 @@ class Curve(Geometry):
         self.is_view = False
         return self
 
-    def check(self, halt=True):
-        return self.splines.check(halt=halt)
+    def check(self, title="Mesh Check", halt=True):
+        ok = self.splines.check(halt=False)
+        if ok:
+            return True
+        elif halt:
+            raise Exception(f"{title} check failed")
+        else:
+            print(f"{title} check failed")
 
     def __str__(self):
         scount = f"{len(self.splines)} spline{'s' if len(self.splines) > 1 else ''}"
@@ -583,7 +589,7 @@ class Curve(Geometry):
                     raise ValueError(f"splines length ({splines}) is not a divider of the number of points ({len(points)}).")
 
                 nsplines = len(points) // splines
-                splines = [splines]*nsplines
+                #splines = [splines]*nsplines
                 points = points.reshape(nsplines, splines, points.shape[-1])
 
             elif hasattr(splines, '__len__'):
@@ -594,7 +600,7 @@ class Curve(Geometry):
             if splines is not None and splines != points.shape[1]:
                 raise ValueError(
                     f"Points arguments is an array of {len(points)} splines of {points.shape[1]} points each, "
-                    "splines argument must be None or {points.shape[1]}, not {splines}")
+                    f"splines argument must be None or {points.shape[1]}, not {splines}")
             
             splines = points.shape[1]
 
@@ -1651,8 +1657,15 @@ class Curve(Geometry):
     @classmethod
     def line(cls, start=(0, 0, 0), end=(0, 0, 1), resolution=2):
         resolution = max(2, resolution)
+        start = np.asarray(start)
+        end = np.asarray(end)
+        points = np.linspace(start, end, resolution)
+        if len(points.shape) == 3:
+            points = points.transpose(1, 0, 2)
+        
         return cls(
-            points = np.linspace(start, end, resolution),
+            points = points.reshape(-1, 3),
+            splines = resolution,
             curve_type = POLY,
         )
 
@@ -1712,329 +1725,3 @@ class Curve(Geometry):
         y = func(x)
         return cls(points=np.stack((x, y, np.zeros_like(x)), axis=-1), materials=materials)
 
-    # ====================================================================================================
-    # Field of vectors
-    # ====================================================================================================
-
-    # ----------------------------------------------------------------------------------------------------
-    # Field line
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def field_line(cls, field_func, start_point, max_len=10., prec=.01, sub_steps=10):
-
-        pts = [start_point]
-        rs  = [np.linalg.norm(field_func(start_point))]
-        p   = np.array(start_point)
-        l   = 0.
-        for _ in range(10000):
-            for _ in range(sub_steps):
-
-                # ----- Vector at current location
-                v0 = field_func(p)
-
-                # ----- Precision along this vector
-                norm  = np.sqrt(np.dot(v0, v0))
-                factor = prec/norm
-                v0 *= factor
-
-                # ----- Average with target vector for more accurracy
-                v1 = field_func(p + v0)*factor
-                v = (v0 + v1)/2
-
-                # ----- Next point
-                p += v
-
-            # ----- Segment length
-
-            v = p - pts[-1]
-            l += np.sqrt(np.dot(v, v))
-
-            # ----- Add a new point
-
-            pts.append(np.array(p))
-            rs.append(norm)
-
-            # ----- Done if loop or max_len is reached
-
-            v = p - start_point
-            cyclic = np.sqrt(np.dot(v, v)) < prec*(sub_steps-1)
-            if cyclic or l >= max_len:
-                pts.append(np.array(start_point))
-                break
-
-        if cyclic:
-            pts.pop()
-
-        return cls(pts, curve_type=POLY, cyclic=cyclic, radius=rs)
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Field lines
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def field_lines_OLD(cls, field_func, start_points,
-        backwards=False, max_length=None, length_scale=None, end_points=None, zero=1e-6, max_points=1000,
-        precision=.1, sub_steps=10, seed=0, **kwargs):
-
-        """ Build splines showing lines of field
-
-        Arguments :
-        -----------
-            - field_func (function of template (array of vectors, **kwargs) -> array of vectors) : the field function
-            - start_points (array of vectors) : lines starting points
-            - backwards (bool = False) : build lines backwards
-            - max_length (float = None) : max line lengths
-            - length_scale (float = None) : line length scale if random length scale around central value
-            - end_points (array of vectors) : points where lines must end
-            - zero (float = 1e-6) : value below which the field is null
-            - max_points (int = 1000) : max number of points per spline
-            - precision (float = 0.1) : step length
-            - sub_steps (int = 10) : number of sub steps
-        """
-
-        splines = field.field_lines(field_func, start_points,
-            backwards       = backwards,
-            max_length      = max_length,
-            length_scale    = length_scale,
-            end_points      = end_points,
-            zero            = zero,
-            max_points      = max_points,
-            precision       = precision,
-            sub_steps       = sub_steps,
-            seed            = seed,
-            **kwargs)
-
-        return cls(**splines)
-
-        curves = cls()
-        for avects, cyclic in lines:
-            if len(avects) <= 1:
-                continue
-            curves.add(avects.co, curve_type='POLY', cyclic=cyclic, radius=avects.radius, tilt=avects.color)
-
-        return curves
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Lines of electric field
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def electric_field_lines_OLD(cls, charge_locations, charges=1., field_color=True,
-                           count=100, start_points=None, plane=None, plane_center=(0, 0, 0),
-                           frag_length=None, frag_scale=None, max_points=1000,
-                           precision=.1, sub_steps=10, seed=None):
-
-        """ Create lines of field for a vector field generated by charges, typically an electric field.
-
-        Arguments:
-        ----------
-            - charge_locations (array (n, 3) of vectors) : where the charges are located
-            - charges (float or array (n) of floats = 1) : the charges
-            - field_color (bool = True) : manage the field_color attribute
-            - count (int = 100) : number of lines to create. Overriden by len(start_points) if not None
-            - start_points (array (s, 3) of vectors = None) : the starting points to compute the lines from
-            - plane (vector = None) = restrict start points to a plane defined by its perpendicular
-            - plane_center (vector = (0, 0, 0)) : center of the plane
-            - frag_length (float=None) : length of fragments, None for full lines
-            - frag_scale (float=None) : length distribution scale
-            - precision (float = .1) : step precision
-            - sub_steps (int=10) : number of steps between two sucessive points of the lines
-        """
-
-        # ----------------------------------------------------------------------------------------------------
-        # Field function
-
-        poles = AttrVectors(charge_locations, charge=charges)
-        field_func = lambda points: field.electric_field(points,
-                            locations=poles.co, charges=poles.charge)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Starting points
-
-        rng = np.random.default_rng(seed=seed)
-        n_charges = len(poles)
-
-        if start_points is None:
-            backwards = rng.choice([True, False], count)
-            if frag_length is None:
-                if plane is None:
-                    start_points, _ = distribs.sphere_dist(radius=precision, count=count, seed=rng.integers(1<<63))
-                else:
-                    start_points, _ = distribs.circle_dist(radius=precision, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
-                inds = rng.integers(0, n_charges, count)
-                start_points += poles.co[inds]
-                backwards[:] = poles.charge[inds] < 0
-
-            else:
-                center = np.average(poles.co, axis=0)
-                bbox0, bbox1 = np.min(poles.co, axis=0), np.max(poles.co, axis=0)
-                radius = 1.3*max(np.linalg.norm(bbox1 - center), np.linalg.norm(bbox0 - center))
-
-                if plane is None:
-                    start_points, _ = distribs.ball_dist(radius=radius, count=count, seed=rng.integers(1<<63))
-                    start_points += center
-                else:
-                    start_points, _ = distribs.disk_dist(radius=radius, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
-        else:
-            if len(np.shape(start_points)) == 1:
-                count = 1
-            else:
-                count = len(start_points)
-            backwards = rng.choice([True, False], count)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Full lines if frag_length is None
-
-        full_lines = frag_length is None
-        if full_lines:
-            backwards[:] = False
-
-        # ----------------------------------------------------------------------------------------------------
-        # Field lines
-
-        lines = field.field_lines(field_func,
-            start_points    = start_points,
-            backwards       = backwards,
-            max_length      = frag_length,
-            length_scale    = frag_scale,
-            end_points      = charge_locations,
-            max_points      = max_points,
-            precision       = precision,
-            sub_steps       = sub_steps,
-            seed            = rng.integers(1 << 63),
-            )
-
-        # ----------------------------------------------------------------------------------------------------
-        # Twice il full lines
-
-        if full_lines:
-
-            # ----- Exclude cyclic lines which are done
-
-            open_lines = np.logical_not(lines['cyclic'] )
-
-            # ----- Backwards lines
-
-            backwards[:] = True
-            back_lines = field.field_lines(field_func,
-                start_points    = start_points[open_lines],
-                backwards       = backwards[open_lines],
-                max_length      = frag_length,
-                length_scale    = frag_scale,
-                end_points      = charge_locations,
-                max_points      = max_points,
-                precision       = precision,
-                sub_steps       = sub_steps,
-                seed            = rng.integers(1 << 63),
-                )
-
-            # ----- Merge the two dictionnaries
-
-            all_lines = {'types':   list(lines['types']) + list(back_lines['types']),
-                         'cyclic':  list(lines['cyclic']) + list(back_lines['cyclic']),
-                         'splines': lines['splines'] + back_lines['splines'],
-                        }
-            lines = all_lines
-
-        return cls(**lines)
-
-    # ----------------------------------------------------------------------------------------------------
-    # Lines of magnetic field
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def magnetic_field_lines_OLD(cls, magnet_locations, moments=(1, 0, 0), field_color=True,
-                           count=100, start_points=None, min_width=.3, plane=None, plane_center=(0, 0, 0),
-                           frag_length=None, frag_scale=None, max_points=1000,
-                           precision=.1, sub_steps=10, seed=None):
-
-        """ Create lines of field for a vector field generated by bipoles, typically an magnetic field.
-
-        Arguments:
-        ----------
-            - magnet_locations (array (n, 3) of vectors) : where the bipoles are located
-            - moments (vector or array (n) of vectors = (1, 0, 0)) : the moments of the magnets
-            - field_color (bool = True) : manage the field_color attribute
-            - count (int = 100) : number of lines to create. Overriden by len(start_points) if not None
-            - start_points (array (s, 3) of vectors = None) : the starting points to compute the lines from
-            - min_width (float = .3) : min width for volume generation when magnet locations are in a plane
-            - plane (vector = None) = restrict start points to a plane defined by its perpendicular
-            - plane_center (vector = (0, 0, 0)) : center of the plane
-            - frag_length (float=None) : length of fragments, None for full lines
-            - frag_scale (float=None) : length distribution scale
-            - precision (float = .1) : step precision
-            - sub_steps (int=10) : number of steps between two sucessive points of the lines
-        """
-
-        # ----------------------------------------------------------------------------------------------------
-        # Field function
-
-        magnets = AttrVectors(magnet_locations, moment=moments)
-        field_func = lambda points: field.magnetic_field(points,
-                            locations=magnets.co, moments=magnets.moment)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Starting points
-
-        rng = np.random.default_rng(seed=seed)
-        n_magnets = len(magnets)
-
-        backwards = rng.choice([True, False], count)
-        if start_points is None:
-            if frag_length is None:
-                if plane is None:
-                    start_points, _ = distribs.sphere_dist(radius=precision*10, count=count, seed=rng.integers(1<<63))
-                else:
-                    start_points, _ = distribs.circle_dist(radius=precision*10, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
-                inds = rng.integers(0, n_magnets, count)
-                mag_locs = magnets.co[inds]
-                backwards[:] = np.einsum('...i, ...i', start_points, magnets.moment[inds]) < 0
-                start_points += mag_locs
-
-            else:
-                center = np.average(magnets.co, axis=0)
-                bbox0, bbox1 = np.min(magnets.co, axis=0), np.max(magnets.co, axis=0)
-                radius = 1.3*max(1., max(np.linalg.norm(bbox1 - center), np.linalg.norm(bbox0 - center)))
-
-                if plane is None:
-                    dims = np.maximum(bbox1 - bbox0, (min_width, min_width, min_width))
-                    center = (bbox0 + bbox1)/2
-                    bbox0, bbox1 = center - 1.3*dims, center + 1.3*dims
-
-                    start_points, _ = distribs.cube_dist(corner0=bbox0, corner1=bbox1, count=count, seed=rng.integers(1<<63))
-                else:
-                    start_points, _ = distribs.disk_dist(radius=radius, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
-        else:
-            if len(np.shape(start_points)) == 1:
-                count = 1
-            else:
-                count = len(start_points)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Field lines
-
-        lines = field.field_lines(field_func,
-            start_points    = start_points,
-            backwards       = backwards,
-            max_length      = frag_length,
-            length_scale    = frag_scale,
-            end_points      = magnet_locations,
-            max_points      = max_points,
-            precision       = precision,
-            sub_steps       = sub_steps,
-            seed            = rng.integers(1 << 63),
-            )
-
-        return cls(**lines)
-    
-
-    
