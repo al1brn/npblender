@@ -157,6 +157,7 @@ def get_face_position(loop_start, loop_total, vertex_index, position):
 
 
 
+
 # =============================================================================================================================
 # reduce indices
 #
@@ -229,7 +230,7 @@ class Domain(FieldArray):
     # Init
     # ----------------------------------------------------------------------------------------------------
 
-    def __init__(self, a=None, mode='COPY', selector=None, **attrs):
+    def __init__(self, a=None, mode='COPY', selector=None, attr_from=None, **attrs):
         """ Initialize the array with another array
 
         Arguments
@@ -239,8 +240,10 @@ class Domain(FieldArray):
         - selector (Any = None) : a selector on data 
         """
         super().__init__(a, mode=mode, selector=selector)
+
         if a is None:
             self.declare_attributes()
+        self.join_attributes(attr_from)
 
         if len(attrs):
             self.append(**attrs)
@@ -262,7 +265,7 @@ class Domain(FieldArray):
     # Add attributes            
     # ====================================================================================================
 
-    def new_attribute(self, name, data_type, default, optional=False, transfer=True):
+    def new_attribute(self, name, data_type, default, optional=False, transfer=True, transdom=True):
         """ Add a new domain attribute.
 
         Use preferrably user friendly methods 'new_float', 'new_vector', ...
@@ -273,7 +276,7 @@ class Domain(FieldArray):
             - data_type (str) : attribute type
             - default (any) : default value
             - transfer (bool=True) : transfer as geometry attribute into Blender
-
+            - transdom (bool=True) : trans domain attribute (can be copied to another domain with join_fields)
         """
 
         # ----- Validate data_type
@@ -290,7 +293,8 @@ class Domain(FieldArray):
             default     = default,
             optional    = optional,
             data_type   = data_type,
-            transfer    = transfer
+            transfer    = transfer,
+            transdom    = transdom,
         )
 
         # ----- Special case: auto-fill ID if non-empty
@@ -299,7 +303,7 @@ class Domain(FieldArray):
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_float(self, name, default=0., optional=False, transfer=True):
+    def new_float(self, name, default=0., optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type FLOAT -> float.
 
         Arguments
@@ -308,11 +312,11 @@ class Domain(FieldArray):
             - default (float=0) : default value
             - transfer (bool=True) : transfer the attribute to the Blender mesh
         """
-        self.new_attribute(name, 'FLOAT', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'FLOAT', default, optional=optional, transfer=transfer, transdom=transdom)
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_vector(self, name, default=(0., 0., 0.), optional=False, transfer=True):
+    def new_vector(self, name, default=(0., 0., 0.), optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type VECTOR -> array of 3 floats.
 
         Arguments
@@ -322,11 +326,11 @@ class Domain(FieldArray):
             - transfer (bool=True) : transfer the attribute to the Blender mesh
         """
 
-        self.new_attribute(name, 'VECTOR', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'VECTOR', default, optional=optional, transfer=transfer, transdom=transdom)
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_int(self, name, default=0, optional=False, transfer=True):
+    def new_int(self, name, default=0, optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type INT -> int.
 
         Arguments
@@ -336,11 +340,11 @@ class Domain(FieldArray):
             - transfer (bool=True) : transfer the attribute to the Blender mesh
         """
 
-        self.new_attribute(name, 'INT', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'INT', default, optional=optional, transfer=transfer, transdom=transdom)
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_bool(self, name, default=False, optional=False, transfer=True):
+    def new_bool(self, name, default=False, optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type BOOLEAN -> bool.
 
         Arguments
@@ -350,11 +354,11 @@ class Domain(FieldArray):
             - transfer (bool=True) : transfer the attribute to the Blender mesh
         """
 
-        self.new_attribute(name, 'BOOLEAN', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'BOOLEAN', default, optional=optional, transfer=transfer, transdom=transdom)
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_color(self, name, default=(0.5, 0.5, 0.5, 1.), optional=False, transfer=True):
+    def new_color(self, name, default=(0.5, 0.5, 0.5, 1.), optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type FLOAT_COLOR -> array of 4 floats.
 
         Arguments
@@ -365,11 +369,11 @@ class Domain(FieldArray):
         """
 
         #self.new_attribute(name, 'FLOAT_COLOR', default, transfer=transfer)
-        self.new_attribute(name, 'COLOR', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'COLOR', default, optional=optional, transfer=transfer, transdom=transdom)
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_vector2(self, name, default=(0., 0.), optional=False, transfer=True):
+    def new_vector2(self, name, default=(0., 0.), optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type FLOAT2 -> array of 2 floats.
 
         Arguments
@@ -379,11 +383,11 @@ class Domain(FieldArray):
             - transfer (bool=True) : transfer the attribute to the Blender mesh
         """
 
-        self.new_attribute(name, 'FLOAT2', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'FLOAT2', default, optional=optional, transfer=transfer, transdom=transdom)
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_quaternion(self, name, default=(0., 0., 0., 1.), optional=False, transfer=True):
+    def new_quaternion(self, name, default=(0., 0., 0., 1.), optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type QUATERNION -> array (4) of floats.
 
         Arguments
@@ -392,11 +396,11 @@ class Domain(FieldArray):
             - default tuple=(0, 0)) : default value
             - transfer (bool=True) : transfer the attribute to the Blender mesh
         """
-        self.new_attribute(name, 'QUATERNION', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'QUATERNION', default, optional=optional, transfer=transfer, transdom=transdom)
 
     # ----------------------------------------------------------------------------------------------------
 
-    def new_matrix(self, name, default=np.eye(4), optional=False, transfer=True):
+    def new_matrix(self, name, default=np.eye(4), optional=False, transfer=True, transdom=True):
         """ Create a new attribute of type MATRIX -> array (4x4) of floats.
 
         Arguments
@@ -405,8 +409,46 @@ class Domain(FieldArray):
             - default tuple=(0, 0)) : default value
             - transfer (bool=True) : transfer the attribute to the Blender mesh
         """
-        self.new_attribute(name, 'MATRIX', default, optional=optional, transfer=transfer)
+        self.new_attribute(name, 'MATRIX', default, optional=optional, transfer=transfer, transdom=transdom)
 
+    # ----------------------------------------------------------------------------------------------------
+    # Trans domain attribute names
+    # ----------------------------------------------------------------------------------------------------
+
+    @property
+    def transdom_names(self):
+        """ Return the names of trans domain attributes """
+        return [name for name, info in self._infos.items() if info['transdom']]
+
+    # ----------------------------------------------------------------------------------------------------
+    # Join attributes definitions from another domain
+    # ----------------------------------------------------------------------------------------------------
+
+    def join_attributes(self, other):
+        """ join trans domain attributes """
+        if other is None:
+            return self
+        
+        exclude = [name for name, info in other._infos.items() if not info['transdom']]
+        self.join_fields(other, exclude=exclude)
+        return self
+
+    # ----------------------------------------------------------------------------------------------------
+    # Transfer trans domain attributes
+    # ----------------------------------------------------------------------------------------------------
+
+    def transfer_attributes(self, other, shape=None, other_shape=None):
+
+        self.join_attributes(other)
+        if shape is None:
+            shape = (self._length,)
+        if other_shape is None:
+            other_shape = (other._length,)
+
+        for name in other.transdom_names:
+            item_shape = self._infos[name]['shape']
+            self[name].reshape(shape + item_shape)[:] = other[name].reshape(other_shape + item_shape)
+        return self
 
     # ====================================================================================================
     # Dump
@@ -600,7 +642,7 @@ class Domain(FieldArray):
 
         for name, info in self._infos.items():
 
-            if not info['transfer']:
+            if not info['transfer'] or info['optional']:
                 continue
 
             if info['data_type'] == 'STRING':
@@ -637,7 +679,7 @@ class PointDomain(Domain):
     domain_name = 'POINT'
 
     def declare_attributes(self):
-        self.new_vector('position', transfer=True)
+        self.new_vector('position', transfer=True, transdom=False)
 
     # ====================================================================================================
     # Properties
@@ -709,6 +751,29 @@ class PointDomain(Domain):
             self.position -= pivot
 
         return self
+    
+    # ====================================================================================================
+    # Kinematics attributes
+    # ====================================================================================================
+
+    def init_kienmatics(self):
+
+        self.new_vector('speed',       default=(0, 0, 0))
+        self.new_vector('accel',       default=(0, 0, 0))
+        self.new_vector('force',       default=(0, 0, 0))
+
+        self.new_float('mass',         default = 1., optional=True)
+        self.new_float('age',          default = 0, optional=True)
+        self.new_bool('locked',        default = False, optional=True)
+        self.new_vector('last_pos',    default = (0, 0, 0), optional=True)
+        self.new_float('viscosity',    default = .01, optional=True)
+
+        self.new_float('moment',       default = 1., optional=True)
+        self.new_vector('euler',       default = (0, 0, 0), optional=True)
+        self.new_quaternion("quat",    optional=True)
+        self.new_float('omega',        default = (0, 0, 0), optional=True)
+
+
 
 # ----------------------------------------------------------------------------------------------------
 # Cloud Point
@@ -729,13 +794,13 @@ class SplinePointDomain(PointDomain):
     def declare_attributes(self):
         super().declare_attributes()
 
-        self.new_float( 'w',                 optional=True, default=1.)
+        self.new_float( 'w',                 optional=True, default=1., transdom=False)
 
-        self.new_vector('handle_left',       optional=True)
-        self.new_vector('handle_right',      optional=True)
-        self.new_int(   'handle_type_left',  optional=True)
-        self.new_int(   'handle_type_right', optional=True)
-        self.new_float( 'tilt',              optional=True)
+        self.new_vector('handle_left',       optional=True, transdom=False)
+        self.new_vector('handle_right',      optional=True, transdom=False)
+        self.new_int(   'handle_type_left',  optional=True, transdom=False)
+        self.new_int(   'handle_type_right', optional=True, transdom=False)
+        self.new_float( 'tilt',              optional=True, transdom=False)
         self.new_float( 'radius',            optional=True, default=1)
         self.new_float( 'weight',            optional=True, default=1.)
 
@@ -884,8 +949,8 @@ class CornerDomain(Domain):
     domain_name = 'CORNER'
 
     def declare_attributes(self):
-        self.new_int('vertex_index', transfer=False)
-        self.new_vector2('UVMap', (0, 0), optional=True, transfer=True)
+        self.new_int('vertex_index', transfer=False, transdom=False)
+        self.new_vector2('UVMap', (0, 0), optional=True, transfer=True, transdom=False)
 
     # ----------------------------------------------------------------------------------------------------
     # Check
@@ -920,10 +985,10 @@ class CornerDomain(Domain):
 class FaceSplineDomain(Domain):
 
     def declare_attributes(self):
-        self.new_int('loop_start', transfer=False)
-        self.new_int('loop_total', transfer=False)
+        self.new_int('loop_start', transfer=False, transdom=False)
+        self.new_int('loop_total', transfer=False, transdom=False)
 
-        self.new_int('material_index', optional=True)
+        self.new_int('material_index', optional=True, transdom=False)
 
     # ----------------------------------------------------------------------------------------------------
     # Check
@@ -1005,7 +1070,7 @@ class FaceSplineDomain(Domain):
             return []
         
         if 'loop_start' in fields:
-            res = self.append(loop_total=sizes, *fields)
+            res = self.append(loop_total=sizes, **fields)
         else:
             loop_start = self.compute_loop_start(sizes)
             res = self.append(loop_start=loop_start, loop_total=sizes, **fields)
@@ -1069,6 +1134,12 @@ class FaceDomain(FaceSplineDomain):
 
     domain_name = 'FACE'
 
+    def declare_attributes(self):
+        super().declare_attributes()
+
+        self.new_bool('sharp_face', optional=True, transdom=False)
+
+
     def delete_loops(self, selection, corners):
         corner_indices = self[selection].get_corner_indices()
         self.delete(selection)
@@ -1081,7 +1152,15 @@ class FaceDomain(FaceSplineDomain):
     # Get edges
     # ====================================================================================================
 
+    def get_face_edges(self, corners):
+        """ Get edges per face
+        """
+        pass
+
+
     def get_edges(self, corners):
+        """ Get the geometry edges
+        """
         if self.is_scalar:
             edge0 = self.loop_start + np.arange(self.loop_total, dtype=bint)
             edge1 = self.loop_start + np.roll(np.arange(self.loop_total, dtype=bint), shift=-1)
@@ -1299,8 +1378,8 @@ class EdgeDomain(Domain):
     domain_name = 'EDGE'
 
     def declare_attributes(self):
-        self.new_int('vertex0', transfer=False)
-        self.new_int('vertex1', transfer=False)
+        self.new_int('vertex0', transfer=False, transdom=False)
+        self.new_int('vertex1', transfer=False, transdom=False)
 
     @property
     def vertices(self):
@@ -1384,15 +1463,15 @@ class SplineDomain(FaceSplineDomain):
     def declare_attributes(self):
         super().declare_attributes()
 
-        self.new_int('curve_type')
+        self.new_int('curve_type', transdom=False)
 
-        self.new_int('resolution',   optional=True, default=16)
-        self.new_bool('cyclic',      optional=True, default=False)
+        self.new_int('resolution',   optional=True, default=16, transdom=False)
+        self.new_bool('cyclic',      optional=True, default=False, transdom=False)
 
         # Nurbs
-        self.new_int('order',        optional=True, default=4)
-        self.new_bool('bezierpoint', optional=True)
-        self.new_bool('endpoint',    optional=True)
+        self.new_int('order',        optional=True, default=4, transdom=False)
+        self.new_bool('bezierpoint', optional=True, transdom=False)
+        self.new_bool('endpoint',    optional=True, transdom=False)
 
     # ====================================================================================================
     # Properties

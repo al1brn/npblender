@@ -44,7 +44,7 @@ DATA_TEMP_NAME = "npblender_TEMP"
 
 class Mesh(Geometry):
 
-    def __init__(self, points=None, corners=None, faces=None, edges=None, materials=None, **attrs):
+    def __init__(self, points=None, corners=None, faces=None, edges=None, materials=None, attr_from=None, **attrs):
         """ Mesh Geometry.
 
         Arguments
@@ -52,22 +52,27 @@ class Mesh(Geometry):
             - points (array of vectors = None) : the vertices
             - corners (array of ints = None) : corners, i.e. indices on the array of points
             - faces (array of ints = None) : size of the faces, the sum of this array must be equal to the length of the corners array
+            - edges (array of couples of ints = None) : list of edges defined by two vertex indices
             - materials (str or list of strs = None) : list of materials used in the geometry
+            - attr_from (Geometry) : domain attributes to copy from
             - **attrs (dict) : other geometry attributes
         """
 
         # ----- Initialize an empty geometry
+
+        self.domain_names = ['points', 'corners', 'faces', 'edges']
 
         self.points  = PointDomain()
         self.corners = CornerDomain()
         self.faces   = FaceDomain()
         self.edges   = EdgeDomain()
 
+        self.join_attributes(attr_from)
+
         # ----- The materials
 
         if materials is None:
             self.materials = []
-
         elif isinstance(materials, str):
             self.materials = [materials]
         else:
@@ -326,33 +331,37 @@ class Mesh(Geometry):
         # ----------------------------------------------------------------------------------------------------
         # Vertices
 
-        if len(self.points):
-            bl_mesh.vertices.add(len(self.points))
+        points = self.points.ravel()
+        if len(points):
+            bl_mesh.vertices.add(len(points))
 
         # ----------------------------------------------------------------------------------------------------
         # Corners
 
-        if len(self.corners):
-            bl_mesh.loops.add(len(self.corners))
-            bl_mesh.loops.foreach_set("vertex_index", blender.int_array(self.corners.vertex_index))
+        corners = self.corners.ravel()
+        if len(corners):
+            bl_mesh.loops.add(len(corners))
+            bl_mesh.loops.foreach_set("vertex_index", blender.int_array(corners.vertex_index))
 
         # ----------------------------------------------------------------------------------------------------
         # Faces
 
-        if len(self.faces):
-            bl_mesh.polygons.add(len(self.faces))
-            bl_mesh.polygons.foreach_set("loop_start", blender.int_array(self.faces.loop_start))
-            bl_mesh.polygons.foreach_set("loop_total", blender.int_array(self.faces.loop_total))
+        faces = self.faces.ravel()
+        if len(faces):
+            bl_mesh.polygons.add(len(faces))
+            bl_mesh.polygons.foreach_set("loop_start", blender.int_array(faces.loop_start))
+            bl_mesh.polygons.foreach_set("loop_total", blender.int_array(faces.loop_total))
 
         # ----------------------------------------------------------------------------------------------------
         # Edges
 
+        edges = self.edges.ravel()
         if len(self.edges):
             # edges to add
-            edges = self.edges.vertices
+            add_edges = self.edges.vertices
 
             # edges have been created by faces
-            if len(self.faces):
+            if len(faces):
                 bl_mesh.update()
 
                 cur_n = len(bl_mesh.edges)
@@ -360,23 +369,23 @@ class Mesh(Geometry):
                     a = np.empty((cur_n, 2), dtype=bint)
                     bl_mesh.edges.foreach_get('vertices', a.ravel())
 
-                edges = np.append(a, edges, axis=0)
+                add_edges = np.append(a, add_edges, axis=0)
 
             # add the edges
-            n = len(self.edges)
+            n = len(edges)
             bl_mesh.edges.add(n)
 
-            bl_mesh.edges.foreach_set('vertices', edges.ravel())
+            bl_mesh.edges.foreach_set('vertices', add_edges.ravel())
 
         # ----------------------------------------------------------------------------------------------------
         # Attributes
 
         attributes = data.attributes
 
-        self.points.to_bl_attributes(attributes, update=False)
-        self.corners.to_bl_attributes(attributes, update=False)
-        self.faces.to_bl_attributes(attributes, update=False)
-        self.edges.to_bl_attributes(attributes, update=False)
+        points.to_bl_attributes(attributes, update=False)
+        corners.to_bl_attributes(attributes, update=False)
+        faces.to_bl_attributes(attributes, update=False)
+        edges.to_bl_attributes(attributes, update=False)
 
         # ----------------------------------------------------------------------------------------------------
         # Update
@@ -459,7 +468,7 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def _bm_verts(self, bm):
-        nverts = len(self.points)
+        nverts = len(self.points.ravel())
         verts  = np.zeros(nverts, dtype=object)
         for vert in bm.verts:
             verts[vert.index] = vert
@@ -796,19 +805,19 @@ class Mesh(Geometry):
                 count += 1
 
             if count == 0:
-                raise AttributeError(f"Unknown mesh attribute '{k}'."
-                                     "- points:  {self.points.all_names}\n"
-                                     "- corners: {self.points.all_names}\n"
-                                     "- faces:   {self.points.all_names}\n"
-                                     "- edges:   {self.points.all_names}\n"
+                raise AttributeError(f"Unknown mesh attribute '{k}'.\n"
+                                     f"- points:  {self.points.all_names}\n"
+                                     f"- corners: {self.corners.all_names}\n"
+                                     f"- faces:   {self.faces.all_names}\n"
+                                     f"- edges:   {self.edges.all_names}\n"
                                      )
 
             if count > 1:
-                raise AttributeError(f"Mesh add_geometry> attribute '{k}' is ambigous, it belongs to more than one domain (count)."
-                                     "- points:  {self.points.all_names}\n"
-                                     "- corners: {self.points.all_names}\n"
-                                     "- faces:   {self.points.all_names}\n"
-                                     "- edges:   {self.points.all_names}\n"
+                raise AttributeError(f"Mesh add_geometry> attribute '{k}' is ambigous, it belongs to more than one domain (count).\n"
+                                     f"- points:  {self.points.all_names}\n"
+                                     f"- corners: {self.corners.all_names}\n"
+                                     f"- faces:   {self.faces.all_names}\n"
+                                     f"- edges:   {self.edges.all_names}\n"
                                      )
         return dispatched
 
@@ -818,6 +827,22 @@ class Mesh(Geometry):
 
     def add_geometry(self, points=None, corners=None, faces=None, edges=None, safe_mode=False, **attrs):
         """ Add geometry
+
+        Note that the added geometry can refer to existing vertices. It is appended as is, whithout shifting
+        indices.
+
+        To add indenpendant geometry, use_join geometry.
+
+        ``` python
+        cube = Mesh.cube()
+        # add a triangle on existing vertices
+        # corners argument refers to cube vertices
+        cube.add_geometry(corners=[0, 1, 2], faces=3)
+
+        # add a triangle with additional vertices
+        # corners argument refers to the new vertices
+        cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
+        ```
 
         Arguments
         ---------
@@ -881,6 +906,30 @@ class Mesh(Geometry):
             self.check()
 
         return added
+    
+    # -----------------------------------------------------------------------------------------------------------------------------
+    # Join geometry
+    # -----------------------------------------------------------------------------------------------------------------------------
+
+    def join_geometry(self, points=None, corners=None, faces=None, edges=None, safe_mode=False, **attrs):
+        """ Join geometry defined by components.
+
+        The geometry passed in argument is consistent and doesn't refer to existing vertices. It is used
+        to build an independant mesh which is then joined.
+        See 'add_geometry' which, on the contrary, can refer to existing vertices.
+
+        Returns
+        -------
+            - self
+        """
+        mesh = Mesh().join_attributes(self).add_geometry(
+            points=points, 
+            corners=corners, 
+            faces=faces, 
+            edges=edges,
+            **attrs)
+        self.join_mesh(mesh)
+        return self
 
     # -----------------------------------------------------------------------------------------------------------------------------
     # Add Vertices
@@ -990,6 +1039,31 @@ class Mesh(Geometry):
         """
         nfaces = len(self.faces)
         return self.add_geometry(faces=faces, corners=corners, **attributes)
+    
+    # -----------------------------------------------------------------------------------------------------------------------------
+    # Join geometry
+    # -----------------------------------------------------------------------------------------------------------------------------
+
+    def join_geometry(self, points=None, corners=None, faces=None, edges=None, safe_mode=False, **attrs):
+        """ Join geometry defined by components.
+
+        The geometry passed in argument is consistent and doesn't refer to existing vertices. It is used
+        to build an independant mesh which is then joined.
+        On the contrary 'add_geometry' can use existing vertices.
+
+        Returns
+        -------
+            - self
+        """
+        mesh = Mesh().join_fields(self)
+        mesh.add_geometry(
+            points=points, 
+            corners=corners, 
+            faces=faces, 
+            edges=edges,
+            **attrs)
+        self.join(mesh)
+        return self
     
     # =============================================================================================================================
     # Split edges
@@ -1842,12 +1916,14 @@ class Mesh(Geometry):
         n = len(locations)
 
         lengths = np.linalg.norm(vectors, axis=-1)
-        lengths[lengths < .00001] = 1
+        is_null = lengths < .00001
+        lengths[is_null] = 1
         v_dir = vectors / lengths[:, None]
         if type(adjust_norm).__name__ == 'function':
             lengths = adjust_norm(lengths)
         elif adjust_norm is not None:
             lengths = np.minimum(adjust_norm, lengths)
+        lengths[is_null] = 0
         vectors = v_dir*lengths[:, None]
 
         # ---------------------------------------------------------------------------
@@ -1876,6 +1952,10 @@ class Mesh(Geometry):
         v0, v1 = cone.bounding_box
         cone.points.z -= v1[2]
 
+        # ---------------------------------------------------------------------------
+        # Small arrows: Vectors whose length < min_length
+        # ---------------------------------------------------------------------------
+
         # Minimum length
         # Below this length, the arrow is scaled
 
@@ -1884,10 +1964,6 @@ class Mesh(Geometry):
         # Small and long arrows if any
         small_arrows = cls()
         long_arrows = cls()
-
-        # ---------------------------------------------------------------------------
-        # Small arrows: Vectors whose length < min_length
-        # ---------------------------------------------------------------------------
 
         small = lengths < min_length
         nsmalls = np.sum(small)
@@ -1960,71 +2036,6 @@ class Mesh(Geometry):
         arrows.join(small_arrows, long_arrows)
 
         return arrows
-
-
-
-
-
-
-
-
-
-        cyl_height  = 1.
-
-        # ---------------------------------------------------------------------------
-        # Base models
-        # ---------------------------------------------------------------------------
-
-        # Cylinder
-
-        cyl = cls.cylinder(vertices=segments, side_segments=2, radius=radius, depth=cyl_height, materials=materials)
-        top_cyl = cyl.points.z > 0
-        cyl.points.z += cyl_height/2
-        cyl.points.position[top_cyl] -= (0, 0, cyl_height/2 - .01)
-
-        # Head
-
-
-
-        # ---------------------------------------------------------------------------
-        # Adjust cylinder height
-        # ---------------------------------------------------------------------------
-
-
-        cyls  = cyl * n
-        cones = cone * n
-
-        to_scale = lengths < min_size
-        
-
-
-
-
-
-        cyls_pos  = np.reshape(cyls.points.position, (n, len(cyl.points),   3))
-        cones_pos = np.reshape(cones.points.position,(n, len(cone.points),  3))
-
-        # ----- Scale the radius for lengths less then scale_length
-
-        if scale_length is not None:
-            scales = np.minimum(lengths/scale_length, 1.)
-            cyls_pos[..., :2] *= scales[:, None, None]
-            cones_pos *= scales[:, None, None]
-            head_height = scales*head_height
-
-        # ----- Locate properly the cylinders and the cones
-
-        cyls_pos[:, top_cyl, 2] = (lengths - head_height*.8)[:, None]
-        cones_pos[..., 2] += np.maximum(0, (lengths - head_height/2))[:, None]
-
-        # ----- Orient them toward the vectors
-
-        trf = Rotation.look_at((0, 0, 1), vectors)
-        cyls.points.position = (trf[:, None] @ cyls.points.position.reshape(n, -1, 3) + locations[:, None]).reshape(-1, 3)
-        cones.points.position = (trf[:, None] @ cones.points.position.reshape(n, -1, 3) + locations[:, None]).reshape(-1, 3)
-
-        return cyls.join(cones)
-
 
     # ----------------------------------------------------------------------------------------------------
     # Chain Link
@@ -2586,6 +2597,187 @@ class Mesh(Geometry):
             copy = self.get_cubic_envelop()
 
         return copy
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Faces to islands
+    # ----------------------------------------------------------------------------------------------------
+
+    def faces_to_islands(self, groups=None):
+        """ Split faces into isolated islands
+
+        Arguments
+        ---------
+        - groups (list of ints):
+            group ids of faces
+        """
+
+        mesh = Mesh(materials=self.materials)
+        attr_names = [name for name in self.faces.actual_names if name not in ['loop_total', 'loop_start']]
+
+        # No group: each face becomes an island
+        if groups is None:
+            attrs = {name: self.faces[name] for name in attr_names}
+            return Mesh().join_attributes(self).join_geometry(
+                points = self.points.position[self.corners.vertex_index],
+                corners = np.arange(len(self.corners)),
+                faces = self.faces.loop_total,
+                **attrs,
+            )
+        
+        groups = np.asarray(groups)
+        if groups.shape != (len(self.faces),)   :
+            raise ValueError(f"The 'groups' argument must be a index per face with a length of {len(self.faces)}.")
+
+        ugroups, rev_index = np.unique(groups, return_inverse=True)
+        for group in ugroups:
+            faces = self.faces[rev_index == group]
+            attrs = {name: faces[name] for name in attr_names}
+
+            corners = self.corners[faces.get_corner_indices()]
+            uniques, new_corners = np.unique(corners.vertex_index, return_inverse=True)
+            mesh.join(Mesh().join_attributes(self).join_geometry(
+                points = self.points.position[uniques],
+                corners = new_corners,
+                faces = faces.loop_total,
+                **attrs,
+            ))
+        
+        return mesh
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Dual mesh
+    # ----------------------------------------------------------------------------------------------------
+
+    def dual(self, center="median"):
+
+        verts = np.empty((len(self.faces), 3), np.float32)
+        corners = []
+        faces = []
+
+        with self.bmesh() as bm:
+            
+            bm.faces.ensure_lookup_table()
+            bm.verts.ensure_lookup_table()    
+            bm.edges.ensure_lookup_table()    
+        
+            # ---------------------------------------------------------------------------
+            # Faces become points
+            # ---------------------------------------------------------------------------
+
+            if center.lower() == 'median':
+                for f in bm.faces:
+                    c = f.calc_center_median()
+                    verts[f.index] = (c.x, c.y, c.z)
+
+            elif center.lower() == 'bounds':
+                for f in bm.faces:
+                    c = f.calc_center_bounds()
+                    verts[f.index] = (c.x, c.y, c.z)
+
+            elif center.lower() == 'weighted':
+                for f in bm.faces:
+                    c = f.calc_center_median_weighted()
+                    verts[f.index] = (c.x, c.y, c.z)
+
+            else:
+                raise ValueError(f"Center must be in ('median', 'bounds','weighted').")
+                
+            # ---------------------------------------------------------------------------
+            # Vertices becom faces
+            # ---------------------------------------------------------------------------
+
+            for v in bm.verts:
+                # Faces need to be ordered (link_faces is not good)
+                # Get the edges as couples (face.index, face.index)
+                # then chain the edges
+
+                couples = []
+                first = True
+                for edge in v.link_edges:
+
+                    if len(edge.link_faces) != 2:
+                        couples = []
+                        break
+                    
+                    # First is used for the order between:
+                    # - face0 then face1
+                    # - face1 then face0
+                    if first:
+                        first = False
+                        
+                        # The edge links two vertices
+                        other_index = edge.verts[0].index if edge.verts[1].index == v.index else edge.verts[1].index
+                        
+                        # We select as first face the one where loop is v -> other                
+                        face0 = edge.link_faces[0]
+                        for i_loop, lp in enumerate(face0.loops):
+                            if lp.vert.index == other_index:
+                                j = (i_loop + 1)%len(face0.loops)
+                                take0 = face0.loops[j].vert.index == v.index
+                                break
+                            
+                        if take0:
+                            loop = [edge.link_faces[0].index, edge.link_faces[1].index]
+                        else:
+                            loop = [edge.link_faces[1].index, edge.link_faces[0].index]
+                    
+                    else:
+                        couples.append((edge.link_faces[0].index, edge.link_faces[1].index))
+                    
+                if len(couples) < 2:
+                    continue
+                
+                # Build the other faces by chaing the edges 
+                # First loop to consume the edge couples      
+                for _ in range(len(couples)):
+                    found = False
+                    # Second loop to find the following edge
+                    for i, e in enumerate(couples):
+                        if e[0] == loop[-1]:
+                            loop.append(e[1])
+                            found = True
+                        elif e[1] == loop[-1]:
+                            loop.append(e[0])
+                            found = True
+                        else:
+                            continue
+                        break
+                    
+                    if found:
+                        del couples[i]
+                    else:
+                        loop = []
+                        break
+                    
+                if len(loop) < 3:
+                    continue
+
+                faces.append(len(loop))
+                corners.extend(loop)
+
+        # We can build the dual mesh
+        return Mesh(points=verts, corners=corners, faces=faces, materials=self.materials)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Faces neighbors
+    # ----------------------------------------------------------------------------------------------------
+
+    def faces_neighbors(self):
+
+        offset = 0
+        neighbors = []
+
+        with self.bmesh() as bm:           
+            bm.faces.ensure_lookup_table()
+
+            for face in bm.faces:
+                ns = set()
+                for edge in face.edges:
+                    ns = ns.union([edge.link_faces[0].index, edge.link_faces[1].index])
+                ns.remove(face.index)
+                neighbors.append(list(ns))
+
+        return neighbors
 
     
     # ====================================================================================================

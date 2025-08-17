@@ -12,6 +12,9 @@ from .curve import Curve
 from .instances import Instances
 from .multiresgrid import MultiResGrid
 
+from .sim_simul import Simulation
+from .sim_kinematics import Kinematics
+
 
 
 

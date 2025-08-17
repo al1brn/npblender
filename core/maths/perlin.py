@@ -153,15 +153,36 @@ class Perlin:
             g = self.grads[h % len(self.grads)]
             return g[:, 0]*xf + g[:, 1]*yf + g[:, 2]*zf + g[:, 3]*wf
 
-    def noise(self, coords, period=None):
+    def noise(self, coords, period=None, out_dim=1):
+
         coords = np.asarray(coords, dtype=np.float32)
+
+        # Multidimensionnal output
+        if out_dim > 1:
+            OFF = np.array([
+                [37.1, 19.9,  7.3, 11.7],
+                [13.4, 53.8, 29.2, 17.6],
+                [41.5, 23.7, 61.3,  3.9],
+                [ 2.6, 47.9, 31.7, 59.1],
+            ], dtype=np.float32)[:, :self.dim]
+
+            comps = []
+            for i in range(out_dim):
+                off = OFF[i % len(OFF)]
+                comps.append(self.noise(coords + off, period=period, out_dim=1))
+            return np.stack(comps, axis=-1)
+        
+        # Scalar output
         if coords.ndim == 0:  # scalaire
             if self.dim == 1:
                 coords = coords.reshape(1, 1)
             else:
                 raise ValueError(f"coords scalaire seulement accepté en 1D (dim={self.dim})")
         elif coords.ndim == 1:
-            coords = coords[None, :]
+            if self.dim == 1:
+                coords = coords[:, None]    # (N,) -> (N,1)  ✅
+            else:
+                coords = coords[None, :]    # (dim,) -> (1,dim)
         assert coords.shape[1] == self.dim
 
         if self.dim == 1:
@@ -318,7 +339,7 @@ def _scaled_period(period, dim, freq):
     return tuple(max(1, int(round(p * freq))) for p in period)
 
 
-def fbm(perlin, coords, octaves=5, lacunarity=2.0, gain=0.5, normalize=True, period=None):
+def fbm(perlin, coords, octaves=5, lacunarity=2.0, gain=0.5, normalize=True, period=None, out_dim=1):
     """
     fBM générique (1D..4D) sur perlin.noise(coords).
     - period: int ou tuple d'int (période en cellules de grille). Si fourni, le fBM est tilable,
@@ -347,7 +368,7 @@ def fbm(perlin, coords, octaves=5, lacunarity=2.0, gain=0.5, normalize=True, per
         return tuple(max(1, int(round(p * freq))) for p in base_period)
 
     for _ in range(n_int):
-        total += amp * perlin.noise(x * freq, period=octave_period(freq))
+        total += amp * perlin.noise(x * freq, period=octave_period(freq), out_dim=out_dim)
         amp_sum += amp
         freq *= lacunarity
         amp  *= gain
@@ -355,7 +376,7 @@ def fbm(perlin, coords, octaves=5, lacunarity=2.0, gain=0.5, normalize=True, per
     # Octave fractionnelle (mix simple de la dernière octave)
     frac = float(octaves) - n_int
     if frac > 1e-6:
-        total   += frac * (amp * perlin.noise(x * freq, period=octave_period(freq)))
+        total   += frac * (amp * perlin.noise(x * freq, period=octave_period(freq), out_dim=out_dim))
         amp_sum += frac * amp
 
     if normalize and amp_sum > 0:
@@ -402,31 +423,31 @@ def _prep_coords_and_spectrum(perlin, coords, detail, lacunarity, dimension, gai
     frac = float(detail) - int(np.floor(detail))
     return x, freqs, amps, frac
 
-def musgrave_fbm(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, period=None):
+def musgrave_fbm(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, period=None, out_dim=1):
     """ Musgrave fBM = somme d'octaves avec spectre ~ lacunarity^(-H*i). """
     x, freqs, amps, frac = _prep_coords_and_spectrum(perlin, coords, detail, lacunarity, dimension, gain)
     total = 0.0
     for f, a in zip(freqs, amps):
-        total += a * perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        total += a * perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
     if frac > 1e-6:
         f = lacunarity**len(freqs); a = (lacunarity**(-dimension * len(freqs))) * (gain**len(freqs))
-        total += frac * a * perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        total += frac * a * perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
     return total
 
-def musgrave_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, period=None):
+def musgrave_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, period=None, out_dim=1):
     """ MultiFractal = produit cumulatif de (1 + a_i * noise_i). Valeurs > 0 typiquement. """
     x, freqs, amps, frac = _prep_coords_and_spectrum(perlin, coords, detail, lacunarity, dimension, gain)
     val = 1.0
     for f, a in zip(freqs, amps):
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
         val = val * (1.0 + a * n)
     if frac > 1e-6:
         f = lacunarity**len(freqs); a = (lacunarity**(-dimension * len(freqs))) * (gain**len(freqs))
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
         val = val * (1.0 + frac * a * n)
     return val
 
-def musgrave_hetero_terrain(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, offset=0.0, period=None):
+def musgrave_hetero_terrain(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, offset=0.0, period=None, out_dim=1):
     x, freqs, amps, frac = _prep_coords_and_spectrum(perlin, coords, detail, lacunarity, dimension, gain)
 
     # octave 0 (robuste si n_int == 0)
@@ -435,11 +456,11 @@ def musgrave_hetero_terrain(perlin, coords, *, detail=5.0, lacunarity=2.0, dimen
     else:
         f0, a0 = float(freqs[0]), float(amps[0])
 
-    v = (perlin.noise(x * f0, period=_scaled_period(period, perlin.dim, f0)) + offset) * a0
+    v = (perlin.noise(x * f0, period=_scaled_period(period, perlin.dim, f0), out_dim=out_dim) + offset) * a0
 
     # octaves suivantes
     for f, a in zip(freqs[1:], amps[1:]):
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, float(f)))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, float(f)), out_dim=out_dim)
         v += (n + offset) * a * v
 
     # octave fractionnelle (s’il y en a une)
@@ -447,29 +468,29 @@ def musgrave_hetero_terrain(perlin, coords, *, detail=5.0, lacunarity=2.0, dimen
         k = len(freqs)
         f = float(lacunarity**k)
         a = float((lacunarity**(-dimension * k)) * (gain**k))
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
         v += frac * (n + offset) * a * v
     return v
 
-def musgrave_ridged_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, offset=1.0, period=None):
+def musgrave_ridged_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, offset=1.0, period=None, out_dim=1):
     """ Ridged = crêtes : signal = (offset - |noise|)^2, accumulation pondérée. """
     x, freqs, amps, frac = _prep_coords_and_spectrum(perlin, coords, detail, lacunarity, dimension, gain)
     val = 0.0
     weight = 1.0
     for f, a in zip(freqs, amps):
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
         signal = (offset - np.abs(n))**2
         signal *= a
         val += signal * weight
         weight = np.clip(signal * gain, 0.0, 1.0)
     if frac > 1e-6:
         f = lacunarity**len(freqs); a = (lacunarity**(-dimension * len(freqs))) * (gain**len(freqs))
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
         signal = (offset - np.abs(n))**2 * a
         val += frac * signal * weight
     return val
 
-def musgrave_hybrid_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, offset=0.0, period=None):
+def musgrave_hybrid_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, dimension=1.0, gain=0.5, offset=0.0, period=None, out_dim=1):
     x, freqs, amps, frac = _prep_coords_and_spectrum(perlin, coords, detail, lacunarity, dimension, gain)
 
     # octave 0 (robuste si n_int == 0)
@@ -478,13 +499,13 @@ def musgrave_hybrid_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, 
     else:
         f0, a0 = float(freqs[0]), float(amps[0])
 
-    n0 = perlin.noise(x * f0, period=_scaled_period(period, perlin.dim, f0))
+    n0 = perlin.noise(x * f0, period=_scaled_period(period, perlin.dim, f0), out_dim=out_dim)
     val = (n0 + offset) * a0
     weight = val
 
     # octaves suivantes
     for f, a in zip(freqs[1:], amps[1:]):
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, float(f)))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, float(f)), out_dim=out_dim)
         signal = (n + offset) * a
         val += weight * signal
         weight = np.clip(weight * signal * gain, 0.0, 1.0)
@@ -494,7 +515,7 @@ def musgrave_hybrid_multifractal(perlin, coords, *, detail=5.0, lacunarity=2.0, 
         k = len(freqs)
         f = float(lacunarity**k)
         a = float((lacunarity**(-dimension * k)) * (gain**k))
-        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f))
+        n = perlin.noise(x * f, period=_scaled_period(period, perlin.dim, f), out_dim=out_dim)
         signal = (n + offset) * a
         val += frac * weight * signal
     return val
@@ -523,8 +544,8 @@ def _as_perlin(perlin, dim):
     # sinon, on suppose que c'est une seed
     return Perlin(dim=dim, seed=int(perlin))
 
-def noise(coords, scale=1.0, octaves=5, lacunarity=2.0, gain=0.5,
-          normalize=True, period=None, algo='fBM', perlin=0, **kwargs):
+def noise(coords, t=None, scale=1.0, octaves=5, lacunarity=2.0, gain=0.5,
+          normalize=True, period=None, algo='fBM', perlin=0, out_dim=1, **kwargs):
     """
     API globale d'échantillonnage de bruit.
 
@@ -532,6 +553,8 @@ def noise(coords, scale=1.0, octaves=5, lacunarity=2.0, gain=0.5,
     ----------
     coords : array-like
         (N,) pour 1D, ou (N, dim) pour dim∈{1,2,3,4}.
+    t : float = None
+        Supplementary dimension
     scale : float = 1.0
         Échelle appliquée aux coordonnées (coords * scale).
     octaves : float
@@ -550,6 +573,8 @@ def noise(coords, scale=1.0, octaves=5, lacunarity=2.0, gain=0.5,
         'hetero' ('hetero_terrain').
     perlin : Perlin | int
         Instance Perlin, ou seed (int). La dim est déduite de coords.
+    out_dim : int
+        Number of dimensions in the result
     **kwargs :
         - dimension (float, défaut 1.0) : exposé pour les variantes Musgrave
         - offset (float) : utilisé par 'ridged', 'hybrid', 'hetero' (défauts adaptés)
@@ -557,14 +582,30 @@ def noise(coords, scale=1.0, octaves=5, lacunarity=2.0, gain=0.5,
     Returns
     -------
     np.ndarray
-        Valeurs de bruit shape (N,).
+        Valeurs de bruit shape (N,) ou shape(N, out_dim)
     """
-    # scale des coords (pas de changement si 1.0)
-    if scale != 1.0:
-        coords = np.asarray(coords, dtype=np.float32) * float(scale)
 
+    coords = np.asarray(coords)
     dim = _infer_dim(coords)
+    # Make sure at least 2D
+    if dim == 1 and coords.ndim == 1:
+        coords = coords[:, None]
+
+    # Scale if required
+    if scale != 1.0:
+        coords = coords.astype(np.float32, copy=False) * float(scale)
+    else:
+        coords = coords.astype(np.float32, copy=False)
+
+    # Add t as supplementary dimension
+    if t is not None and dim < 4:
+        t_arr = np.asarray(t, dtype=coords.dtype)
+        t_col = np.broadcast_to(t_arr, coords.shape[:-1])[..., None]  # (..., 1)
+        coords = np.concatenate([coords, t_col], axis=-1)
+        dim += 1
+
     p = _as_perlin(perlin, dim)
+
 
     key = str(algo).strip().lower().replace(" ", "").replace("-", "_")
 
@@ -579,39 +620,39 @@ def noise(coords, scale=1.0, octaves=5, lacunarity=2.0, gain=0.5,
     # --- fBM (classique) ---
     if key in ("fbm", "f_bm"):
         return fbm(p, coords, octaves=octaves, lacunarity=lacunarity,
-                   gain=gain, normalize=normalize, period=period)
+                   gain=gain, normalize=normalize, period=period, out_dim=out_dim)
 
     # --- Perlin brut (une octave) ---
     if key in ("perlin", "raw", "basic"):
         x = _ensure_coords(coords, dim)
-        return p.noise(x, period=period)
+        return p.noise(x, period=period, out_dim=out_dim)
 
     # --- Musgrave: Multifractal ---
     if key in ("multifractal", "multi"):
         return musgrave_multifractal(p, coords, detail=octaves,
                                      lacunarity=lacunarity, dimension=H,
-                                     gain=gain, period=period)
+                                     gain=gain, period=period, out_dim=out_dim)
 
     # --- Musgrave: Ridged ---
     if key in ("ridged", "ridged_multifractal", "ridge"):
         offset = float(1.0 if off_user is None else off_user)
         return musgrave_ridged_multifractal(p, coords, detail=octaves,
                                             lacunarity=lacunarity, dimension=H,
-                                            gain=gain, offset=offset, period=period)
+                                            gain=gain, offset=offset, period=period, out_dim=out_dim)
 
     # --- Musgrave: Hybrid ---
     if key in ("hybrid", "hybrid_multifractal"):
         offset = float(0.0 if off_user is None else off_user)
         return musgrave_hybrid_multifractal(p, coords, detail=octaves,
                                             lacunarity=lacunarity, dimension=H,
-                                            gain=gain, offset=offset, period=period)
+                                            gain=gain, offset=offset, period=period, out_dim=out_dim)
 
     # --- Musgrave: Hetero Terrain ---
     if key in ("hetero", "hetero_terrain", "heteroterrain"):
         offset = float(0.0 if off_user is None else off_user)
         return musgrave_hetero_terrain(p, coords, detail=octaves,
                                        lacunarity=lacunarity, dimension=H,
-                                       gain=gain, offset=offset, period=period)
+                                       gain=gain, offset=offset, period=period, out_dim=out_dim)
 
     raise ValueError(
         f"Unknown Noise algorithm: {algo!r}. "

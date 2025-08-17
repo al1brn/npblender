@@ -1677,6 +1677,16 @@ def set_attribute(attributes, name, value):
 
     # ----- Set the array to the layer
 
+    a = np.asarray(value, dtype=value_type).flatten()
+    if n*value_size != len(a):
+        raise Exception(f"Set Attribute Error: Object attribute '{name}' len is {n}. Impossible to set with value of shape {np.shape(value)}.")
+
+    if not n:
+        return
+
+    battr.data.foreach_set(value_name, a)
+    return
+
     if n*value_size == np.size(value):
         battr.data.foreach_set(value_name, np.reshape(value, np.size(value)).astype(value_type))
 

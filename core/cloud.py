@@ -28,7 +28,7 @@ from . maths.topology import border_edges, edges_between, row_edges, col_edges
 from . maths import distribs
 
 from . geometry import Geometry
-from . domain import PointDomain, CornerDomain, FaceDomain, EdgeDomain
+from . domain import CloudPointDomain
 
 DATA_TEMP_NAME = "NPBL_TEMP"
 
@@ -39,7 +39,7 @@ DATA_TEMP_NAME = "NPBL_TEMP"
 
 class Cloud(Geometry):
 
-    def __init__(self, points=None, **attrs):
+    def __init__(self, points=None, attr_from=None, **attrs):
         """ Clod Geometry.
 
         Arguments
@@ -47,10 +47,12 @@ class Cloud(Geometry):
             - points (array of vectors = None) : the vertices
             - attrs (dict) : other geometry attributes
         """
-
         # ----- Initialize an empty geometry
 
-        self.points  = PointDomain()
+        self.domain_names = ['points']
+        self.points = CloudPointDomain()
+
+        self.join_attributes(attr_from)
 
         # ----- Add geometry
         if points is not None:
@@ -73,14 +75,14 @@ class Cloud(Geometry):
 
     def to_dict(self):
         return {
-            'geometry':     'Cloud',
-            'points':       self.points.to_dict(),
+            'geometry': 'Cloud',
+            'points':    self.points.to_dict(),
             }
 
     @classmethod
     def from_dict(cls, d):
         cloud = cls()
-        cloud.points     = PointDomain.from_dict(d['points'])
+        cloud.points = CloudPointDomain.from_dict(d['points'])
         return cloud
     
     # ====================================================================================================
@@ -121,7 +123,7 @@ class Cloud(Geometry):
             raise ValueError(f"from_geometry> {type(other)} has no points.")
 
         cloud = cls()
-        cloud.points  = PointDomain(points,  mode='COPY')
+        cloud.points = CloudPointDomain(points,  mode='COPY')
 
         if selection is not None:
             points_mask = np.ones(len(cloud.points), dtype=bool)

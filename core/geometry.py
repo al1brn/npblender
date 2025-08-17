@@ -29,6 +29,34 @@ from . import blender
 class Geometry:
 
     # ====================================================================================================
+    # Copy attributes definition
+    # ====================================================================================================
+
+    def join_attributes(self, other, **kwargs):
+        """ Capture the attributes from another geometry.
+
+        Other can be a different geometry, in that case, only domains with the same name are captured.
+        kwargs allows to filter the domains to capture:
+
+        ```python
+        mesh.join_attributes(other_mesh, faces=False)
+        mesh.join_attributes(curve)
+        ```
+
+        Returns:
+            - self
+        """
+        if other is None:
+            return self
+
+        for name in self.domain_names:
+            if name in other.domain_names and kwargs.get(name, True):
+                getattr(self, name).join_fields(getattr(other, name))
+
+        return self
+
+
+    # ====================================================================================================
     # Check geometry consistency
     # ====================================================================================================
 

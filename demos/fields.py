@@ -1,13 +1,29 @@
-
 import numpy as np
+
+EPS = 1e-6
 
 # ====================================================================================================
 # Electric field
 # ====================================================================================================
 
-def electric_field(coords, charge_locations=[0, 0, 0], charges=1, charge_size=.1):
-    """ Electric field produced by charges
+def electric_field(coords, charge_locations=[0, 0, 0], charges=1, charge_size=.1, speeds=None):
+    """ Electric field produced by charges.
+
+    If speeds are defined for the charges, the function returns the magnetic field.
+
+    Arguments
+    ---------
+    - coords (array of vectors) : where to compute the field
+    - charge_locations (array of vectors) : where the charges are located
+    - charges (array of floats) : electric charges
+    - charge_size (float) : field not defined close to the charges
+    - speeds (array floats = None) : charge speed
+
+    Returns
+    -------
+    - array ot vectors : field
     """
+
     # --------------------------------------------------
     # Coords
     # --------------------------------------------------
@@ -39,22 +55,59 @@ def electric_field(coords, charge_locations=[0, 0, 0], charges=1, charge_size=.1
     charges = np.atleast_1d(charges) # (Q,) or (1,)
     
     # --------------------------------------------------
-    # Compute field
+    # Compute electric field
     # --------------------------------------------------
 
-    field = coords[:, None] - charge_locations # (N, Q, 3)
-    dist = np.linalg.norm(field, axis=2, keepdims=True)
+    E = coords[:, None] - charge_locations # (N, Q, 3)
+    dist = np.linalg.norm(E, axis=2, keepdims=True)
     infinite = dist < charge_size
     dist[infinite] = np.nan
-    field = np.sum(field*charges[None, :, None] / dist**3, axis=1)
+    E = E*charges[None, :, None] / dist**3
 
-    return field[0] if single else field
+    if speeds is None:
+        E = np.sum(E, axis=1)
+        return E[0] if single else E
+
+    # --------------------------------------------------
+    # Magnetic field
+    # --------------------------------------------------
+
+    speeds = np.atleast_2d(speeds)
+    B = np.cross(speeds[None], E)
+    B = np.sum(B, axis=1)
+
+    return B[0] if single else B
+
 
 # ====================================================================================================
 # Magnetic field
 # ====================================================================================================
 
 def magnetic_field(coords, location=[0, 0, 0], length=1, radius=.1, transfo=None):
+    """ Approximation of the field produced by a cylindrical magnet.
+
+    The field is approximated from a planar field produced by a single point
+    oriented along x: circles centered on y axis and tangent in (0, 0):
+    - x = r.sin(a)
+    - y = r(1 - cos(a))
+    When working with x > 0 and y > 0, r and a can be found with: f = x/y
+    - s = f(1 - c) <=> s + fc = f <=> s² + 2fcs + f²c² = f² <=> s² + 2fcs + f²(c² - 1) = 0
+    - s² + 2fcs - f²s² = 0 <=> (1 - f²)s = -2fc <=> s/c = 2f/(f² - 1)
+    - a = atan(2f/(f² - 1))
+
+    The circles are shifted along the y axis to approximate the magnet radius h:
+    - x = r.sin(a)
+    - y = dy + r(1 - cos(a))
+    dy is such that:
+    - dy(0) = 0
+    - dy(h) = h
+    - dy(inf) = 0
+    Hence:
+    - dy = h²y/(h² + y²)
+
+    Then the circles are streched along x to approximate the magnet length:
+    - x = x*(1 + length)
+    """
 
     # --------------------------------------------------
     # Coords
@@ -71,49 +124,98 @@ def magnetic_field(coords, location=[0, 0, 0], length=1, radius=.1, transfo=None
     coords = np.atleast_2d(coords) # (N, 3)
 
     if transfo is not None:
-        coords = transfo.inverse(coords)
+        coords = transfo.inverse() @ coords
+
+    # --------------------------------------------------
+    # Canonical field
+    # Coputed with x > 0 and y > 0 after stretching and shifting
+    # --------------------------------------------------
+
+    def _canonic(x, y):
+        f = x/y   
+        f2 = f**2 - 1
+        a = np.arctan2(f2, 2*f)
+
+        ca, sa = np.cos(a), np.sin(a)
+        n = 1 + sa
+
+        r = np.empty_like(x)
+        mask = x > y
+        r[mask] = x[mask]/sa[mask]
+        mask = ~mask
+        r[mask] = y[mask]/(1 + ca[mask])
+
+        v = 3*n/r
+
+        return v*sa, v*ca
 
     # --------------------------------------------------
     # Compute field
     # --------------------------------------------------
 
-    field = np.empty_like(coords)
+    # NOTE : Initialized at nan
+    field = np.full(coords.shape, np.nan, dtype=np.float32)
 
     # Symmetry along x
-    x_neg = coords[:, 0] < 0
-    coords[x_neg, 0] *= -1
+    d = np.linalg.norm(coords[:, 1:], axis=1)
+    # In formula, d is used as y (which is necessarily positive)
+    x = np.abs(coords[:, 0])
+    y = d
 
-    # Symmetry around x axis
-    r = np.linalg.norm(coords[:, 1:], axis=1)
-    theta = np.atan2(coords[:, 2], coords[:, 1])
+    # x stretching
+    length = length/2
+    x /= 1 + length
 
-    
+    # Particular cases
+    y_not_null = y > EPS
 
+    # Line of field along the x axis
+    field[~y_not_null] = (1, 0, 0)
 
+    # Valid points: x > 0 or y > radius
+    valid = y_not_null
 
+    y = y[valid]
+    x = x[valid]
 
-    # Outside the magnet
+    # y shift
+    dy = radius**2*y/(radius**2 + y*y)
+    if False: # DEBUG
+        y = y - dy + EPS
 
-    out = np.logical_or(coords[:, 0] < length/2, coords[:, 0] > length/2)
-    out = np.logical_or(out > radius)
+    # Canonic field
+    fx, fy = _canonic(x, y)
 
+    # Stretching back
+    fx *= (1 + length)
 
+    # To field
+    fy /= d[valid]
 
+    field[valid] = coords[valid]
+    field[valid, 0] = fx
+    field[valid, 1] *= fy
+    field[valid, 2] *= fy
 
+    # Symmetry
+    field[coords[:, 0] < 0, 1:] *= -1
 
+    # Back rotation
+    if transfo is not None:
+        field = transfo.rotation @ field
 
-    
+    return field[0] if single else field
 
-    field = coords[:, None] - charge_locations # (N, Q, 3)
-    dist = np.linalg.norm(field, axis=2, keepdims=True)
-    infinite = dist < charge_size
-    dist[infinite] = np.nan
-    field = np.sum(field*charges[None, :, None] / dist**3, axis=1)
+# ====================================================================================================
+# Induces field from a moving field
+# ====================================================================================================
 
-    
-    
+def induced_field(ifield_func, coords, speed=[0, 0, 0], factor=1., **kgwargs):
 
+    field = ifield_func(coords, **kgwargs)
+    speed = np.atleast_2d(speed)
 
+    return factor * np.cross(speed, field)
 
 # ====================================================================================================
 # Lines of field
@@ -123,6 +225,10 @@ def line_of_fields(coords, field_func, count=100, ds=.1, **kwargs):
 
     coords = np.atleast_2d(coords)
     nsplines = len(coords)
+
+    # ---------------------------------------------------------------------------
+    # Move forwards or backwards
+    # ---------------------------------------------------------------------------
 
     def _move(signed_ds, ends=None):
 
@@ -165,17 +271,23 @@ def line_of_fields(coords, field_func, count=100, ds=.1, **kwargs):
                 active[active] = dist > ds
 
                 if ends is not None:
-                    dist = np.linalg.norm(lines[active, i+1] - ends[active, 0], axis=-1)
+                    dist = np.linalg.norm(lines[active, i+1] - ends[active], axis=-1)
                     active[active] = dist > ds
 
-
-
         return lines, total, weights
+    
+    # ---------------------------------------------------------------------------
+    # Move in the two directions
+    # ---------------------------------------------------------------------------
 
     fwd_lines, fwd_total, fwd_weights = _move(ds)
     ends = fwd_lines[np.arange(nsplines), fwd_total-1]
 
-    bwd_lines, bwd_total, bwd_weights = _move(-ds)
+    bwd_lines, bwd_total, bwd_weights = _move(-ds, ends=ends)
+
+    # ---------------------------------------------------------------------------
+    # Merge te resultings curves
+    # ---------------------------------------------------------------------------
 
     npoints = np.sum(fwd_total) + np.sum(bwd_total) - nsplines
     points = np.empty((npoints, 3), np.float32)
@@ -196,385 +308,170 @@ def line_of_fields(coords, field_func, count=100, ds=.1, **kwargs):
 
     return points, bwd_total + fwd_total - 1, weights
 
-
 # ====================================================================================================
-# Field visu with arrows
+# Field visualisaton as field of vectors
 # ====================================================================================================
 
-def vis_field(field_func, seed=0, **kwargs):
+def vis_field_of_vectors(field_func, coords, name="Field of vectors", materials=None, **kwargs):
 
     from npblender import Mesh
 
-    rng = np.random.default_rng(seed)
-    coords = rng.uniform(-10, 10, (1000, 3))
     field = field_func(coords, **kwargs)
 
-    mesh = Mesh.vectors_field(coords, field, 
-            radius=.05,
-            scale_length=1.,
-            angle=24.,
-            segments=8,
-            head=None,
-            adjust_norm=None, 
-            materials=None)
+    mesh = Mesh.vectors_field(
+            coords, 
+            field, 
+            radius = .05,
+            scale_length = 1.,
+            angle = 24.,
+            segments = 8,
+            head = None,
+            adjust_norm = None, 
+            materials = materials)
 
-    mesh.to_object("Electric Field")
+    obj = mesh.to_object(name, shade_smooth=True)
+    return obj
 
 # ====================================================================================================
-# Field visu with lines of field
+# Field visualisaton as field of vectors
 # ====================================================================================================
 
-def vis_lines_of_field(field_func, seed=0, as_mesh=False, **kwargs):
+def vis_lines_of_field(field_func, coords, name="Lines of field", as_mesh=False, count=100, ds=.1, **kwargs):
 
     from npblender import Curve
 
-    rng = np.random.default_rng(seed)
-    coords = rng.uniform(-10, 10, (1000, 3))
     field = field_func(coords, **kwargs)
-
-    lines, total, weights = line_of_fields(coords, field_func, count=100, ds=.1, **kwargs)
+    lines, total, weights = line_of_fields(coords, field_func, count=count, ds=ds, **kwargs)
 
     curve = Curve(points=lines, splines=total, radius=np.log(1 + weights))
 
     if as_mesh:
         curve = curve.to_mesh(profile=Curve.circle(resolution=6, radius=.01), use_radius=True)
-    curve.      to_object("Lines of Electric Field")
 
-def test(seed=0):
+    obj = curve.to_object("Lines of Electric Field")
+    return obj
+
+# ====================================================================================================
+# Some demos
+# ====================================================================================================
+
+# ----------------------------------------------------------------------------------------------------
+# Fields produced by moving electric charges
+# ----------------------------------------------------------------------------------------------------
+
+def demo_electric_charges(count=7, nsplines=100, magnetic=False, seed=0):
+
+    from npblender import engine, Transformation, Rotation, Mesh
+
     rng = np.random.default_rng(seed)
-    seed = rng.integers(1<<32, dtype=np.uint32)
 
-    Q = 17
-    charge_locations = rng.uniform(-10, 10, (Q, 3))
-    charges = rng.uniform(-1, 1, Q)*100
+    # Move the charges on circles
+    radius = rng.uniform(1, 5, count)
+    omega = (2*np.pi)*rng.uniform(1/10, 1, count)/10
+    phi = rng.uniform(0, 2*np.pi, count)
+    transfo = Transformation.from_components(
+        rotation = Rotation.from_euler(rng.uniform(0, 2*np.pi, (count, 3))),
+        translation = rng.uniform(-3, 3, (count, 3)),
+        )
+    q = rng.uniform(-1, 1, count)*100
     
-    #vis_field(electric_field, charge_locations=charge_locations, charges=charges)
-    vis_lines_of_field(electric_field, charge_locations=charge_locations, charges=charges)
+    # Vis coords
+    coords = rng.uniform(-10, 10, (nsplines, 3))
 
+    def update():
+        theta = omega*engine.time + phi
+        x = radius*np.cos(theta)
+        y = radius*np.sin(theta)
+        z = np.zeros_like(x)
+        loc = np.stack((x, y, z), axis=1)
+        loc = transfo @ loc
 
-class OLD:
-    # ====================================================================================================
-    # Field of vectors
-    # ====================================================================================================
-
-    # ----------------------------------------------------------------------------------------------------
-    # Field line
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def field_line(cls, field_func, start_point, max_len=10., prec=.01, sub_steps=10):
-
-        pts = [start_point]
-        rs  = [np.linalg.norm(field_func(start_point))]
-        p   = np.array(start_point)
-        l   = 0.
-        for _ in range(10000):
-            for _ in range(sub_steps):
-
-                # ----- Vector at current location
-                v0 = field_func(p)
-
-                # ----- Precision along this vector
-                norm  = np.sqrt(np.dot(v0, v0))
-                factor = prec/norm
-                v0 *= factor
-
-                # ----- Average with target vector for more accurracy
-                v1 = field_func(p + v0)*factor
-                v = (v0 + v1)/2
-
-                # ----- Next point
-                p += v
-
-            # ----- Segment length
-
-            v = p - pts[-1]
-            l += np.sqrt(np.dot(v, v))
-
-            # ----- Add a new point
-
-            pts.append(np.array(p))
-            rs.append(norm)
-
-            # ----- Done if loop or max_len is reached
-
-            v = p - start_point
-            cyclic = np.sqrt(np.dot(v, v)) < prec*(sub_steps-1)
-            if cyclic or l >= max_len:
-                pts.append(np.array(start_point))
-                break
-
-        if cyclic:
-            pts.pop()
-
-        return cls(pts, curve_type=POLY, cyclic=cyclic, radius=rs)
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Field lines
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def field_lines_OLD(cls, field_func, start_points,
-        backwards=False, max_length=None, length_scale=None, end_points=None, zero=1e-6, max_points=1000,
-        precision=.1, sub_steps=10, seed=0, **kwargs):
-
-        """ Build splines showing lines of field
-
-        Arguments :
-        -----------
-            - field_func (function of template (array of vectors, **kwargs) -> array of vectors) : the field function
-            - start_points (array of vectors) : lines starting points
-            - backwards (bool = False) : build lines backwards
-            - max_length (float = None) : max line lengths
-            - length_scale (float = None) : line length scale if random length scale around central value
-            - end_points (array of vectors) : points where lines must end
-            - zero (float = 1e-6) : value below which the field is null
-            - max_points (int = 1000) : max number of points per spline
-            - precision (float = 0.1) : step length
-            - sub_steps (int = 10) : number of sub steps
-        """
-
-        splines = field.field_lines(field_func, start_points,
-            backwards       = backwards,
-            max_length      = max_length,
-            length_scale    = length_scale,
-            end_points      = end_points,
-            zero            = zero,
-            max_points      = max_points,
-            precision       = precision,
-            sub_steps       = sub_steps,
-            seed            = seed,
-            **kwargs)
-
-        return cls(**splines)
-
-        curves = cls()
-        for avects, cyclic in lines:
-            if len(avects) <= 1:
-                continue
-            curves.add(avects.co, curve_type='POLY', cyclic=cyclic, radius=avects.radius, tilt=avects.color)
-
-        return curves
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Lines of electric field
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def electric_field_lines_OLD(cls, charge_locations, charges=1., field_color=True,
-                           count=100, start_points=None, plane=None, plane_center=(0, 0, 0),
-                           frag_length=None, frag_scale=None, max_points=1000,
-                           precision=.1, sub_steps=10, seed=None):
-
-        """ Create lines of field for a vector field generated by charges, typically an electric field.
-
-        Arguments:
-        ----------
-            - charge_locations (array (n, 3) of vectors) : where the charges are located
-            - charges (float or array (n) of floats = 1) : the charges
-            - field_color (bool = True) : manage the field_color attribute
-            - count (int = 100) : number of lines to create. Overriden by len(start_points) if not None
-            - start_points (array (s, 3) of vectors = None) : the starting points to compute the lines from
-            - plane (vector = None) = restrict start points to a plane defined by its perpendicular
-            - plane_center (vector = (0, 0, 0)) : center of the plane
-            - frag_length (float=None) : length of fragments, None for full lines
-            - frag_scale (float=None) : length distribution scale
-            - precision (float = .1) : step precision
-            - sub_steps (int=10) : number of steps between two sucessive points of the lines
-        """
-
-        # ----------------------------------------------------------------------------------------------------
-        # Field function
-
-        poles = AttrVectors(charge_locations, charge=charges)
-        field_func = lambda points: field.electric_field(points,
-                            locations=poles.co, charges=poles.charge)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Starting points
-
-        rng = np.random.default_rng(seed=seed)
-        n_charges = len(poles)
-
-        if start_points is None:
-            backwards = rng.choice([True, False], count)
-            if frag_length is None:
-                if plane is None:
-                    start_points, _ = distribs.sphere_dist(radius=precision, count=count, seed=rng.integers(1<<63))
-                else:
-                    start_points, _ = distribs.circle_dist(radius=precision, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
-                inds = rng.integers(0, n_charges, count)
-                start_points += poles.co[inds]
-                backwards[:] = poles.charge[inds] < 0
-
-            else:
-                center = np.average(poles.co, axis=0)
-                bbox0, bbox1 = np.min(poles.co, axis=0), np.max(poles.co, axis=0)
-                radius = 1.3*max(np.linalg.norm(bbox1 - center), np.linalg.norm(bbox0 - center))
-
-                if plane is None:
-                    start_points, _ = distribs.ball_dist(radius=radius, count=count, seed=rng.integers(1<<63))
-                    start_points += center
-                else:
-                    start_points, _ = distribs.disk_dist(radius=radius, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
+        if magnetic:
+            speeds = np.stack((-y, x, z), axis=1)*omega[:, None]
+            speeds = transfo.rotation @ speeds
         else:
-            if len(np.shape(start_points)) == 1:
-                count = 1
-            else:
-                count = len(start_points)
-            backwards = rng.choice([True, False], count)
+            speeds = None
 
-        # ----------------------------------------------------------------------------------------------------
-        # Full lines if frag_length is None
+        vis_lines_of_field(
+            electric_field, 
+            coords, 
+            name="E from moving charges", 
+            as_mesh=True, 
+            count=100,
+            ds=.1,
+            charge_locations = loc,
+            charges = q,
+            charge_size = .1,
+            speeds = speeds,
+        )
 
-        full_lines = frag_length is None
-        if full_lines:
-            backwards[:] = False
+        mesh = Mesh.icosphere(radius=.3)*count
+        mesh.points.reshape(count, -1)
+        mesh.points.position += loc[:, None]
+        mesh.to_object("Charges")
 
-        # ----------------------------------------------------------------------------------------------------
-        # Field lines
+    engine.go(update)
 
-        lines = field.field_lines(field_func,
-            start_points    = start_points,
-            backwards       = backwards,
-            max_length      = frag_length,
-            length_scale    = frag_scale,
-            end_points      = charge_locations,
-            max_points      = max_points,
-            precision       = precision,
-            sub_steps       = sub_steps,
-            seed            = rng.integers(1 << 63),
-            )
+# ----------------------------------------------------------------------------------------------------
+# Fields produced by a moving magnets
+# ----------------------------------------------------------------------------------------------------
 
-        # ----------------------------------------------------------------------------------------------------
-        # Twice il full lines
+def demo_magnets(nsplines=100, magnetic=True, seed=0):
 
-        if full_lines:
+    from npblender import engine, Transformation, Rotation, Mesh
 
-            # ----- Exclude cyclic lines which are done
+    rng = np.random.default_rng(seed)
 
-            open_lines = np.logical_not(lines['cyclic'] )
+    omega = 2*np.pi/3
+    length = 3.
+    mid = 2*length
+    amp = mid - length/2
 
-            # ----- Backwards lines
+    def _field(coords, time):
 
-            backwards[:] = True
-            back_lines = field.field_lines(field_func,
-                start_points    = start_points[open_lines],
-                backwards       = backwards[open_lines],
-                max_length      = frag_length,
-                length_scale    = frag_scale,
-                end_points      = charge_locations,
-                max_points      = max_points,
-                precision       = precision,
-                sub_steps       = sub_steps,
-                seed            = rng.integers(1 << 63),
-                )
+        theta = omega*engine.time
+        x0 = mid - amp*np.sin(theta)
 
-            # ----- Merge the two dictionnaries
+        B0 = magnetic_field(coords, length=length, transfo=Transformation.from_components(translation=[x0, 0, 0]))
+        B1 = magnetic_field(coords, length=length, transfo=Transformation.from_components(translation=[-x0, 0, 0]))
 
-            all_lines = {'types':   list(lines['types']) + list(back_lines['types']),
-                         'cyclic':  list(lines['cyclic']) + list(back_lines['cyclic']),
-                         'splines': lines['splines'] + back_lines['splines'],
-                        }
-            lines = all_lines
+        if magnetic:
+            return B0 + B1
+        
+        v0 = amp*omega*np.cos(theta)
+        E0 = np.cross(np.array([v0, 0, 0]).reshape(1, 3), B0)
+        E1 = np.cross(np.array([-v0, 0, 0]).reshape(1, 3), B1)
 
-        return cls(**lines)
+        print("SHAPES", B0.shape, E0.shape, E1.shape, (E0 + E1).shape)
 
-    # ----------------------------------------------------------------------------------------------------
-    # Lines of magnetic field
-    # ----------------------------------------------------------------------------------------------------
+        return E0 + E1
 
-    @classmethod
-    def magnetic_field_lines_OLD(cls, magnet_locations, moments=(1, 0, 0), field_color=True,
-                           count=100, start_points=None, min_width=.3, plane=None, plane_center=(0, 0, 0),
-                           frag_length=None, frag_scale=None, max_points=1000,
-                           precision=.1, sub_steps=10, seed=None):
+    # Vis coords
+    coords = rng.uniform([-amp, -2, -.1], [amp, 2, .1], (nsplines, 3))
+    assert(coords.shape == (nsplines, 3))
 
-        """ Create lines of field for a vector field generated by bipoles, typically an magnetic field.
+    def update():
 
-        Arguments:
-        ----------
-            - magnet_locations (array (n, 3) of vectors) : where the bipoles are located
-            - moments (vector or array (n) of vectors = (1, 0, 0)) : the moments of the magnets
-            - field_color (bool = True) : manage the field_color attribute
-            - count (int = 100) : number of lines to create. Overriden by len(start_points) if not None
-            - start_points (array (s, 3) of vectors = None) : the starting points to compute the lines from
-            - min_width (float = .3) : min width for volume generation when magnet locations are in a plane
-            - plane (vector = None) = restrict start points to a plane defined by its perpendicular
-            - plane_center (vector = (0, 0, 0)) : center of the plane
-            - frag_length (float=None) : length of fragments, None for full lines
-            - frag_scale (float=None) : length distribution scale
-            - precision (float = .1) : step precision
-            - sub_steps (int=10) : number of steps between two sucessive points of the lines
-        """
+        theta = omega*engine.time
+        x0 = mid - amp*np.sin(theta)
 
-        # ----------------------------------------------------------------------------------------------------
-        # Field function
+        vis_lines_of_field(
+            _field, 
+            coords, 
+            name="F from moving magnets" if magnetic else "E from moving magnets", 
+            as_mesh=True, 
+            count=100,
+            ds=.1,
+            time = engine.time,
+        )
 
-        magnets = AttrVectors(magnet_locations, moment=moments)
-        field_func = lambda points: field.magnetic_field(points,
-                            locations=magnets.co, moments=magnets.moment)
+        mesh = Mesh.cube(size=(length, 1, .7))*2
+        mesh.points.reshape(2, -1)
+        v = np.array([x0, 0, 0]).reshape(1, 3)
+        mesh.points[0].position -= v
+        mesh.points[1].position += v
+        mesh.to_object("Magnets")
 
-        # ----------------------------------------------------------------------------------------------------
-        # Starting points
 
-        rng = np.random.default_rng(seed=seed)
-        n_magnets = len(magnets)
+    engine.go(update)
 
-        backwards = rng.choice([True, False], count)
-        if start_points is None:
-            if frag_length is None:
-                if plane is None:
-                    start_points, _ = distribs.sphere_dist(radius=precision*10, count=count, seed=rng.integers(1<<63))
-                else:
-                    start_points, _ = distribs.circle_dist(radius=precision*10, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
-                inds = rng.integers(0, n_magnets, count)
-                mag_locs = magnets.co[inds]
-                backwards[:] = np.einsum('...i, ...i', start_points, magnets.moment[inds]) < 0
-                start_points += mag_locs
-
-            else:
-                center = np.average(magnets.co, axis=0)
-                bbox0, bbox1 = np.min(magnets.co, axis=0), np.max(magnets.co, axis=0)
-                radius = 1.3*max(1., max(np.linalg.norm(bbox1 - center), np.linalg.norm(bbox0 - center)))
-
-                if plane is None:
-                    dims = np.maximum(bbox1 - bbox0, (min_width, min_width, min_width))
-                    center = (bbox0 + bbox1)/2
-                    bbox0, bbox1 = center - 1.3*dims, center + 1.3*dims
-
-                    start_points, _ = distribs.cube_dist(corner0=bbox0, corner1=bbox1, count=count, seed=rng.integers(1<<63))
-                else:
-                    start_points, _ = distribs.disk_dist(radius=radius, count=count, seed=rng.integers(1<<63))
-                    start_points = rotate_xy_into_plane(start_points, plane=plane, origin=plane_center)
-
-        else:
-            if len(np.shape(start_points)) == 1:
-                count = 1
-            else:
-                count = len(start_points)
-
-        # ----------------------------------------------------------------------------------------------------
-        # Field lines
-
-        lines = field.field_lines(field_func,
-            start_points    = start_points,
-            backwards       = backwards,
-            max_length      = frag_length,
-            length_scale    = frag_scale,
-            end_points      = magnet_locations,
-            max_points      = max_points,
-            precision       = precision,
-            sub_steps       = sub_steps,
-            seed            = rng.integers(1 << 63),
-            )
-
-        return cls(**lines)
-    
-    

@@ -28,6 +28,8 @@ from . itemsarray import ItemsArray
 from . rotation import Rotation
 from . quaternion import Quaternion
 
+ZERO = 1e-8
+
 class Transformation(ItemsArray):
 
     _item_shape = (4, 4) # Array of 4x4 matrices
@@ -165,7 +167,7 @@ class Transformation(ItemsArray):
         scale = np.linalg.norm(rot_scale, axis=-2)  # (..., 3)
 
         # Normalize columns to get pure rotation
-        rot = rot_scale / np.maximum(scale[..., None, :], self.ZERO)
+        rot = rot_scale / np.maximum(scale[..., None, :], ZERO)
 
         return Rotation(rot, copy=False), scale, trans
     
@@ -191,7 +193,7 @@ class Transformation(ItemsArray):
         """Return the pure rotation part of the matrix."""
         rot_scale = self._mat[..., :3, :3]
         scale = np.linalg.norm(rot_scale, axis=-2, keepdims=True)
-        return Rotation(rot_scale / np.maximum(scale, self.ZERO), copy=False)
+        return Rotation(rot_scale / np.maximum(scale, ZERO), copy=False)
 
     @rotation.setter
     def rotation(self, value: np.ndarray):
@@ -375,7 +377,7 @@ class Transformation(ItemsArray):
         sin_theta = np.sin(theta)
 
         # Avoid division by zero
-        mask = sin_theta > self.ZERO
+        mask = sin_theta > ZERO
 
         w1 = np.where(mask, np.sin((1 - t) * theta) / sin_theta, 1.0 - t)
         w2 = np.where(mask, np.sin(t * theta) / sin_theta, t)

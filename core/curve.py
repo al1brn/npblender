@@ -36,7 +36,7 @@ DATA_TEMP_NAME = "npblender_TEMP"
 
 class Curve(Geometry):
 
-    def __init__(self, points=None, splines=None, curve_type=POLY, materials=None, **attrs):
+    def __init__(self, points=None, splines=None, curve_type=POLY, materials=None, attr_from=None, **attrs):
         """ Curve Geometry.
 
         Arguments
@@ -67,8 +67,13 @@ class Curve(Geometry):
         self.is_view = False
 
         # ----- Initialize empty domains
+
+        self.domain_names = ['points', 'splines']
+
         self.points  = SplinePointDomain()
         self.splines = SplineDomain()
+
+        self.join_attributes(attr_from)
 
         # ----- Add geometry
         self.add_splines(points, splines, curve_type=curve_type, **attrs)
@@ -1251,6 +1256,9 @@ class Curve(Geometry):
 
         if resolution is not None:
             resolution = max(2, resolution)
+
+        attr_names = self.points.transdom_names
+        attr_names.extend(['w', 'tilt'])
         
         def _to_poly(curve, ctype, loop_total, is_cyclic, resol=None):
 
@@ -1272,14 +1280,14 @@ class Curve(Geometry):
 
             pos = curve.evaluate(t).reshape(-1, 3)
             attrs = {}
-            for k, v in curve.sample_attributes(t, cubic=ctype==BEZIER).items():
+            for k, v in curve.sample_attributes(t, names=attr_names, cubic=ctype==BEZIER).items():
                 field_shape = curve.points.get_field_shape(k)
                 if field_shape == ():
                     attrs[k] = v.flatten()
                 else:
                     attrs[k] = v.reshape((-1,) + field_shape)
 
-            points = SplinePointDomain(position=pos, **attrs)
+            points = SplinePointDomain(position=pos, attr_from=self.points, **attrs)
             splines = SplineDomain(curve.splines)
             splines.curve_type = POLY
             splines.loop_total = len(t)
@@ -1291,8 +1299,8 @@ class Curve(Geometry):
         
         new_curve = Curve(materials=self.materials)
         for _, c in self.for_each_bucket(_to_poly):
-            new_curve.splines.extend(c.splines, join_fields=False)
-            new_curve.points.extend(c.points, join_fields=False)
+            new_curve.splines.extend(c.splines)
+            new_curve.points.extend(c.points)
 
         new_curve.splines.update_loop_start()
         return new_curve
@@ -1313,6 +1321,9 @@ class Curve(Geometry):
             Per-segment resolution to write into `splines.resolution` (>=1).
         """
         resolution = max(1, int(resolution))
+
+        attr_names = self.points.transdom_names
+        attr_names.extend(['tilt'])
 
         def _to_bezier(curve, ctype, loop_total, is_cyclic, _resol=None):
 
@@ -1351,7 +1362,7 @@ class Curve(Geometry):
 
             # Sample additional point attributes at anchors
             attrs = {}
-            for k, v in curve.sample_attributes(t, cubic=(ctype == BEZIER)).items():
+            for k, v in curve.sample_attributes(t, name=attr_names, cubic=(ctype == BEZIER)).items():
                 field_shape = curve.points.get_field_shape(k)  # e.g. (), (D,), (H,W), ...
                 if field_shape == ():
                     attrs[k] = v.reshape(-1)
@@ -1362,6 +1373,7 @@ class Curve(Geometry):
             points = SplinePointDomain(position=P_flat,
                                     handle_left=L_flat,
                                     handle_right=R_flat,
+                                    attr_from = self.points,
                                     **attrs)
 
             splines = SplineDomain(curve.splines)  # copy bucket rows
@@ -1447,11 +1459,11 @@ class Curve(Geometry):
 
             if profile is None:
 
-                # Same fields
-                mesh.points.join_fields(curve.points)
+                # Create mesh points
+                mesh.add_points(curve.points.position)
 
-                # Mesh points extension to transfer the attributes
-                mesh.points.extend(curve.points, join_fields=True)
+                # Transfer trans domain attributes
+                mesh.points.transfer_attributes(curve.points)
 
                 # Edges
                 inds = np.arange(npoints).reshape(nsplines, N)
@@ -1515,6 +1527,10 @@ class Curve(Geometry):
             all_points = all_points.reshape(-1, 3)
 
             mesh.add_points(all_points)
+
+            # Transfer trans domain attributes
+            mesh.points.transfer_attributes(curve.points, shape=(nsplines, N, nprof), other_shape=(nsplines, N, 1))
+            mesh.points.transfer_attributes(profile.points, shape=(nsplines, N, nprof), other_shape=(1, 1, nprof))
 
             # Grid corners
             corners = grid_corners(N, nprof, row_first=False, close_x=cyclic, close_y=prof_closed, clockwise=True).flatten()

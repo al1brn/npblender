@@ -18,17 +18,14 @@ import inspect
 
 import numpy as np
 
-from . import engine
+from .engine import engine, Animation
 from . import blender
-from .mesh import Mesh
-from ..maths import functions
-from .engine import Animation
 
 PI  = np.pi
 TAU = np.pi*2
 
 # =============================================================================================================================
-# A simulation si basically a loop calling actions
+# A simulation is basically a loop calling actions
 #
 # The simulation maintains:
 # - the current time

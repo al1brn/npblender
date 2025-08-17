@@ -110,6 +110,17 @@ class FieldArray(object):
                     self._infos[name] = {'dtype': data[name].dtype, 'shape': shape, 'default': 0, 'optional': False}
 
     # ====================================================================================================
+    # Clone with another array
+    # ====================================================================================================
+
+    def clone(self, data):
+        fa = type(self)()
+        fa._data = data
+        fa._length = self._length
+        fa._infos = dict(self._infos)
+        return fa
+
+    # ====================================================================================================
     # Shape management
     # ====================================================================================================
 
@@ -299,6 +310,10 @@ class FieldArray(object):
         self._length = 0
         self._data = self._data.reshape(-1)
 
+    # ----------------------------------------------------------------------------------------------------
+    # Resize
+    # ----------------------------------------------------------------------------------------------------
+
     def resize(self, shape):
 
         if isinstance(shape, (int, np.int32, np.int64)):
@@ -328,6 +343,10 @@ class FieldArray(object):
         if len(shape) > 1:
             self.reshape(shape)
 
+    # ----------------------------------------------------------------------------------------------------
+    # Reshape
+    # ----------------------------------------------------------------------------------------------------
+
     def reshape(self, *shape):
 
         if len(shape) == 1 and isinstance(shape[0], (tuple, list)):
@@ -355,8 +374,25 @@ class FieldArray(object):
             raise ValueError(f"Impossible to reshape array of length {self._length} to shape {shape}.")
         
         if len(shape) > 1:
-            self._data = np.array(self._data[:self._length])
-        self._data = np.reshape(self._data, shape)    
+            self._data = self._data[:self._length].reshape(shape)
+        else:
+            self._data = self._data.reshape(-1)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Ravel and flatten
+    # ----------------------------------------------------------------------------------------------------
+
+    def ravel(self):
+        if self.is_shaped:
+            return self.clone(self._data.ravel())
+        else:
+            return self
+
+    def flatten(self):
+        if self.is_shaped:
+            return self.clone(self._data.flatten())
+        else:
+            return self
 
     # ====================================================================================================
     # Items
@@ -418,6 +454,16 @@ class FieldArray(object):
 
         if name in self._infos:
             self._ensure_optional_field(name)
+
+            # Should never happen, but just in case...
+            if name not in self._data.dtype.names or name not in self._data_view.dtype.names:
+                raise AttributeError(
+                    f"{type(self).__name__}> impossible to create the field '{name}'."
+                    f"\n_infos: {[(n, info['optional']) for n, info in self._infos.items()]}"
+                    f"\n_data: {self._data.dtype.names}"
+                    f"\n_data_view: {self._data_view.dtype.names}"
+                    )
+
             return self._data_view[name]
 
         raise AttributeError(f"{type(self).__name__}> no field named '{name}'")
@@ -497,6 +543,28 @@ class FieldArray(object):
     # Create fields
     # ====================================================================================================
 
+    def check_fields(self, label="check"):
+        msg = None
+        for name, info in self._infos.items():
+            if info['optional']:
+                if name in self._data.dtype.names:
+                    msg = f"Attribute '{name}' is optional but exists in _data." 
+                break
+
+            if name not in self._data.dtype.names:
+                msg = f"Attribute '{name}' doesn't exist in _data."
+                break
+
+            if name not in self._data_view.dtype.names:
+                msg = f"Attribute '{name}' doesn't exist in _data_view."
+                break
+
+        if msg is None:
+            print(f"FieldArray fields checking ok ({label})")
+            return True
+        
+        raise Exception(f"Error in FieldArray fields checking ({label}) : {msg}")
+
     def is_reserved_name(self, name):
         return name in self._slots or hasattr(type(self), name)
     
@@ -574,7 +642,9 @@ class FieldArray(object):
         
         # Already exists
         if name in self._infos:
-            raise ValueError(f"new_field > '{name}' is already defined.")
+            if (dtype != self._infos[name]['dtype'] or
+                shape != self._infos[name]['shape']):
+                raise ValueError(f"new_field > '{name}' is already defined.")
         
         # Declare in infos
         self._infos[name] = {
@@ -594,12 +664,20 @@ class FieldArray(object):
     # ----------------------------------------------------------------------------------------------------
 
     def _ensure_optional_field(self, index):
-        if isinstance(index, str):
-            if index not in self._infos:
-                raise IndexError(f"FieldArray has no field named {index}")
-            
-            if self._infos[index]['optional']:
-                self._create_field_in_data(index)
+        if not isinstance(index, str):
+            return
+        
+        if index not in self._infos:
+            raise IndexError(f"FieldArray has no field named {index}")
+        
+        if self._infos[index]['optional']:
+            self._create_field_in_data(index)
+        else:
+            if index not in self._data.dtype.names:
+                raise IndexError(
+                    f"Field '{index}' is not in _data. "
+                    "make sure not to create an optional field in a selection, or a ravel() view."
+                    )
 
     # ----------------------------------------------------------------------------------------------------    
     # Copy an existing field
@@ -649,7 +727,7 @@ class FieldArray(object):
     # Join fields from another FielArray
     # ----------------------------------------------------------------------------------------------------    
 
-    def join_fields(self, other):
+    def join_fields(self, other, exclude=[]):
         """
         Add all missing fields from another FieldArray.
 
@@ -667,7 +745,7 @@ class FieldArray(object):
         """
         if isinstance(other, FieldArray):
             for name in other._infos:
-                if name in self._infos:
+                if name in self._infos or name in exclude:
                     continue
 
                 self._infos[name] = {**other._infos[name]}
@@ -676,7 +754,7 @@ class FieldArray(object):
 
         else:
             for name in other.dtype.names:
-                if name in self._infos:
+                if name in self._infos or name in exclude:
                     continue
 
                 self.new_field(name, dtype=other[name].dtype, shape=other[name].shape)
@@ -1303,6 +1381,24 @@ if __name__ == "__main__":
     print("Col 1:      ", fa[:, 1].i)
     print("Item [1, 2]:", fa[1, 2].i)
 
+    print("Ravel")
+    print("i", fa.ravel().i.shape)
+    print("v", fa.ravel().v.shape)
+    print("m", fa.ravel().m.shape)
+    
+    assert(np.shares_memory(fa._data, fa.ravel()._data))
+
+    # ----- Test set
+
+    fa = FieldArray()
+    fa.new_field("i", int)
+    i = np.arange(10)
+    fa.append(i=i)
+
+    for rg, val in [(5, 99), (slice(2, 5), 999)]:
+        fa[rg].i = val
+        i[rg] = val
+        assert np.all(fa.i == i), f"{str(fa.i)} != {str(i)}"
 
     print("Tests completed")
 

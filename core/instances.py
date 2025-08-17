@@ -24,7 +24,7 @@ DATA_TEMP_NAME = "npblender_TEMP"
 
 class Instances(Geometry):
 
-    def __init__(self, points=None, models=None, model_index=0, **attributes):
+    def __init__(self, points=None, models=None, model_index=0, attr_from=None, **attributes):
         """ Create new instances.
 
         Arguments
@@ -34,7 +34,10 @@ class Instances(Geometry):
             - model_index (int = 0) : model index of instances
             - **attributes (dict) : other geometry attributes
         """
+        self.domain_names = ['points']
         self.points  = InstanceDomain()
+
+        self.join_attributes(attr_from)
 
         if models is None:
             self.models = []
@@ -44,9 +47,10 @@ class Instances(Geometry):
         
         self.points.append(position=points, model_index=model_index, **attributes)
 
-    def check(self, halt=True):
+    def check(self, title="Instances Check", halt=True):
         n = np.max(self.points.model_index)
         if n >= len(self.models):
+            print(title)
             print(f"Model index {n} greater than the number {len(self.models)} of models.")
             if halt:
                 assert(False)
@@ -58,6 +62,27 @@ class Instances(Geometry):
     
     def __len__(self):
         return len(self.points)
+    
+    # =============================================================================================================================
+    # Serialization
+    # =============================================================================================================================
+
+    def to_dict(self):
+        return {
+            'geometry':   'Instances',
+            'points':     self.points.to_dict(),
+            'models':     [model.to_dict() for model in self.models],
+            'low_resols': [[lr.to_dict() for lr in low_resol] for low_resol in self.low_resols]
+            }
+
+    @classmethod
+    def from_dict(cls, d):
+        insts = cls()
+        insts.points     = InstanceDomain.from_dict(d['points'])
+        insts.models     = [Geometry.from_dict(model) for model in d['models']]
+        insts.low_resols = [[Geometry.from_dict(lrd) for lrd in low_resol_dict] for low_resol_dict in d['low_resols']]
+
+        return insts    
     
     # ====================================================================================================
     # Low scale models

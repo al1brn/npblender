@@ -486,6 +486,14 @@ class Animation:
     @property
     def engine(self):
         return engine
+    
+    @property
+    def time(self):
+        return engine.time
+    
+    @property
+    def delta_time(self):
+        return engine.delta_time
 
     # ----------------------------------------------------------------------------------------------------
     # Three animation methods
@@ -498,7 +506,8 @@ class Animation:
         pass
 
     def compute(self):
-        raise NotImplementedError(f"{type(self).__name__} does not implement compute()")
+        pass
+        #raise NotImplementedError(f"{type(self).__name__} does not implement compute()")
 
     def view(self):
         pass
