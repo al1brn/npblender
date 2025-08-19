@@ -18,7 +18,7 @@ from . maths import Transformation, Quaternion, Rotation
 from . maths import splinemaths
 
 from . geometry import Geometry
-from . domain import InstanceDomain
+from . domain import Point
 
 DATA_TEMP_NAME = "npblender_TEMP"
 
@@ -38,7 +38,7 @@ class Instances(Geometry):
             - model_index (int = 0) : model index of instances
             - **attributes (dict) : other geometry attributes
         """
-        self.points  = InstanceDomain()
+        self.points  = Point()
         self.join_attributes(attr_from)
 
         if models is None:
@@ -80,7 +80,7 @@ class Instances(Geometry):
     @classmethod
     def from_dict(cls, d):
         insts = cls()
-        insts.points     = InstanceDomain.from_dict(d['points'])
+        insts.points     = Point.from_dict(d['points'])
         insts.models     = [Geometry.from_dict(model) for model in d['models']]
         insts.low_resols = [[Geometry.from_dict(lrd) for lrd in low_resol_dict] for low_resol_dict in d['low_resols']]
 
@@ -423,9 +423,8 @@ class Meshes(Geometry):
             - attr_from (Geometry) : geometry where to capture attributes from
             - **attributes (dict) : other geometry attributes
         """
-        self.points  = InstanceDomain()
+        self.points  = Point()
         self.join_attributes(attr_from)
-        self.points.init_rotation(scale=True)
 
         self._init_buckets(mesh, mesh_id)
 
@@ -520,7 +519,7 @@ class Meshes(Geometry):
         m = cls(attr_from=meshes)
         m.mesh = Mesh.from_mesh(meshes.mesh)
         m.buckets = [np.array(b) for b in meshes.buckets]
-        m.points = InstanceDomain(meshes.points, mode='COPY')
+        m.points = Point(meshes.points, mode='COPY')
 
         return m
 
@@ -551,7 +550,7 @@ class Meshes(Geometry):
         from .mesh import Mesh
 
         meshes = cls()
-        meshes.points     = InstanceDomain.from_dict(d['points'])
+        meshes.points     = Point.from_dict(d['points'])
         meshes.mesh       = Mesh.from_dict(d['mesh'])
         meshes.buckets    = d['buckets']
 

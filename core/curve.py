@@ -26,7 +26,7 @@ from . maths import Transformation, Quaternion, Rotation
 from . maths import splinemaths
 
 from . geometry import Geometry
-from . domain import SplinePointDomain, SplineDomain
+from . domain import ControlPoint, Spline
 
 DATA_TEMP_NAME = "npblender_TEMP"
 
@@ -59,8 +59,8 @@ class Curve(Geometry):
 
         # ----- The two domains are already built
         # can be a view on a larger curve
-        if ( points is not None and isinstance(points, SplinePointDomain) and
-             splines is not None and isinstance(splines, SplineDomain) ):
+        if ( points is not None and isinstance(points, ControlPoint) and
+             splines is not None and isinstance(splines, Spline) ):
             self.points = points
             self.splines = splines
             self.is_view = np.sum(self.splines.loop_total) != len(self.points)
@@ -70,8 +70,8 @@ class Curve(Geometry):
 
         # ----- Initialize empty domains
 
-        self.points  = SplinePointDomain()
-        self.splines = SplineDomain()
+        self.points  = ControlPoint()
+        self.splines = Spline()
 
         self.join_attributes(attr_from)
 
@@ -116,7 +116,7 @@ class Curve(Geometry):
         import numpy as np
 
         # 1) Copy splines domain (owning copy)
-        splines = SplineDomain(self.splines, mode='COPY')
+        splines = Spline(self.splines, mode='COPY')
 
         # 2) Build a single flat index of point rows, bucketed by loop_total (N)
         lt = splines.loop_total
@@ -138,9 +138,9 @@ class Curve(Geometry):
         if idx_blocks:
             idx_all = np.concatenate(idx_blocks, axis=0)
             # 3) Slice the point FieldArray to keep all fields aligned
-            points = SplinePointDomain(self.points, mode='COPY', selector=idx_all)  # owning copy
+            points = ControlPoint(self.points, mode='COPY', selector=idx_all)  # owning copy
         else:
-            points = SplinePointDomain()                       # empty
+            points = ControlPoint()                       # empty
 
         # 4) Assign back and normalize bookkeeping
         self.points = points
@@ -203,8 +203,8 @@ class Curve(Geometry):
     def from_dict(cls, d):
         curve = cls()
         curve.materials  = d['materials']
-        curve.points     = SplinePointDomain.from_dict(d['points'])
-        curve.splines    = SplineDomain.from_dict(d['splines'])
+        curve.points     = ControlPoint.from_dict(d['points'])
+        curve.splines    = Spline.from_dict(d['splines'])
         return curve
     
     # ====================================================================================================
@@ -243,8 +243,8 @@ class Curve(Geometry):
         """
 
         curve = cls(materials=other.materials)
-        curve.points  = SplinePointDomain(other.points,  mode='COPY')
-        curve.splines = SplineDomain(other.splines, mode='COPY')
+        curve.points  = ControlPoint(other.points,  mode='COPY')
+        curve.splines = Spline(other.splines, mode='COPY')
 
         if points is None:
             points_mask = None
@@ -1287,8 +1287,8 @@ class Curve(Geometry):
                 else:
                     attrs[k] = v.reshape((-1,) + field_shape)
 
-            points = SplinePointDomain(position=pos, attr_from=self.points, **attrs)
-            splines = SplineDomain(curve.splines)
+            points = ControlPoint(position=pos, attr_from=self.points, **attrs)
+            splines = Spline(curve.splines)
             splines.curve_type = POLY
             splines.loop_total = len(t)
             splines.update_loop_start()
@@ -1334,8 +1334,8 @@ class Curve(Geometry):
             N = int(control_count) if control_count is not None else int(loop_total)
             if N <= 0:
                 # build empty bucket preserving schema
-                pts = SplinePointDomain()
-                spl = SplineDomain(curve.splines)
+                pts = ControlPoint()
+                spl = Spline(curve.splines)
                 spl.curve_type = BEZIER
                 spl.loop_total = 0
                 spl.resolution = resolution
@@ -1370,13 +1370,13 @@ class Curve(Geometry):
                     attrs[k] = v.reshape((-1,) + field_shape)
 
             # Build new domains for this bucket
-            points = SplinePointDomain(position=P_flat,
+            points = ControlPoint(position=P_flat,
                                     handle_left=L_flat,
                                     handle_right=R_flat,
                                     attr_from = self.points,
                                     **attrs)
 
-            splines = SplineDomain(curve.splines)  # copy bucket rows
+            splines = Spline(curve.splines)  # copy bucket rows
             splines.curve_type = BEZIER
             splines.loop_total = N
             splines.resolution = resolution

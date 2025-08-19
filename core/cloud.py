@@ -28,7 +28,7 @@ from . maths.topology import border_edges, edges_between, row_edges, col_edges
 from . maths import distribs
 
 from . geometry import Geometry
-from . domain import CloudPointDomain
+from . domain import Point
 
 DATA_TEMP_NAME = "NPBL_TEMP"
 
@@ -49,7 +49,7 @@ class Cloud(Geometry):
         """
         # ----- Initialize an empty geometry
 
-        self.points = CloudPointDomain()
+        self.points = Point()
 
         self.join_attributes(attr_from)
 
@@ -81,7 +81,7 @@ class Cloud(Geometry):
     @classmethod
     def from_dict(cls, d):
         cloud = cls()
-        cloud.points = CloudPointDomain.from_dict(d['points'])
+        cloud.points = Point.from_dict(d['points'])
         return cloud
     
     # ====================================================================================================
@@ -122,7 +122,7 @@ class Cloud(Geometry):
             raise ValueError(f"from_geometry> {type(other)} has no points.")
 
         cloud = cls()
-        cloud.points = CloudPointDomain(points,  mode='COPY')
+        cloud.points = Point(points,  mode='COPY')
 
         if selection is not None:
             points_mask = np.ones(len(cloud.points), dtype=bool)

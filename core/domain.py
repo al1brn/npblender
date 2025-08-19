@@ -737,7 +737,7 @@ class Domain(FieldArray):
 # ====================================================================================================
 
 # ----------------------------------------------------------------------------------------------------
-# Mesh Point
+# Root class for points
 # ----------------------------------------------------------------------------------------------------
 
 class PointDomain(Domain):
@@ -747,12 +747,11 @@ class PointDomain(Domain):
         - Mesh : vertices
         - Curve : control points
         - Cloud : points
-        - Instances : instance locations
+        - Instances/Meshes : instance locations
 
     Attributes
     ----------
         - position (vector) : point position
-        - radius (float, optional) : point radius
     """
 
     domain_name = 'POINT'
@@ -831,36 +830,11 @@ class PointDomain(Domain):
 
         return self
     
-    # ====================================================================================================
-    # Kinematics attributes
-    # ====================================================================================================
+# ----------------------------------------------------------------------------------------------------
+# Vertex (Mesh)
+# ----------------------------------------------------------------------------------------------------
 
-    def init_rotation(self, scale=False):
-        self.new_vector('euler',       default = (0, 0, 0), optional=True)
-        self.new_quaternion("quat",    optional=True)
-        if scale:
-            self.new_vector("scale",    optional=True, default=1, transfer=False)
-
-    def init_kinematics(self):
-
-        # Speed
-        self.new_vector('speed',       default=(0, 0, 0))
-        self.new_vector('accel',       default=(0, 0, 0))
-        self.new_float('mass',         default = 1., optional=True)
-        self.new_vector('force',       default=(0, 0, 0))
-
-        # Rotation
-        self.init_rotation(scale=False) # euler and quat
-        self.new_float('moment',       default = 1., optional=True) # Should be a 3x3 tensor !
-        self.new_vector('omega',       default = (0, 0, 0), optional=True) # Angular velocity
-        self.new_vector('torque',      default = (0, 0, 0), optional=True)
-
-        # Miscellaneous
-        self.new_float('age',          default = 0, optional=True)
-        self.new_bool('locked',        default = False, optional=True)
-        self.new_vector('last_pos',    default = (0, 0, 0), optional=True)
-        self.new_float('viscosity',    default = .01, optional=True)
-
+class Vertex(PointDomain):
 
     # ----------------------------------------------------------------------------------------------------
     # Compute attribute on faces
@@ -923,7 +897,26 @@ class PointDomain(Domain):
         attr, item_shape = self._check_attribute_to_compute(attr)
         res = np.zeros((len(edges),) + item_shape, dtype=attr.dtype)
         return _to_edges(edges.vertex0, edges.vertex1, attr, res)    
-    
+
+# ----------------------------------------------------------------------------------------------------
+# Control Point (Curve)
+# ----------------------------------------------------------------------------------------------------
+
+class ControlPoint(PointDomain):
+
+    def declare_attributes(self):
+        super().declare_attributes()
+
+        self.new_float( 'w',                 optional=True, default=1., transdom=False)
+
+        self.new_vector('handle_left',       optional=True, transdom=False)
+        self.new_vector('handle_right',      optional=True, transdom=False)
+        self.new_int(   'handle_type_left',  optional=True, transdom=False)
+        self.new_int(   'handle_type_right', optional=True, transdom=False)
+        self.new_float( 'tilt',              optional=True, transdom=False)
+        self.new_float( 'radius',            optional=True, default=1)
+        self.new_float( 'weight',            optional=True, default=1.)
+
     # ----------------------------------------------------------------------------------------------------
     # Compute attribute on splines
     # ----------------------------------------------------------------------------------------------------
@@ -946,37 +939,11 @@ class PointDomain(Domain):
 
         attr, item_shape = self._check_attribute_to_compute(attr)
         res = np.zeros((len(splines),) + item_shape, dtype=attr.dtype)
-        return _to_splines(splines.loop_start, splines.loop_total, attr, res)    
-
-
-# ----------------------------------------------------------------------------------------------------
-# Cloud Point
-# ----------------------------------------------------------------------------------------------------
-
-class CloudPointDomain(PointDomain):
-
-    def declare_attributes(self):
-        super().declare_attributes()
-        self.new_float('radius', default=.05, optional=True, transfer=True)
-
-# ----------------------------------------------------------------------------------------------------
-# Spline Point
-# ----------------------------------------------------------------------------------------------------
-
-class SplinePointDomain(PointDomain):
-
-    def declare_attributes(self):
-        super().declare_attributes()
-
-        self.new_float( 'w',                 optional=True, default=1., transdom=False)
-
-        self.new_vector('handle_left',       optional=True, transdom=False)
-        self.new_vector('handle_right',      optional=True, transdom=False)
-        self.new_int(   'handle_type_left',  optional=True, transdom=False)
-        self.new_int(   'handle_type_right', optional=True, transdom=False)
-        self.new_float( 'tilt',              optional=True, transdom=False)
-        self.new_float( 'radius',            optional=True, default=1)
-        self.new_float( 'weight',            optional=True, default=1.)
+        return _to_splines(splines.loop_start, splines.loop_total, attr, res)
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Transformation
+    # ----------------------------------------------------------------------------------------------------
 
     def apply_scale(self, scale, pivot=None):
 
@@ -998,49 +965,57 @@ class SplinePointDomain(PointDomain):
             self.handle_right = rot @ self.handle_right
 
         return self
-
+    
 # ----------------------------------------------------------------------------------------------------
-# Instance Domain
+# Point (Geometries with Point as single domain : Cloud, Instances, Meshes)
 # ----------------------------------------------------------------------------------------------------
 
-class InstanceDomain(PointDomain):
-    """ Instance Domain.
-
-    Instance domain directly inherits from Point domain.
-    In addition to position attribute, it managed two more transformations : scale and rotation (euler and quaternion) to
-    be applied to the instances.
-
-    Instances are randomly chosen in a list of models. The index is stored in the model_index attribute.
-
-    The instances capture attributes from other domains.
-
-    Attributes
-    ----------
-        - position (vector) : instance position
-        - scale (vector, optional) : instance scale
-        - euler (vector, optional) : instance rotation
-        - quat (vector (4,), optional) : instance rotation
-        - rot (matrix (3x3), optional) : instance rotation
-        - model_index (int) : index in the list of models
-
-    Arguments
-    ---------
-        - domain_name (str = None) : 'INSTANCE' or None
-        - owner (Instance domain = None) : the selection owner if not None
-        - selector (selection = None) : selection if initialized as domain selection
-        - points (array of vectors = None) : a point domain
-        - models (model spec of list of model specs) : the model to pick into
-        - indices (array of ints = None) : model_index initialization
-        - seed (int = None) : random seed if indices is None
-    """
-
-    domain_name = 'INSTANCE'
+class Point(PointDomain):
 
     def declare_attributes(self):
         super().declare_attributes()
 
-        self.new_int("model_index", optional=True, transfer=False)
-        self.init_rotation(scale=True)
+        # Cloud
+        self.new_float('radius', default=.05, optional=True, transfer=True)
+
+        # Instance
+        self.new_int('model_index', default=0, optional=True, transfer=False)
+
+        # All
+        self.new_vector('euler',       default = (0, 0, 0), optional=True)
+        self.new_quaternion("quat",    optional=True)
+        self.new_vector("scale",       optional=True, default=1, transfer=False)
+
+    # ====================================================================================================
+    # Kinematics attributes
+    # ====================================================================================================
+
+    def init_kinematics(self):
+
+        # Speed
+        self.new_vector('speed',       default=(0, 0, 0))
+        self.new_vector('accel',       default=(0, 0, 0))
+        self.new_float('mass',         default = 1., optional=True)
+        self.new_vector('force',       default=(0, 0, 0))
+
+        # Rotation
+        self.new_float('moment',       default = 1., optional=True) # Should be a 3x3 tensor !
+        self.new_vector('omega',       default = (0, 0, 0), optional=True) # Angular velocity
+        self.new_vector('torque',      default = (0, 0, 0), optional=True)
+
+        # Miscellaneous
+        self.new_float('age',          default = 0, optional=True)
+        self.new_bool('locked',        default = False, optional=True)
+        self.new_vector('last_pos',    default = (0, 0, 0), optional=True)
+        self.new_float('viscosity',    default = .01, optional=True)
+
+    # ====================================================================================================
+    # Transformation
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Rotation
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def has_rotation(self):
@@ -1069,6 +1044,16 @@ class InstanceDomain(PointDomain):
             else:
                 return quat @ rot
             
+    def get_rotation(self, default=None):
+        if self.has_rotation:
+            return self.rotation
+        else:
+            return default
+
+    # ----------------------------------------------------------------------------------------------------
+    # Scale
+    # ----------------------------------------------------------------------------------------------------
+            
     def apply_scale(self, scale, pivot=None):
 
         super().apply_scale(scale, pivot=pivot)
@@ -1078,6 +1063,9 @@ class InstanceDomain(PointDomain):
 
         return self
 
+    # ----------------------------------------------------------------------------------------------------
+    # Transformation
+    # ----------------------------------------------------------------------------------------------------
             
     def transform(self, transfo, pivot=None):
 
@@ -1100,12 +1088,11 @@ class InstanceDomain(PointDomain):
 
         return self
 
-
 # ====================================================================================================
 # Corner Domain
 # ====================================================================================================
 
-class CornerDomain(Domain):
+class Corner(Domain):
     """ Corner domain stores a vertex index for face descriptions.
 
     This domain is specific to Mesh geometry.
@@ -1132,7 +1119,7 @@ class CornerDomain(Domain):
             return True
         
         if np.max(self.vertex_index) > count:
-            msg = f"CornerDomain check fail: {np.max(self.vertex_index)=}, {count=}"
+            msg = f"Corner check fail: {np.max(self.vertex_index)=}, {count=}"
             if halt:
                 raise RuntimeError(msg)
             else:
@@ -1186,8 +1173,6 @@ class CornerDomain(Domain):
         res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
         return _to_points(self.vertex_index, attr, res)                
 
-
-
 # ====================================================================================================
 # Root for Face and Spline
 # ====================================================================================================
@@ -1209,7 +1194,7 @@ class FaceSplineDomain(Domain):
             return True
         
         if np.sum(self.loop_total) != count:
-            msg = f"FaceDomain check fail: {np.sum(self.loop_total)=}, {count=}"
+            msg = f"Face check fail: {np.sum(self.loop_total)=}, {count=}"
             if halt:
                 raise RuntimeError(msg)
             else:
@@ -1340,7 +1325,7 @@ class FaceSplineDomain(Domain):
 # Face Domain
 # ====================================================================================================
 
-class FaceDomain(FaceSplineDomain):
+class Face(FaceSplineDomain):
 
     domain_name = 'FACE'
 
@@ -1452,7 +1437,7 @@ class FaceDomain(FaceSplineDomain):
         else:
             sv = np.zeros((len(vs), 3), float)
             for i in range(size-2):
-                sv += FaceDomain.surf_vect(vs[..., [0, i+1, i+2], :], 3)
+                sv += Face.surf_vect(vs[..., [0, i+1, i+2], :], 3)
 
         if return_vector == 'AREA':
             return np.linalg.norm(sv, axis=-1)/2
@@ -1643,14 +1628,11 @@ class FaceDomain(FaceSplineDomain):
         res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
         return _to_points(self.loop_start, self.loop_total, corners.vertex_index, attr, res)                
 
-
-
-
 # ====================================================================================================
 # Edge Domain
 # ====================================================================================================
 
-class EdgeDomain(Domain):
+class Edge(Domain):
     """ Edge domain.
 
     Attributes
@@ -1760,13 +1742,11 @@ class EdgeDomain(Domain):
         res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
         return _to_points(self.vertex0, self.vertex1, attr, res)                
 
-
-
-
 # ====================================================================================================
 # Spline Domain
+# ====================================================================================================
 
-class SplineDomain(FaceSplineDomain):
+class Spline(FaceSplineDomain):
     """ Spline domain.
 
     Spline domain is specific to Curve geometry. A spline is an array of control points.
@@ -2002,15 +1982,6 @@ class SplineDomain(FaceSplineDomain):
         return _to_points(self.loop_start, self.loop_total, attr, res)                
     
 
-
-
-
-
-
-
-
-
-
 from pprint import pprint
 from time import time
 
@@ -2027,13 +1998,13 @@ rng = np.random.default_rng(0)
 
 def test_face_delete(n=10):
 
-    face = FaceDomain()
+    face = Face()
     loops = rng.integers(3, 7, n)
     face.append_loops(loops)
 
     ok_check = n < 20
 
-    corners = CornerDomain()
+    corners = Corner()
     corners.append(vertex_index=np.arange(np.sum(face.loop_total)))
 
     if ok_check:
@@ -2068,7 +2039,7 @@ def test_face_edges(n=10):
         for i in range(min(10, len(e0))):
             print(f"- {i:2d}> ({e0[i]:2d}, {e1[i]:2d})")
 
-    face = FaceDomain()
+    face = Face()
     loops = rng.integers(3, 7, n)
     face.append_loops(loops)
 
@@ -2083,7 +2054,7 @@ def test_face_edges(n=10):
 
 def test_per_size(n=10):
 
-    face = FaceDomain()
+    face = Face()
     loops = rng.integers(3, 7, n)
     face.append_loops(loops)
 
@@ -2124,7 +2095,7 @@ def test_per_size(n=10):
 
 def test_control_point(n=10):
 
-    cp = ControlPointDomain()
+    cp = ControlPoint()
     cp.append(points4=np.arange(16).reshape((4, 4)))
 
     print(cp.position)

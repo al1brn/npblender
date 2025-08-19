@@ -27,7 +27,7 @@ from . maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_ma
 from . maths.topology import border_edges, edges_between, row_edges, col_edges
 
 from . geometry import Geometry
-from . domain import PointDomain, CornerDomain, FaceDomain, EdgeDomain
+from . domain import Vertex, Corner, Face, Edge
 
 
 import bpy
@@ -62,10 +62,10 @@ class Mesh(Geometry):
 
         # ----- Initialize an empty geometry
 
-        self.points  = PointDomain()
-        self.corners = CornerDomain()
-        self.faces   = FaceDomain()
-        self.edges   = EdgeDomain()
+        self.points  = Vertex()
+        self.corners = Corner()
+        self.faces   = Face()
+        self.edges   = Edge()
 
         self.join_attributes(attr_from)
 
@@ -141,10 +141,10 @@ class Mesh(Geometry):
     def from_dict(cls, d):
         mesh = cls()
         mesh.materials  = d['materials']
-        mesh.points     = PointDomain.from_dict(d['points'])
-        mesh.corners    = CornerDomain.from_dict(d['corners'])
-        mesh.faces      = FaceDomain.from_dict(d['faces'])
-        mesh.edges      = EdgeDomain.from_dict(d['edges'])
+        mesh.points     = Vertex.from_dict(d['points'])
+        mesh.corners    = Corner.from_dict(d['corners'])
+        mesh.faces      = Face.from_dict(d['faces'])
+        mesh.edges      = Edge.from_dict(d['edges'])
         return mesh
     
     # =============================================================================================================================
@@ -183,10 +183,10 @@ class Mesh(Geometry):
             - Mesh
         """
         mesh = cls(materials=other.materials)
-        mesh.points  = PointDomain(other.points,  mode='COPY')
-        mesh.corners = CornerDomain(other.corners, mode='COPY')
-        mesh.faces   = FaceDomain(other.faces,   mode='COPY')
-        mesh.edges   = EdgeDomain(other.edges,    mode='COPY')
+        mesh.points  = Vertex(other.points,  mode='COPY')
+        mesh.corners = Corner(other.corners, mode='COPY')
+        mesh.faces   = Face(other.faces,   mode='COPY')
+        mesh.edges   = Edge(other.edges,    mode='COPY')
 
         if points is None:
             points_mask = None
