@@ -50,7 +50,7 @@ USE_JIT = True
 # It is te be used when working on a selection of faces
 # ----------------------------------------------------------------------------------------------------
 
-@njit    
+@njit(cache=True)
 def get_corner_indices(loop_start, loop_total):
 
     total_len = 0
@@ -77,7 +77,7 @@ def get_corner_indices(loop_start, loop_total):
 # Build the edges indices
 # ----------------------------------------------------------------------------------------------------
 
-@njit    
+@njit(cache=True)
 def get_face_edges(loop_start, loop_total):
 
     edges_count = np.sum(loop_total)
@@ -95,7 +95,7 @@ def get_face_edges(loop_start, loop_total):
 
     return edges
 
-@njit    
+@njit(cache=True)
 def get_face_per_size(loop_start, loop_total):
 
     n = len(loop_start)
@@ -124,7 +124,7 @@ def get_face_per_size(loop_start, loop_total):
 
     return arrays, counts, indices
 
-@njit    
+@njit(cache=True)
 def get_face_reverse_indices(loop_start, loop_total):
 
     total = np.sum(loop_total)
@@ -141,7 +141,7 @@ def get_face_reverse_indices(loop_start, loop_total):
 
     return indices
 
-@njit
+@njit(cache=True)
 def get_face_position(loop_start, loop_total, vertex_index, position):
 
     n = len(loop_start)
@@ -156,10 +156,8 @@ def get_face_position(loop_start, loop_total, vertex_index, position):
     return pos
 
 
-
-
 # =============================================================================================================================
-# reduce indices
+# Reduce indices
 #
 # selection is a list of indices to be renumeroted from 0 to max
 # [7, 9, 9, 2, 5, 7] -> [2, 3, 3, 0, 1, 2]
@@ -652,6 +650,87 @@ class Domain(FieldArray):
                 blender.set_attribute(attributes, name, self[name])
             else:
                 blender.create_attribute(attributes, name, info['data_type'], domain=self.domain_name, value=self[name])
+
+    # ====================================================================================================
+    # Create buckets from an attribute
+    # ====================================================================================================
+
+    def make_buckets(self, attr):
+        """ Make buckets from an attribute.
+
+        Domain items are grouped with the provided attribute. For each attribute value g,
+        we have n[g] indices sharing the value g. Items are grouped in buckets of the same
+        value g: a bucket is an array (b, n) of indices where:
+        - there are b attribute values g for which there are exactly n items having the value g.
+        - each line of of bucket (b, n) gives the indices of items sharing a common value.
+
+        Example:
+        - attrs = [0, 1, 2, 0, 1, 2, 0, 1, 2, 7, 8, 8, 9, 9]
+        - buckets = [
+          [[0, 3, 6],  # 0
+           [1, 4, 7],  # 1
+           [2, 5, 8]], # 2
+          [[9]],       # 7
+          [[10, 11],   # 8
+           [12, 13]]   # 9
+        ]
+
+        Note that the attribute values can be read with `attr[bucket[:, 0]]`.
+
+        If attr is an int, it is the name of the attribute to use.
+
+        Arguments
+        ---------
+        - attr (array of ints or str) : grouping attribute 
+
+        Returns
+        -------
+        - buckets (list of arrays (b, n) of ints) : buckets of indices
+        """
+        # ---------------------------------------------------------------------------
+        # Check attribute
+        # ---------------------------------------------------------------------------
+
+        if isinstance(attr, str):
+            groups = self[attr]
+        else:
+            groups = np.asarray(attr)
+
+        if groups.shape != (len(self),) or (groups.dtype not in (int, np.int32, np.int64)):
+            raise ValueError(f"Attribute must be an array({len(self)},) of ints, not array{attr.shape} of {attr.dtype}.")
+
+        # ---------------------------------------------------------------------------
+        # Make the buckets
+        # ---------------------------------------------------------------------------
+
+        idx = np.arange(groups.size)
+        counts = np.bincount(groups)
+
+        # Sort by contigous blocks
+        gcounts = counts[groups]
+        order = np.lexsort((idx, groups, gcounts))
+        
+        gc_ordered = gcounts[order]
+        buckets = []        
+        for count in np.unique(gcounts):
+            sel = order[gc_ordered == count]
+            buckets.append(sel.reshape(-1, count))        
+
+        return buckets
+    
+    # ====================================================================================================
+    # Check attribute to compute on another domain
+    # ====================================================================================================
+
+    def _check_attribute_to_compute(self, attr):
+        if isinstance(attr, str):
+            attr = self[attr]
+        
+        if attr.shape == () or len(attr) != len(self):
+            raise AttributeError(f"Domain '{type(self).__name__}': attribute (shape {attr.shape}) should have a length of {len(self)}.")
+        
+        return attr, attr.shape[1:]
+
     
 # ====================================================================================================
 # Point Domain
@@ -756,23 +835,118 @@ class PointDomain(Domain):
     # Kinematics attributes
     # ====================================================================================================
 
-    def init_kienmatics(self):
+    def init_rotation(self, scale=False):
+        self.new_vector('euler',       default = (0, 0, 0), optional=True)
+        self.new_quaternion("quat",    optional=True)
+        if scale:
+            self.new_vector("scale",    optional=True, default=1, transfer=False)
 
+    def init_kinematics(self):
+
+        # Speed
         self.new_vector('speed',       default=(0, 0, 0))
         self.new_vector('accel',       default=(0, 0, 0))
+        self.new_float('mass',         default = 1., optional=True)
         self.new_vector('force',       default=(0, 0, 0))
 
-        self.new_float('mass',         default = 1., optional=True)
+        # Rotation
+        self.init_rotation(scale=False) # euler and quat
+        self.new_float('moment',       default = 1., optional=True) # Should be a 3x3 tensor !
+        self.new_vector('omega',       default = (0, 0, 0), optional=True) # Angular velocity
+        self.new_vector('torque',      default = (0, 0, 0), optional=True)
+
+        # Miscellaneous
         self.new_float('age',          default = 0, optional=True)
         self.new_bool('locked',        default = False, optional=True)
         self.new_vector('last_pos',    default = (0, 0, 0), optional=True)
         self.new_float('viscosity',    default = .01, optional=True)
 
-        self.new_float('moment',       default = 1., optional=True)
-        self.new_vector('euler',       default = (0, 0, 0), optional=True)
-        self.new_quaternion("quat",    optional=True)
-        self.new_float('omega',        default = (0, 0, 0), optional=True)
 
+    # ----------------------------------------------------------------------------------------------------
+    # Compute attribute on faces
+    # ----------------------------------------------------------------------------------------------------
+    
+    def compute_attribute_on_faces(self, attr, corners, faces):
+
+        @njit(cache=True)
+        def _to_faces(loop_start, loop_total, vertex_index, source, res):
+
+            nfaces = loop_start.shape[0]
+            for iface in range(nfaces):
+                start = loop_start[iface]
+                total = loop_total[iface]
+                for icorner in range(start, start + total):
+                    vi = vertex_index[icorner]
+                    res[iface] += source[vi]
+                inv = 1.0 / total
+                res[iface] *= inv
+
+            return res        
+
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(faces),) + item_shape, dtype=attr.dtype)
+        return _to_faces(faces.loop_start, faces.loop_total, corners.vertex_index, attr, res)
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Compute attribute on corners
+    # ----------------------------------------------------------------------------------------------------
+    
+    def compute_attribute_on_corners(self, attr, corners):
+
+        @njit(cache=True)
+        def _to_corners(vertex_index, source, res):
+            ncorners = vertex_index.shape[0]
+            for icorner in range(ncorners):
+                vi = vertex_index[icorner]
+                res[icorner] += source[vi]
+            return res        
+
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(corners),) + item_shape, dtype=attr.dtype)
+        return _to_corners(corners.vertex_index, attr, res)    
+
+    # ----------------------------------------------------------------------------------------------------
+    # Compute attribute on edges
+    # ----------------------------------------------------------------------------------------------------
+    
+    def compute_attribute_on_edges(self, attr, edges):
+
+        @njit(cache=True)
+        def _to_edges(vertex0, vertex1, source, res):
+            nedges = vertex0.shape[0]
+            for iedge in range(nedges):
+                v0 = vertex0[iedge]
+                v1 = vertex1[iedge]
+                res[iedge] = (source[v0] + source[v1])* 0.5                
+            return res        
+
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(edges),) + item_shape, dtype=attr.dtype)
+        return _to_edges(edges.vertex0, edges.vertex1, attr, res)    
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Compute attribute on splines
+    # ----------------------------------------------------------------------------------------------------
+    
+    def compute_attribute_on_splines(self, attr, splines):
+
+        @njit(cache=True)
+        def _to_splines(loop_start, loop_total, source, res):
+
+            nsplines = loop_start.shape[0]
+            for ispline in range(nsplines):
+                start = loop_start[ispline]
+                total = loop_total[ispline]
+                for ipoint in range(start, start + total):
+                    res[ispline] += source[ipoint]
+                inv = 1.0 / total
+                res[ispline] *= inv
+
+            return res        
+
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(splines),) + item_shape, dtype=attr.dtype)
+        return _to_splines(splines.loop_start, splines.loop_total, attr, res)    
 
 
 # ----------------------------------------------------------------------------------------------------
@@ -865,11 +1039,8 @@ class InstanceDomain(PointDomain):
     def declare_attributes(self):
         super().declare_attributes()
 
-        self.new_int("model_index", transfer=False)
-
-        self.new_vector("scale",    optional=True, default=1, transfer=False)
-        self.new_vector("euler",    optional=True, transfer=False)
-        self.new_quaternion("quat", optional=True, transfer=False)
+        self.new_int("model_index", optional=True, transfer=False)
+        self.init_rotation(scale=True)
 
     @property
     def has_rotation(self):
@@ -889,7 +1060,7 @@ class InstanceDomain(PointDomain):
 
         if rot is None:
             if quat is None:
-                return Quaternion.identity(shape=self.position.shape)
+                return Quaternion.identity(shape=(len(self.position),))
             else:
                 return quat
         else:
@@ -977,6 +1148,45 @@ class CornerDomain(Domain):
         self.new_vector2(name)
         if value is not None:
             self[name] = value
+
+    # ====================================================================================================
+    # Compute attribute on points
+    # ====================================================================================================
+
+    def compute_attribute_on_points(self, attr, points):
+
+        @njit(cache=True)
+        def _to_points(vertex_index, source, res):
+            npoints = res.shape[0]
+            ncorners = vertex_index.shape[0]
+
+            count = np.zeros(npoints, dtype=np.int32)
+            for icorner in range(ncorners):
+                s = source[icorner]
+
+                ipoint = vertex_index[icorner]
+                res[ipoint] += s
+                count[ipoint] += 1
+
+            trailing = 1
+            for d in range(1, res.ndim):
+                trailing *= res.shape[d]
+
+            R2 = res.reshape((npoints, trailing))
+            for ipoint in range(npoints):
+                c = count[ipoint]
+                if c > 0:
+                    inv = 1.0 / c
+                    for j in range(trailing):
+                        R2[ipoint, j] *= inv
+
+            return res  
+        
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
+        return _to_points(self.vertex_index, attr, res)                
+
+
 
 # ====================================================================================================
 # Root for Face and Spline
@@ -1139,6 +1349,9 @@ class FaceDomain(FaceSplineDomain):
 
         self.new_bool('sharp_face', optional=True, transdom=False)
 
+    # ====================================================================================================
+    # Delete loops
+    # ====================================================================================================
 
     def delete_loops(self, selection, corners):
         corner_indices = self[selection].get_corner_indices()
@@ -1152,34 +1365,63 @@ class FaceDomain(FaceSplineDomain):
     # Get edges
     # ====================================================================================================
 
-    def get_face_edges(self, corners):
-        """ Get edges per face
-        """
-        pass
+    # ----------------------------------------------------------------------------------------------------
+    # Get the edges per face as start, count arrays
+    # ----------------------------------------------------------------------------------------------------
 
+    def get_face_edges(self, corners):
+        """ Return edge couples with ordered vertex indices par face.
+
+        The face edge couples can be accessed via loop_start and loop_total
+        """
+
+        @njit(cache=True)
+        def _get_edges(loop_start, loop_total, vertex_index):
+
+            ncorners = vertex_index.shape[0]
+            edges =  np.empty((ncorners, 2), dtype=np.int32)
+
+            nfaces = loop_start.shape[0]
+            iedge = 0
+            for iface in range(nfaces):
+                start = loop_start[iface]
+                total = loop_total[iface]
+                for icorner in range(start, start + total):
+                    ipoint = vertex_index[icorner]
+                    if icorner == 0:
+                        iprec = vertex_index[start + total - 1]
+                    else:
+                        iprec = vertex_index[ipoint - 1]
+
+                    if iprec < ipoint:
+                        edges[iedge, 0] = iprec
+                        edges[iedge, 1] = ipoint
+                    else:
+                        edges[iedge, 0] = ipoint
+                        edges[iedge, 1] = iprec
+                    iedge += 1
+
+            return edges
+        
+        return _get_edges(self.loop_start, self.loop_total, corners.vertex_index)
+
+
+    # ----------------------------------------------------------------------------------------------------
+    # Get all the edges as ordered couples
+    # ----------------------------------------------------------------------------------------------------
 
     def get_edges(self, corners):
-        """ Get the geometry edges
-        """
-        if self.is_scalar:
-            edge0 = self.loop_start + np.arange(self.loop_total, dtype=bint)
-            edge1 = self.loop_start + np.roll(np.arange(self.loop_total, dtype=bint), shift=-1)
-            return np.array([edge0, edge1], dtype=bint)
-
-        edges = get_face_edges(self.loop_start, self.loop_total)
-        edges = corners.vertex_index[edges]
-
-        edges = np.sort(edges, axis=-1)
-        edges = np.unique(edges, axis=0)
-
-        return edges
+        """ Get all the edge couples of the faces.
+        """        
+        edges = self.get_face_edges(corners)
+        return np.unique(edges, axis=0)
     
     # ====================================================================================================
     # Get position
     # ====================================================================================================
     
     def get_position(self, corners, points):
-        return get_face_position(self.loop_start, self.loop_total, corners.vertex_index, points.position)
+        return points.compute_attribute_on_faces("position", corners, self)
     
     # ====================================================================================================
     # Surfaces and normals
@@ -1360,7 +1602,49 @@ class FaceDomain(FaceSplineDomain):
 
     def sequences(self, corners):
         inds = list(corners.vertex_index)
-        return [inds[lstart:lstart+ltotal] for (lstart, ltotal) in zip(self.loop_start, self.loop_total)]            
+        return [inds[lstart:lstart+ltotal] for (lstart, ltotal) in zip(self.loop_start, self.loop_total)]     
+
+    # ====================================================================================================
+    # Compute attribute on points
+    # ====================================================================================================
+
+    def compute_attribute_on_points(self, attr, corners, points):
+
+        @njit(cache=True)
+        def _to_points(loop_start, loop_total, vertex_index, source, res):
+            npoints = res.shape[0]
+            nfaces = loop_start.shape[0]
+
+            count = np.zeros(npoints, dtype=np.int32)
+            for iface in range(nfaces):
+                start = loop_start[iface]
+                total = loop_total[iface]
+                s = source[iface]
+                for icorner in range(start, start + total):
+                    ipoint = vertex_index[icorner]
+                    res[ipoint] += s
+                    count[ipoint] += 1
+
+            trailing = 1
+            for d in range(1, res.ndim):
+                trailing *= res.shape[d]
+
+            R2 = res.reshape((npoints, trailing))
+            for ipoint in range(npoints):
+                c = count[ipoint]
+                if c > 0:
+                    inv = 1.0 / c
+                    for j in range(trailing):
+                        R2[ipoint, j] *= inv
+
+            return res  
+        
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
+        return _to_points(self.loop_start, self.loop_total, corners.vertex_index, attr, res)                
+
+
+
 
 # ====================================================================================================
 # Edge Domain
@@ -1434,6 +1718,49 @@ class EdgeDomain(Domain):
         mask = np.isin(u_verts, u_faces).ravel()
 
         self.delete(mask)
+
+    # ====================================================================================================
+    # Compute attribute on points
+    # ====================================================================================================
+
+    def compute_attribute_on_points(self, attr, points):
+
+        @njit(cache=True)
+        def _to_points(vertex0, vertex1, source, res):
+            npoints = res.shape[0]
+            nedges = vertex0.shape[0]
+
+            count = np.zeros(npoints, dtype=np.int32)
+            for iedge in range(nedges):
+                s = source[iedge]
+
+                ipoint = vertex0[iedge]
+                res[ipoint] += s
+                count[ipoint] += 1
+
+                ipoint = vertex1[iedge]
+                res[ipoint] += s
+                count[ipoint] += 1
+
+            trailing = 1
+            for d in range(1, res.ndim):
+                trailing *= res.shape[d]
+
+            R2 = res.reshape((npoints, trailing))
+            for ipoint in range(npoints):
+                c = count[ipoint]
+                if c > 0:
+                    inv = 1.0 / c
+                    for j in range(trailing):
+                        R2[ipoint, j] *= inv
+
+            return res  
+        
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
+        return _to_points(self.vertex0, self.vertex1, attr, res)                
+
+
 
 
 # ====================================================================================================
@@ -1652,6 +1979,27 @@ class SplineDomain(FaceSplineDomain):
                 blender.set_attribute(data, name, self[name])
             else:
                 blender.create_attribute(data, name, info['data_type'], domain=self.domain, value=self[name])    
+
+    # ====================================================================================================
+    # Compute attribute on points
+    # ====================================================================================================
+    
+    def compute_attribute_on_points(self, attr, points):
+
+        @njit(cache=True)
+        def _to_points(loop_start, loop_total, source, res): 
+            nsplines = loop_start.shape[0]
+            for ispline in range(nsplines):
+                start = loop_start[ispline]
+                total = loop_total[ispline]
+                for ipoint in range(start, start + total):
+                    res[ipoint] += source[ispline]
+
+            return res        
+
+        attr, item_shape = self._check_attribute_to_compute(attr)
+        res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
+        return _to_points(self.loop_start, self.loop_total, attr, res)                
     
 
 

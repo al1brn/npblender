@@ -9,7 +9,7 @@ from .geometry import Geometry
 from .cloud import Cloud
 from .mesh import Mesh
 from .curve import Curve
-from .instances import Instances
+from .instances import Instances, Meshes
 from .multiresgrid import MultiResGrid
 
 from .sim_simul import Simulation

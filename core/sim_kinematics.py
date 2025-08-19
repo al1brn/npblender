@@ -21,27 +21,32 @@ import numpy as np
 from .sim_action import Action
 from .sim_simul import Simulation
 from .instances import Instances
+from .maths import Quaternion, Rotation
 
 class Kinematics(Simulation):
-        
-    def __init__(self, geometry=None, object=None):
-        if geometry is None:
-            self.own_geo = True
-            geometry = Instances()
-        else:
-            self.own_geo = False
-        
-        if object is None:
-            object = "Kinematics"
-
-        super().__init__(geometry, object)
-
-        # Create attributes dedicated to kinematics
-        self.points.init_kinematics()
 
     # ====================================================================================================
     # Usefull actions
     # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Setter action
+    # ----------------------------------------------------------------------------------------------------
+
+    def add_setter(self, attribute, value, incr=None, start=0, duration=None, flags=0):
+        def func(simulation):
+            if incr == '+':
+                self.points[attribute] += value
+            elif incr == '-':
+                self.points[attribute] -= value
+            elif incr == '*':
+                self.points[attribute] *= value
+            elif incr == '/':
+                self.points[attribute] /= value
+            else:
+                self.points[attribute] = value
+
+        return self.add_action(func, None, start=start, duration=duration, flags=flags)
 
     # ----------------------------------------------------------------------------------------------------
     # Gravity
@@ -49,6 +54,20 @@ class Kinematics(Simulation):
 
     def gravity(self, g=(0, 0, -9.81)):
         self.points.accel += g
+
+    # ----------------------------------------------------------------------------------------------------
+    # A force
+    # ----------------------------------------------------------------------------------------------------
+
+    def force(self, force):
+        self.points.force += force
+
+    # ----------------------------------------------------------------------------------------------------
+    # A torque
+    # ----------------------------------------------------------------------------------------------------
+
+    def torque(self, torque):
+        self.points.torque += torque
 
     # ----------------------------------------------------------------------------------------------------
     # Newton's Law
@@ -171,16 +190,6 @@ class Kinematics(Simulation):
     # ====================================================================================================
 
     # ----------------------------------------------------------------------------------------------------
-    # Reset
-    # ----------------------------------------------------------------------------------------------------
-
-    def reset(self):
-        if self.own_geometry:
-            self.geometry.clear()
-
-        super().reset()
-
-    # ----------------------------------------------------------------------------------------------------
     # Compute
     # ----------------------------------------------------------------------------------------------------
 
@@ -188,14 +197,28 @@ class Kinematics(Simulation):
 
         pts = self.points.ravel()
 
+        # ---------------------------------------------------------------------------
+        # Prepare
+        # ---------------------------------------------------------------------------
+
         # Reset the acceleration and force
         pts.accel = 0
         pts.force = 0
 
-        # Loop on the actions
+        # Reset angular torque
+        if "torque" in pts.actual_names:
+            pts.torque = 0
+
+        # ---------------------------------------------------------------------------
+        # Loop on actions
+        # ---------------------------------------------------------------------------
+
         super().compute()
 
-        # Take forces into account
+        # ---------------------------------------------------------------------------
+        # Translation
+        # ---------------------------------------------------------------------------
+
         F = pts.force
         mask = pts.mass != 0
         F[mask] /= pts.mass[mask, None]
@@ -209,8 +232,45 @@ class Kinematics(Simulation):
         pts.position += (pts.speed + new_speed)*(self.delta_time/2)
         pts.speed = new_speed
 
-        # Update the age
-        if 'age' in pts.actual_names:
+        if False:
+            print("DEBUG")
+            print(pts.position[:3])
+            print(pts.speed[:3])
+            print(pts.accel[:3])
+
+        # ---------------------------------------------------------------------------
+        # Rotation
+        # ---------------------------------------------------------------------------
+
+        if "torque" in pts.actual_names:
+            torque = pts.torque
+            mask = pts.moment != 0
+            torque[mask] /= pts.moment[mask, None]
+            torque[~mask] = 0
+
+            omega = pts.omega
+            new_omega = omega + torque*self.delta_time
+            pts.omega = (omega + new_omega)*(self.delta_time/2)
+
+        if "omega" in pts.actual_names:
+            domg = pts.omega*self.delta_time
+            ag = np.linalg.norm(domg, axis=-1)
+            mask = ag != 0
+            domg[mask] = domg[mask]/ag[mask, None]
+            domg[~mask] = (1, 0, 0)
+
+            quat = Quaternion.from_axis_angle(domg, ag)
+            new_rot = quat @ pts.rotation
+            if "euler" in pts.euler:
+                pts.euler = new_rot.as_euler()
+            else:
+                pts.quat = new_rot.as_quaternion()
+
+        # ---------------------------------------------------------------------------
+        # Miscellaneous
+        # ---------------------------------------------------------------------------
+
+        if "age" in pts.actual_names:
             self.points.age += self.delta_time
 
 
@@ -410,9 +470,6 @@ class Kinematics_OLD(Simulation):
         self.min_speed   = min_speed
         self.max_speed   = max_speed
         self._ignore_acc = None
-
-
-
 
     # ====================================================================================================
     # Actions and event

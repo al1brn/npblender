@@ -40,6 +40,14 @@ class Quaternion(Rotation):
     _item_shape = (4,)
 
     # ----------------------------------------------------------------------------------------------------
+    # Dump
+    # ----------------------------------------------------------------------------------------------------
+
+    def __str__(self):
+        return f"<Quaternion {self.shape}>"
+
+
+    # ----------------------------------------------------------------------------------------------------
     # Constructors
     # ----------------------------------------------------------------------------------------------------
 
@@ -47,6 +55,8 @@ class Quaternion(Rotation):
     def identity(cls, shape=()) -> "Quaternion":
         """Return the identity quaternion (no rotation)."""
         dtype = cls.FLOAT
+        if not isinstance(shape, tuple):
+            shape = (shape,)
         q = np.zeros(shape + (4,), dtype=dtype)
         q[..., 3] = 1.0
         return cls(q, copy=False)

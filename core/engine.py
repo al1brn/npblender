@@ -24,8 +24,8 @@ Features:
 - Random number generation per frame for procedural animation
 - Support for viewport and render-time updates
 
-This module also provides a base `Animation` class, a `SimpleAnimation`
-wrapper for function-based animations, and Blender operators/panels for
+This module also provides a base `Animation` class which can be directly used
+with function-based animations, and Blender operators/panels for
 managing baked animations.
 """
 
@@ -397,7 +397,7 @@ class Engine:
         - view (function = None) : view function
         - subframes (int = 0) : subframes
         """
-        self.animation(SimpleAnimation(compute, reset=reset, view=view), subframes=subframes)
+        self.animation(Animation(compute, reset=reset, view=view), subframes=subframes)
 
 
 # ====================================================================================================
@@ -479,6 +479,11 @@ def before_render_image(scene, depsgraph):
 
 class Animation:
 
+    def __init__(self, compute=None, reset=None, view=None):
+        self._compute = compute
+        self._reset   = reset
+        self._view    = view
+
     # ----------------------------------------------------------------------------------------------------
     # Access to engine
     # ----------------------------------------------------------------------------------------------------
@@ -503,14 +508,16 @@ class Animation:
     # ----------------------------------------------------------------------------------------------------
 
     def reset(self):
-        pass
+        if self._reset is not None:
+            self._reset()
 
     def compute(self):
-        pass
-        #raise NotImplementedError(f"{type(self).__name__} does not implement compute()")
+        if self._compyte is not None:
+            self._compute()
 
     def view(self):
-        pass
+        if self._view is not None:
+            self._view()
 
     # ----------------------------------------------------------------------------------------------------
     # Complementary
@@ -548,27 +555,6 @@ class Animation:
 
     def go(self, subframes=0):
         engine.animation(self, subframes=subframes)
-
-# ====================================================================================================
-# Simple Animation
-# ====================================================================================================
-
-class SimpleAnimation(Animation):
-    def __init__(self, compute, reset=None, view=None):
-        self._compute = compute
-        self._reset   = reset
-        self._view    = view
-
-    def reset(self):
-        if self._reset is not None:
-            self._reset()
-
-    def compute(self):
-        self._compute()
-
-    def view(self):
-        if self._view is not None:
-            self._view()
 
 # ====================================================================================================
 # Demo Animation

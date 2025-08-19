@@ -90,10 +90,7 @@ class Transformation(ItemsArray):
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_components(cls,
-                translation=(0.0, 0.0, 0.0),
-                rotation=None,
-                scale=(1.0, 1.0, 1.0)) -> "Transformation":
+    def from_components(cls, translation=None, rotation=None, scale=None) -> "Transformation":
         """Build a *Transformation* from translation, rotation, and scale.
 
         Parameters
@@ -112,8 +109,15 @@ class Transformation(ItemsArray):
         ``scale[...,0]``, and ``rotation[...,0,0]``.
         """
         # Convert to arrays with the global dtype
-        t = np.asarray(translation, dtype=cls.FLOAT)
-        s = np.asarray(scale, dtype=cls.FLOAT)
+        if translation is None:
+            t = np.array([0, 0, 0], dtype=cls.FLOAT)
+        else:
+            t = np.asarray(translation, dtype=cls.FLOAT)
+
+        if scale is None:
+            s = np.array([1, 1, 1], dtype=cls.FLOAT)
+        else:
+            s = np.asarray(scale, dtype=cls.FLOAT)
 
         if t.shape[-1] != 3 or s.shape[-1] != 3:
             raise ValueError("translation and scale must end with 3 components")
@@ -121,6 +125,8 @@ class Transformation(ItemsArray):
         if rotation is None:
             r = np.eye(3, dtype=cls.FLOAT)
         else:
+            if isinstance(rotation, Quaternion):
+                rotation = rotation.as_matrix()
             r = np.asarray(rotation, dtype=cls.FLOAT)
             if r.shape[-2:] != (3, 3):
                 raise ValueError("rotation must end with (3, 3)")

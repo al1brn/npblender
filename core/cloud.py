@@ -49,7 +49,6 @@ class Cloud(Geometry):
         """
         # ----- Initialize an empty geometry
 
-        self.domain_names = ['points']
         self.points = CloudPointDomain()
 
         self.join_attributes(attr_from)

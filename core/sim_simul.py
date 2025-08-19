@@ -12,8 +12,10 @@ class Simulation(Animation):
     BEFORE = 1
     AFTER  = 2
 
-    def __init__(self, geometry=None, object=None):
-        super().__init__()
+    def __init__(self, geometry=None, object=None, reset=None, view=None):
+        
+        super().__init__(reset=reset, view=view)
+
         self.actions = []
 
         self.geometry = geometry
@@ -154,10 +156,12 @@ class Simulation(Animation):
     # ----------------------------------------------------------------------------------------------------
 
     def view(self):
-        #print("VIEW", self.geometry is None or self.object is None, self.geometry, self.object)
-        if self.geometry is None or self.object is None:
-            return
-        self.geometry.to_object(self.object)
+        if self._view is None:
+            if self.geometry is None or self.object is None:
+                return
+            self.geometry.to_object(self.object)
+        else:
+            super().view()
 
     # ----------------------------------------------------------------------------------------------------
     # Baking : save the geometry

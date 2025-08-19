@@ -72,15 +72,15 @@ class Action:
 
     def __str__(self):
         #return f"<Action: {self.args=}, {self.kwargs=}, {self.arg_sim_index=}, {self.sig_kwargs=}>"                
-        if self.start == 0 and self.duration is None:
-            stime = "No timing"
+        if self.duration is None:
+            stime = f"start: {self.start:.2f}, no end"
 
         else:
             if self.duration == 0:
-                stime = f"Event  at {self.start:.2f}"
+                stime = f"Event at {self.start:.2f}"
             else:
                 stime = f"start: {self.start:.2f} during {self.duration:.2f}"
-            stime += f" {['Not started', 'Active', 'Done'].index(self.status)}"
+            stime += f" {['Not started', 'Active', 'Done'][self.status]}"
 
         return f"<Action '{self.func.__name__}', {stime}>" #, {'enabled' if self.is_enabled else 'disabled'}>"
 
@@ -143,7 +143,7 @@ class Action:
         # Already done
         if self.status == Action.DONE:
             return None
-
+        
         # Let's go
         res = self.call_function(simulation)
         self.status = Action.ACTIVE
@@ -208,11 +208,6 @@ if __name__ == '__main__':
     action(sim2)
     print()
 
-    from collections.abc import Callable
-
-    print(callable(action.func))
-    print(callable(action))
-    print(callable(np.asarray(123)))
 
     
 

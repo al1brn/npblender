@@ -398,6 +398,12 @@ class FieldArray(object):
     # Items
     # ====================================================================================================
 
+    def get(self, name, default=None):
+        if name not in self._data.dtype.names:
+            return default
+        else:
+            return self[name]
+
     def __getitem__(self, index):
 
         # ---------------------------------------------------------------------------
@@ -418,28 +424,6 @@ class FieldArray(object):
         else:
             arr = self._data_view[index]
             return type(self)(arr, mode='CAPTURE')
-        
-
-        # OLD OLD OLD
-
-        # ---------------------------------------------------------------------------
-        # A single integer, we return a scalar FieldArray
-        # ---------------------------------------------------------------------------
-        """
-        elif isinstance(index, (int, np.int32, np.int64)):
-            if index >= self._length:
-                raise IndexError(f"FieldArray has only {self._length} items, {index} index is not valid.")
-            
-            #return type(self)(self._data[index], mode='CAPTURE')
-            return type(self)(self._data, mode='CAPTURE', selector=index)
-
-        # ---------------------------------------------------------------------------
-        # Other case : we return a FieldArray on the selection
-        # ---------------------------------------------------------------------------
-
-        else:
-            return type(self)(self._data[:self._length], mode='CAPTURE', selector=index)
-        """
 
     def __setitem__(self, index, value):
 
@@ -645,6 +629,7 @@ class FieldArray(object):
             if (dtype != self._infos[name]['dtype'] or
                 shape != self._infos[name]['shape']):
                 raise ValueError(f"new_field > '{name}' is already defined.")
+            return
         
         # Declare in infos
         self._infos[name] = {

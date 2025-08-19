@@ -44,6 +44,8 @@ DATA_TEMP_NAME = "npblender_TEMP"
 
 class Mesh(Geometry):
 
+    domain_names = ['points', 'corners', 'faces', 'edges']
+
     def __init__(self, points=None, corners=None, faces=None, edges=None, materials=None, attr_from=None, **attrs):
         """ Mesh Geometry.
 
@@ -59,8 +61,6 @@ class Mesh(Geometry):
         """
 
         # ----- Initialize an empty geometry
-
-        self.domain_names = ['points', 'corners', 'faces', 'edges']
 
         self.points  = PointDomain()
         self.corners = CornerDomain()
@@ -582,7 +582,7 @@ class Mesh(Geometry):
         # ----- Back
 
         if not readonly:
-            self.capture(Mesh.FromMeshData(data))
+            self.capture(Mesh.from_mesh_data(data))
 
     # ====================================================================================================
     # From something
@@ -922,13 +922,14 @@ class Mesh(Geometry):
         -------
             - self
         """
-        mesh = Mesh().join_attributes(self).add_geometry(
+        mesh = Mesh(attr_from=self)
+        mesh.add_geometry(
             points=points, 
             corners=corners, 
             faces=faces, 
             edges=edges,
             **attrs)
-        self.join_mesh(mesh)
+        self.join(mesh)
         return self
 
     # -----------------------------------------------------------------------------------------------------------------------------
@@ -1039,31 +1040,6 @@ class Mesh(Geometry):
         """
         nfaces = len(self.faces)
         return self.add_geometry(faces=faces, corners=corners, **attributes)
-    
-    # -----------------------------------------------------------------------------------------------------------------------------
-    # Join geometry
-    # -----------------------------------------------------------------------------------------------------------------------------
-
-    def join_geometry(self, points=None, corners=None, faces=None, edges=None, safe_mode=False, **attrs):
-        """ Join geometry defined by components.
-
-        The geometry passed in argument is consistent and doesn't refer to existing vertices. It is used
-        to build an independant mesh which is then joined.
-        On the contrary 'add_geometry' can use existing vertices.
-
-        Returns
-        -------
-            - self
-        """
-        mesh = Mesh().join_fields(self)
-        mesh.add_geometry(
-            points=points, 
-            corners=corners, 
-            faces=faces, 
-            edges=edges,
-            **attrs)
-        self.join(mesh)
-        return self
     
     # =============================================================================================================================
     # Split edges
@@ -1423,7 +1399,7 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def points(cls, points=None, materials=None):
+    def points_cloud(cls, points=None, materials=None):
         """ Create a mesh with points at the given positions.
 
         Arguments
@@ -2602,7 +2578,7 @@ class Mesh(Geometry):
     # Faces to islands
     # ----------------------------------------------------------------------------------------------------
 
-    def faces_to_islands(self, groups=None):
+    def separate_faces(self, groups=None):
         """ Split faces into isolated islands
 
         Arguments
@@ -2614,28 +2590,35 @@ class Mesh(Geometry):
         mesh = Mesh(materials=self.materials)
         attr_names = [name for name in self.faces.actual_names if name not in ['loop_total', 'loop_start']]
 
+        # ---------------------------------------------------------------------------
         # No group: each face becomes an island
+        # ---------------------------------------------------------------------------
+
         if groups is None:
             attrs = {name: self.faces[name] for name in attr_names}
-            return Mesh().join_attributes(self).join_geometry(
+            return Mesh(attr_from=self).join_geometry(
                 points = self.points.position[self.corners.vertex_index],
                 corners = np.arange(len(self.corners)),
                 faces = self.faces.loop_total,
                 **attrs,
             )
-        
+
+        # ---------------------------------------------------------------------------
+        # Faces are grouped with groupds IDs
+        # ---------------------------------------------------------------------------
+
         groups = np.asarray(groups)
         if groups.shape != (len(self.faces),)   :
             raise ValueError(f"The 'groups' argument must be a index per face with a length of {len(self.faces)}.")
 
         ugroups, rev_index = np.unique(groups, return_inverse=True)
         for group in ugroups:
-            faces = self.faces[rev_index == group]
+            faces = self.faces[ugroups[rev_index] == group]
             attrs = {name: faces[name] for name in attr_names}
 
             corners = self.corners[faces.get_corner_indices()]
             uniques, new_corners = np.unique(corners.vertex_index, return_inverse=True)
-            mesh.join(Mesh().join_attributes(self).join_geometry(
+            mesh.join(Mesh(attr_from=self).join_geometry(
                 points = self.points.position[uniques],
                 corners = new_corners,
                 faces = faces.loop_total,
@@ -2778,8 +2761,61 @@ class Mesh(Geometry):
                 neighbors.append(list(ns))
 
         return neighbors
-
     
+    # ----------------------------------------------------------------------------------------------------
+    # Get islands
+    # ----------------------------------------------------------------------------------------------------
+
+    def get_islands(self):
+        """ Get an island id per face.
+        """
+        from collections import deque
+
+        nfaces = len(self.faces)
+        if not nfaces:
+            return []
+        
+        islands = np.full(nfaces, -1, dtype=np.int32)
+        cur_island = -1
+
+        passed = np.zeros(nfaces, dtype=bool)
+
+        with self.bmesh() as bm:
+            bm.faces.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+
+            for f in bm.faces:
+                # Already visited
+                if islands[f.index] >= 0:
+                    continue
+
+                # New island index
+                cur_island += 1
+
+                q = deque([f])
+                while q:
+                    cur = q.popleft()
+
+                    # Part of the current island
+                    islands[cur.index] = cur_island
+
+                    # No infinite loop
+                    passed[cur.index] = True
+
+                    # Loop on the edges
+                    for e in cur.edges:                                               
+                        # Loop on the edge faces
+                        for nb in e.link_faces:
+                            if passed[nb.index]:
+                                continue
+                            passed[nb.index] = True
+
+                            if islands[nb.index] < 0:
+                                q.append(nb)
+                        
+
+        return islands
+
     # ====================================================================================================
     # BVHTree
     # ====================================================================================================
@@ -2797,9 +2833,7 @@ class Mesh(Geometry):
             faces  = [inds[lstart:lstart+ltotal] for (lstart, ltotal) in zip(self.faces.loop_start[:nfaces], self.faces.loop_total[:nfaces])]
 
             return [BVHTree.FromPolygons(pos[i], faces, all_triangles=False, epsilon=0.0) for i in range(count)]
-
-
-
+        
 
     # ====================================================================================================
     # Tests
@@ -3016,6 +3050,8 @@ class Mesh(Geometry):
             curve.add(self.points.position[spline], curve_type='POLY', cyclic=cyclic)
 
         return curve
+    
+
     
 
 

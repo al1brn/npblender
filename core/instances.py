@@ -22,6 +22,10 @@ from . domain import InstanceDomain
 
 DATA_TEMP_NAME = "npblender_TEMP"
 
+# ====================================================================================================
+# Instances
+# ====================================================================================================
+
 class Instances(Geometry):
 
     def __init__(self, points=None, models=None, model_index=0, attr_from=None, **attributes):
@@ -34,9 +38,7 @@ class Instances(Geometry):
             - model_index (int = 0) : model index of instances
             - **attributes (dict) : other geometry attributes
         """
-        self.domain_names = ['points']
         self.points  = InstanceDomain()
-
         self.join_attributes(attr_from)
 
         if models is None:
@@ -136,7 +138,6 @@ class Instances(Geometry):
 
             if max_count is None or max_count <= 8:
                 break
-
 
     def _sort_low_resols(self):
 
@@ -353,6 +354,9 @@ class Instances(Geometry):
     def join(self, *others):
 
         for other in others:
+
+            if not isinstance(other, Instances):
+                raise AttributeError(f"Instances can be joined with Instances only, not {type(other).__name__}.")
             insts_count = len(self.points)
             models_count = len(self.models)
 
@@ -377,10 +381,10 @@ class Instances(Geometry):
             if in_place:
                 return self
             else:
-                return type(self)().join(self)
+                return type(self)(attr_from=self).join(self)
             
         if not in_place:
-            return type(self)().join(self).multiply(count, in_place=True)
+            return type(self)(attr_from=self).join(self).multiply(count, in_place=True)
         
         self.points.mmultiply(count)
 
@@ -398,4 +402,294 @@ class Instances(Geometry):
 
     def clear_geometry(self):
         self.points.clear()
+
+# ====================================================================================================
+# Meshes
+# ====================================================================================================
+
+class Meshes(Geometry):
+
+    def __init__(self, mesh=None, mesh_id=None, attr_from=None, **attributes):
+        """ Instances based on mesh buckets.
+
+        Instances is best for managing a high number of instances with a low number
+        of models.
+        Meshes manages one mesh per point
+
+        Arguments
+        ---------
+            - mesh (Mesh) : the mesh containing the geometry
+            - mesh_id (int = None) : mesh points attribute defining the instances
+            - attr_from (Geometry) : geometry where to capture attributes from
+            - **attributes (dict) : other geometry attributes
+        """
+        self.points  = InstanceDomain()
+        self.join_attributes(attr_from)
+        self.points.init_rotation(scale=True)
+
+        self._init_buckets(mesh, mesh_id)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Utilities
+    # ----------------------------------------------------------------------------------------------------
+
+    def __str__(self):
+        return f"<Meshes: {len(self)}, total vertices: {0 if self.mesh is None else len(self.mesh.points)}>"
+    
+    def __len__(self):
+        return len(self.points)
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Loop on the buckets
+    # ----------------------------------------------------------------------------------------------------
+
+    def __iter__(self):
+        offset = 0
+        for bucket in self.buckets:
+            yield bucket, offset
+            offset += len(bucket)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Init buckets
+    # ----------------------------------------------------------------------------------------------------
+
+    def _init_buckets(self, mesh, mesh_id):
+
+        from .mesh import Mesh
+
+        self.points.clear()
+        
+        if mesh is None:
+            self.mesh = Mesh()
+            self.buckets = []
+
+        else:
+            self.mesh = mesh
+
+            self.buckets = self.mesh.points.make_buckets(mesh_id)
+            npoints = sum([len(b) for b in self.buckets])
+
+            # Position of each mesh
+            position = np.empty((npoints, 3), dtype=bfloat)
+            for bucket, offset in self:
+                pos = np.average(self.mesh.points.position[bucket], axis=1)
+                position[offset:offset + len(bucket)] = pos
+
+                # Put the mesh at center (position is captured by points.position)
+                self.mesh.points.position[bucket] -= pos[:, None]
+
+            self.points.append(position=position)
+
+    # ====================================================================================================
+    # Check
+    # ====================================================================================================
+
+    def check(self, title="Meshes Check", halt=True):
+        npoints = sum([len(b) for b in self.buckets])
+        if npoints != len(self.points):
+            print(title)
+            print(f"The numbers of points {len(self.mesh.points)} in the mesh is different from the buckets length {npoints}")
+            if halt:
+                assert(False)
+            return False
+        return True
+
+    # ====================================================================================================
+    # Get the mesh ids
+    # ====================================================================================================
+
+    @property
+    def mesh_id(self):
+        mesh_id = np.empty(len(self.mesh.points), dtype=bint)
+        for index, (bucket, offset) in enumerate(self):
+            mesh_id[offset:offset + len(bucket)] = index
+        return mesh_id
+
+    # ====================================================================================================
+    # From meshes
+    # ====================================================================================================
+
+    @classmethod
+    def from_meshes(cls, meshes):
+
+        from .mesh import Mesh
+
+        if not isinstance(meshes, Meshes):
+            raise AttributeError(f"meshes argument is not Meshes '{type(meshes).__name__}'.")
+
+        m = cls(attr_from=meshes)
+        m.mesh = Mesh.from_mesh(meshes.mesh)
+        m.buckets = [np.array(b) for b in meshes.buckets]
+        m.points = InstanceDomain(meshes.points, mode='COPY')
+
+        return m
+
+    # ====================================================================================================
+    # From islands
+    # ====================================================================================================
+
+    @classmethod
+    def from_mesh_islands(cls, mesh):
+        face_islands = mesh.get_islands()
+        islands = mesh.compute_attribute_on_domain("faces", face_islands, "points")
+        return cls(mesh, mesh_id=islands)
+
+    # ====================================================================================================
+    # Serialization
+    # ====================================================================================================
+
+    def to_dict(self):
+        return {
+            'geometry':   'Meshes',
+            'points':     self.points.to_dict(),
+            'mesh':       self.mesh.to_dict(),
+            'buckets':    self.buckets,
+            }
+
+    @classmethod
+    def from_dict(cls, d):
+        from .mesh import Mesh
+
+        meshes = cls()
+        meshes.points     = InstanceDomain.from_dict(d['points'])
+        meshes.mesh       = Mesh.from_dict(d['mesh'])
+        meshes.buckets    = d['buckets']
+
+        return meshes
+
+    # ====================================================================================================
+    # To mesh
+    # ====================================================================================================
+
+    def realize(self):
+
+        from .mesh import Mesh
+
+        mesh = Mesh.from_mesh(self.mesh)
+        mesh.points.join_fields(self.points)
+
+        attr_names = [name for name in self.points.actual_names if name != 'position']
+        for bucket, offset in self:
+
+            sl = slice(offset, offset + len(bucket))
+            # Transfer the attrbutes
+            for name in attr_names:
+                mesh.points[name][bucket] += self.points[name][offset:offset + len(bucket), None]
+
+            # Transformation
+            if self.points.has_rotation:
+                rot = self.points.rotation[sl]
+            else:
+                rot = None
+
+            scale = self.points.get("scale")
+            if scale is not None:
+                scale = scale[sl]
+
+            transfo = Transformation.from_components(
+                rotation = rot,
+                scale = scale,
+                translation = self.points.position[sl],
+            )
+            mesh.points.position[bucket] = transfo[:, None] @ mesh.points.position[bucket]
+
+        return mesh
+    
+    # ====================================================================================================
+    # Joining meshes
+    # ====================================================================================================
+
+    def join(self, *others):
+        
+        from .mesh import Mesh
+
+        for other in others:
+
+            if not isinstance(other, Meshes):
+                raise AttributeError(f"Meshes can be joined with Meshes only, not {type(other).__name__}.")
+            
+            self.mesh.join(other.mesh)
+            for ob in other.buckets:
+                ok = False
+                for i, sb in enumerate(self.buckets):
+                    if ob.shape[-1] == sb.shape[-1]:
+                        self.buckets[i] = np.append(sb, ob, axis=0)
+                        ok = True
+                if not ok:
+                    self.buckets.append(np.array(ob))
+
+        return self
+    
+    # ====================================================================================================
+    # Multiply
+    # ====================================================================================================
+
+    def multiply(self, count, in_place=True):
+
+        count = int(count)
+
+        if count == 0:
+            return None
+        
+        if count == 1:
+            if in_place:
+                return self
+            else:
+                return type(self)(attr_from=self).join(self)
+            
+        if not in_place:
+            return type(self)(attr_from=self).join(self).multiply(count, in_place=True)
+        
+        # Multiply the buckets
+        npoints = len(self.mesh.points)
+        for i in range(len(self.buckets)):
+            bucket = self.buckets[i]
+            n, length = bucket.shape
+            bucket = bucket[None] + (np.arange(count)*npoints)[:, None, None]
+            self.buckets[i] = bucket.reshape(n*count, length)
+            
+        # Multiply the points and the mesh        
+        self.points.multiply(count)
+        self.mesh.multiply(count)
+        
+        return self
+
+    def __mul__(self, count):
+        return self.multiply(count, in_place=False)
+
+    def __imul__(self, count):
+        return self.multiply(count, in_place=True)
+    
+    # ====================================================================================================
+    # Operations
+    # ====================================================================================================
+
+    def clear_geometry(self):
+
+        from .mesh import Mesh
+
+        self.mesh = Mesh()  
+        self.points.clear()  
+        self.buckets = []
+
+    # ----------------------------------------------------------------------------------------------------
+    # Set an attribute on mesh points
+    # ----------------------------------------------------------------------------------------------------
+
+    def set_mesh_points_attribute(self, domain_name, name, value):
+
+        # Will raise en error if attribute doesn' exist
+        attr = self.mesh.points[name]
+
+        # _infos can be accessed securely
+        value = np.broadcast_to(value, (len(self),) + self.mesh.points._infos[name]['shape'])
+
+        # Loop on the buckets
+        offset = 0
+        for bucket in self.buckets:
+            attr[bucket] = value[offset:offset + len(bucket), None]
+            offset += len(bucket)
+
+        return self
+
 

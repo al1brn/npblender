@@ -36,6 +36,8 @@ DATA_TEMP_NAME = "npblender_TEMP"
 
 class Curve(Geometry):
 
+    domain_names = ["points", "splines"]
+
     def __init__(self, points=None, splines=None, curve_type=POLY, materials=None, attr_from=None, **attrs):
         """ Curve Geometry.
 
@@ -67,8 +69,6 @@ class Curve(Geometry):
         self.is_view = False
 
         # ----- Initialize empty domains
-
-        self.domain_names = ['points', 'splines']
 
         self.points  = SplinePointDomain()
         self.splines = SplineDomain()
