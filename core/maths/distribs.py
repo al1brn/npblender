@@ -48,6 +48,24 @@ PI  = np.pi
 HPI = np.pi/2
 TAU = 2*np.pi
 
+bfloat = np.float32
+
+from .rotation import Rotation
+
+# ====================================================================================================
+# Rotate and translate a distribution
+# ====================================================================================================
+
+def _rot_trans(vectors, center=None, normal=None):
+    if normal is not None:
+        rot = Rotation.look_at(np.asarray([0, 0, 1], dtype=bfloat), normal)
+        vectors = rot @ vectors
+
+    if center is not None:
+        vectors += center
+
+    return vectors
+
 # ====================================================================================================
 # Regular distributions
 # ====================================================================================================
@@ -165,7 +183,7 @@ def shake_points(points, scale=None, seed=None):
     ----------
     points : array_like, shape (..., D)
         Input array of points (D is typically 2 or 3).
-    scale : float or None, optional
+    scale : bfloat or None, optional
         Standard deviation of the displacement. If None, no displacement is applied.
     seed : int or Generator, optional
         Random seed or NumPy random Generator for reproducibility.
@@ -200,7 +218,7 @@ def shake_vectors(vectors, scale=None, length_only=False, lengths=None, seed=Non
     ----------
     vectors : array_like, shape (..., D)
         Input vectors to perturb.
-    scale : float or None, optional
+    scale : bfloat or None, optional
         Relative noise scale (as a fraction of the vector norm). If None, no perturbation is applied.
     length_only : bool, default False
         If True, only the magnitudes are modified (direction remains unchanged).
@@ -254,7 +272,7 @@ def line_dist(point0=(-1, -1, -1), point1=(1, 1, 1), count=10, density=None, see
         Second endpoint of the segment.
     count : int, default=10
         Number of points to generate (ignored if density is specified).
-    density : float, optional
+    density : bfloat, optional
         If specified, determines point count via a Poisson distribution with mean = density * segment_length.
     seed : int or Generator, optional
         Random seed.
@@ -266,8 +284,8 @@ def line_dist(point0=(-1, -1, -1), point1=(1, 1, 1), count=10, density=None, see
         - 'tangents': ndarray of shape (count, D)
     """
 
-    point0 = np.asarray(point0, dtype=np.float32)
-    point1 = np.asarray(point1, dtype=np.float32)
+    point0 = np.asarray(point0, dtype=bfloat)
+    point1 = np.asarray(point1, dtype=bfloat)
 
     rng = np.random.default_rng(seed)
 
@@ -340,7 +358,7 @@ def arc_dist(
     """
 
     rng = np.random.default_rng(seed)
-    center = np.asarray(center, dtype=float)
+    center = np.asarray(center, dtype=bfloat)
     dim = center.shape[-1]
 
     if dim < 2:
@@ -374,12 +392,12 @@ def arc_dist(
         rs = rng.normal(radius, scale, count)
 
     # --- Compute points
-    points = np.zeros((count, dim), dtype=float)
+    points = np.zeros((count, dim), dtype=bfloat)
     points[:, 0] = rs * cags
     points[:, 1] = rs * sags
 
     # --- Compute tangents
-    tangents = np.zeros((count, dim), dtype=float)
+    tangents = np.zeros((count, dim), dtype=bfloat)
     tangents[:, 0] = -sags
     tangents[:, 1] = cags
 
@@ -469,8 +487,8 @@ def curve_dist_LATER(curve, t0=0., t1=1., count=10, density=None, seed=None):
 
     funcs = curve.splines.functions
 
-    locs = np.zeros((0, 3), float)
-    tgs  = np.zeros((0, 3), float)
+    locs = np.zeros((0, 3), bfloat)
+    tgs  = np.zeros((0, 3), bfloat)
 
     for i, (func, length) in enumerate(zip(funcs, funcs.length)):
 
@@ -532,7 +550,7 @@ def rect_dist(a=1, b=1, center=(0, 0, 0), count=10, density=None, seed=None):
     """
     rng = np.random.default_rng(seed)
 
-    center = np.asarray(center, dtype=float)
+    center = np.asarray(center, dtype=bfloat)
     dim = center.shape[-1]
     if dim not in (2, 3):
         raise ValueError("Center must have dimension 2 or 3")
@@ -548,7 +566,7 @@ def rect_dist(a=1, b=1, center=(0, 0, 0), count=10, density=None, seed=None):
     xy = rng.uniform(low=[-a / 2, -b / 2], high=[a / 2, b / 2], size=(count, 2))
 
     # Assemble full points (2D or 3D)
-    points = np.zeros((count, dim), dtype=float)
+    points = np.zeros((count, dim), dtype=bfloat)
     points[:, 0:2] = xy
     points += center
 
@@ -563,7 +581,8 @@ def rect_dist(a=1, b=1, center=(0, 0, 0), count=10, density=None, seed=None):
 def pie_dist(
     radius=1,
     outer_radius=None,
-    center=(0, 0, 0),
+    center=None,
+    normal=None,
     pie_center=0.,
     pie_angle=PI/2,
     use_vonmises=False,
@@ -580,8 +599,10 @@ def pie_dist(
         Disk radius (or inner radius if `outer_radius` is specified).
     outer_radius : float, optional
         Outer radius. If provided, defines a ring sector from `radius` to `outer_radius`.
-    center : array_like, shape (2,) or (3,), default=(0, 0, 0)
-        Center of the pie.
+    center : array_like, shape (2,) or (3,), default=None
+        Center of the pie if different from (0, 0, 0).
+    normal : normal, default=None
+        Normal if different from Z
     pie_center : float, default=0.
         Central angle of the pie (radians).
     pie_angle : float, default=TAU
@@ -604,10 +625,12 @@ def pie_dist(
         - 'lengths'  : (count,) array of radial distances
         - 'angles'   : (count,) array of polar angles (radians)
     """
-
     rng = np.random.default_rng(seed)
-    center = np.asarray(center, dtype=float)
-    dim = center.shape[-1]
+    if center is None:
+        dim = 3
+    else:
+        center = np.asarray(center, dtype=bfloat)
+        dim = center.shape[-1]
 
     if dim not in (2, 3):
         raise ValueError("Center must be 2D or 3D")
@@ -643,18 +666,27 @@ def pie_dist(
     # --- Coordinates
     cos_a = np.cos(ags)
     sin_a = np.sin(ags)
-    locs = np.zeros((count, dim), dtype=float)
+    locs = np.zeros((count, dim), dtype=bfloat)
     locs[..., 0] = rs * cos_a
     locs[..., 1] = rs * sin_a
-    locs += center
+
+    rot = None if normal is None else Rotation.look_at((0, 0, 1), normal)
+    if rot is not None:
+        locs = rot @ locs
+    if center is not None:
+        locs += center
 
     # --- Tangents (orthogonal to radius)
-    tgs = np.zeros((count, 3), dtype=float)
+    tgs = np.zeros((count, 3), dtype=bfloat)
     tgs[:, 0] = -sin_a
     tgs[:, 1] = cos_a
+    if rot is not None:
+        tgs = rot @ tgs
 
     # --- Normals
     normals = np.tile((0., 0., 1.), (count, 1))
+    if rot is not None:
+        tgs = rot @ normals
 
     return {
         'points': locs,
@@ -668,7 +700,7 @@ def pie_dist(
 # Points on a disk
 # ----------------------------------------------------------------------------------------------------
 
-def disk_dist(radius=1, outer_radius=None, center=(0, 0, 0), count=10, density=None, seed=None):
+def disk_dist(radius=1, outer_radius=None, center=None, normal=None, count=10, density=None, seed=None):
     """
     Distribute points uniformly on a 2D disk or annulus in the XY plane.
 
@@ -678,8 +710,10 @@ def disk_dist(radius=1, outer_radius=None, center=(0, 0, 0), count=10, density=N
         Radius of the disk (or inner radius if `outer_radius` is provided).
     outer_radius : float, optional
         Outer radius of the disk. If given, points are sampled in an annular ring [radius, outer_radius].
-    center : array_like, shape (2,) or (3,), default=(0, 0, 0)
-        Center of the disk.
+    center : array_like, shape (2,) or (3,), default=None
+        Center of the disk if difference from (0, 0, 0)
+    normal : normal, default=None
+        Normal if different from Z
     count : int, default=10
         Number of points to generate (overridden by `density` if given).
     density : float, optional
@@ -701,6 +735,7 @@ def disk_dist(radius=1, outer_radius=None, center=(0, 0, 0), count=10, density=N
         radius=radius,
         outer_radius=outer_radius,
         center=center,
+        normal=normal,
         pie_center=0.,
         pie_angle=TAU,
         use_vonmises=False,
@@ -863,7 +898,7 @@ def sphere_dist(
 
     # Compute radius
     if scale is None:
-        rs = np.full(count, radius, dtype=float)
+        rs = np.full(count, radius, dtype=bfloat)
     else:
         rs = rng.normal(radius, scale, count)
 
@@ -925,8 +960,8 @@ def dome_dist(
     """
 
     rng = np.random.default_rng(seed)
-    axis = np.asarray(axis, dtype=float)
-    center = np.asarray(center, dtype=float)
+    axis = np.asarray(axis, dtype=bfloat)
+    center = np.asarray(center, dtype=bfloat)
 
     # ----- Estimate count from surface area
     if density is not None:
@@ -1004,9 +1039,9 @@ def triangle_dist(corners, count, rng=None):
         rng = np.random.default_rng()
 
     if count == 0:
-        return np.zeros((0, 3), dtype=float)
+        return np.zeros((0, 3), dtype=bfloat)
 
-    corners = np.asarray(corners, dtype=float)
+    corners = np.asarray(corners, dtype=bfloat)
     O = corners[0]
     i = corners[1] - O
     j = corners[2] - O
@@ -1075,8 +1110,8 @@ def surface_dist(surface, count=10, density=None, seed=None):
     per_face_counts = np.bincount(face_indices, minlength=nfaces)
 
     # Allocate outputs
-    points = np.empty((count, 3), dtype=float)
-    normal_array = np.empty((count, 3), dtype=float)
+    points = np.empty((count, 3), dtype=bfloat)
+    normal_array = np.empty((count, 3), dtype=bfloat)
 
     i = 0
     for face_idx, n in enumerate(per_face_counts):
@@ -1113,8 +1148,8 @@ def mesh_dist(mesh, selection=None, count=10, density=None, seed=None):
     tri_mesh = mesh.from_mesh(mesh, faces_sel=selection).triangulate()
     nfaces = len(tri_mesh.faces)
 
-    normals = np.empty((nfaces, 3), dtype=np.float32)
-    areas = np.empty(nfaces, dtype=np.float32)
+    normals = np.empty((nfaces, 3), dtype=bfloat)
+    areas = np.empty(nfaces, dtype=bfloat)
 
     with tri_mesh.blender_data(readonly=True) as data:
         data.polygons.foreach_get('area', areas)
@@ -1156,8 +1191,8 @@ def cube_dist(size=1, center=(0, 0, 0), count=10, density=None, seed=None):
 
     rng = np.random.default_rng(seed)
 
-    size = np.full(3, size) if np.ndim(size) == 0 else np.asarray(size, dtype=float)
-    center = np.asarray(center, dtype=float)
+    size = np.full(3, size) if np.ndim(size) == 0 else np.asarray(size, dtype=bfloat)
+    center = np.asarray(center, dtype=bfloat)
 
     if density is not None:
         volume = np.prod(size)
@@ -1217,8 +1252,8 @@ def ball_dist(
     """
 
     rng = np.random.default_rng(seed)
-    center = np.asarray(center, float)
-    axis = np.asarray(axis, float)
+    center = np.asarray(center, bfloat)
+    axis = np.asarray(axis, bfloat)
 
     # Estimate count from partial volume
     if density is not None:
@@ -1297,7 +1332,7 @@ def speed_dist(direction, speed, scale=None, mu=None, seed=None):
         Velocity vectors.
     """
 
-    direction = np.asarray(direction, dtype=float)
+    direction = np.asarray(direction, dtype=bfloat)
     single = direction.ndim == 1
     if single:
         direction = direction[None, :]
@@ -1448,7 +1483,7 @@ def test_distribs():
 
     # ----- Triangle
 
-    pts = triangle_dist(np.array(((1, 1, 1), (1, 2, -1), (-1, 0, -2)), float), 100)
+    pts = triangle_dist(np.array(((1, 1, 1), (1, 2, -1), (-1, 0, -2)), bfloat), 100)
     show_dist({'points': pts}, "Triangle dist")
 
     # ----- Surface

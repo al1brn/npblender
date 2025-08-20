@@ -28,7 +28,7 @@ DATA_TEMP_NAME = "npblender_TEMP"
 
 class Instances(Geometry):
 
-    def __init__(self, points=None, models=None, model_index=0, attr_from=None, **attributes):
+    def __init__(self, points=None, models=None, model_index=None, attr_from=None, **attributes):
         """ Create new instances.
 
         Arguments
@@ -46,7 +46,7 @@ class Instances(Geometry):
         else:
             self.models = self.load_models(models)
         self.low_resols = []
-        
+
         self.points.append(position=points, model_index=model_index, **attributes)
 
     def check(self, title="Instances Check", halt=True):
@@ -212,29 +212,29 @@ class Instances(Geometry):
             pts = insts[sel]
 
             if "scale" in self.points.actual_names:
-                scale = pts.scale
+                scale = pts.scale[:, None]
             else:
                 scale = None
 
             if self.points.has_rotation:
-                rot = pts.rotation
+                rot = pts.rotation[:, None]
             else:
                 rot = None
 
-            geo.transformation(rotation=rot[:, None], scale=scale[:, None], translation=pts.position[:, None])
+            geo.transformation(rotation=rot, scale=scale, translation=pts.position[:, None])
 
             # --------------------------------------------------
             # Add to realized geometry
             # --------------------------------------------------
 
-            if isinstance(model, Mesh):
+            if type(model).__name__ == 'Mesh':
                 mesh.join(geo)
 
-            elif isinstance(model, Curve):
+            elif type(model).__name__ == 'Curve':
                 curve.join(geo)
 
             else:
-                raise TypeError(f"Instances.realize> Unsupported model type: '{type(model).__name__}'")
+                raise TypeError(f"Instances.realize> Unsupported model type: '{type(model)}'")
 
         # ---------------------------------------------------------------------------
         # Loop on models
@@ -583,6 +583,7 @@ class Meshes(Geometry):
 
             scale = self.points.get("scale")
             if scale is not None:
+                print("DEBUG", self.points.shape, scale.shape, self.points.scale.shape)
                 scale = scale[sl]
 
             transfo = Transformation.from_components(

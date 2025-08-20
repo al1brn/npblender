@@ -61,6 +61,9 @@ class Engine:
     # Baking
     bake_file = None
 
+    # random see
+    SEED = 8694853
+
     def __init__(self):
         self._scene = None
         self._frame = None
@@ -74,8 +77,7 @@ class Engine:
         self._rendering  = False
         self._depsgraph  = None
 
-        self._seed       = 0
-        self._rng        = np.random.default_rng(self._seed)
+        self._frame_seeds = None
 
     # ====================================================================================================
     # Engine reset
@@ -85,6 +87,7 @@ class Engine:
 
         self.subframes = subframes
         self.subframe  = 0
+        self._frame_seeds = None
 
         self.animations.clear()
 
@@ -147,14 +150,26 @@ class Engine:
     @property
     def is_baked(self):
         return self.bake_file is not None
+    
+    # ====================================================================================================
+    # Randomness
+    # ====================================================================================================
 
     @property
-    def rng(self):
-        return self._rng
+    def frame_seeds(self):
+        shape = (self.scene_end + 1, self.subframes)
+        if self._frame_seeds is None or self._frame_seeds.shape != shape:
+            rng = np.random.default_rng(self.SEED)
+            self._frame_seeds = rng.integers(0, 1<<32, shape)
+        return self._frame_seeds
 
     @property
     def seed(self):
-        return self.rng.integers(1<<63)
+        return self.frame_seeds[self.frame, self.subframe]
+
+    @property
+    def rng(self):
+        return np.random.default_rng(self.seed)
     
     # ====================================================================================================
     # Utilities
@@ -201,7 +216,8 @@ class Engine:
         logging.debug(f"Engine> frame {self.frame:3d} loaded, setting animation to frames.")
 
         for i, anim in enumerate(self.animations):
-            anim.set_frame_data(data[i])
+            if not anim.set_frame_data(data[i]):
+                return False
 
         # ----- Frame state
 
@@ -283,9 +299,6 @@ class Engine:
         if self.is_first_frame:
             self.init_bake()
 
-        # New random generator for this frame
-        self._rng = np.random.default_rng(self._seed + self.frame)
-
         # ===== Compute / load frame
 
         # ----- Frame is baked
@@ -326,9 +339,7 @@ class Engine:
             for i in range(1, subframes + 2):
                 subframe = 0 if i == subframes + 1 else i
                 for anim in self.animations:
-                    anim.before_compute()
                     anim.compute()
-                    anim.after_compute()
             comp_dur = time() - t0
 
             # Bake
@@ -480,9 +491,12 @@ def before_render_image(scene, depsgraph):
 class Animation:
 
     def __init__(self, compute=None, reset=None, view=None):
-        self._compute = compute
-        self._reset   = reset
-        self._view    = view
+        if compute is not None:
+            self._compute = compute
+        if reset is not None:
+            self._reset = reset
+        if view is not None:
+            self._view = view
 
     # ----------------------------------------------------------------------------------------------------
     # Access to engine
@@ -508,26 +522,16 @@ class Animation:
     # ----------------------------------------------------------------------------------------------------
 
     def reset(self):
-        if self._reset is not None:
+        if hasattr(self, '_reset'):
             self._reset()
 
     def compute(self):
-        if self._compyte is not None:
+        if hasattr(self, '_compute'):
             self._compute()
 
     def view(self):
-        if self._view is not None:
+        if hasattr(self, '_view'):
             self._view()
-
-    # ----------------------------------------------------------------------------------------------------
-    # Complementary
-    # ----------------------------------------------------------------------------------------------------
-
-    def before_compute(self):
-        pass
-
-    def after_compute(self):
-        pass
 
     # ----------------------------------------------------------------------------------------------------
     # Baking
@@ -539,7 +543,7 @@ class Animation:
         return None
 
     def set_frame_data(self, data):
-        pass
+        return False
 
     # ----- State data
 
@@ -581,6 +585,7 @@ class DemoAnimation(Animation):
     
     def set_frame_data(self, data):
         self.cube.points.position = data
+        return True
 
 # ====================================================================================================
 # Automation in scene

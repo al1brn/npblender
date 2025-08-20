@@ -1,55 +1,14 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Sun Nov 19 10:27:01 2023
-
-@author: alain
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Oct 10 07:45:22 2023
-
-@author: alain
-"""
 
 import inspect
 
 import numpy as np
+from .engine import Animation
+from .maths.easings import maprange
+from .maths import Quaternion
 
-from .engine import engine, Animation
-from . import blender
-
-PI  = np.pi
-TAU = np.pi*2
-
-# =============================================================================================================================
-# A simulation is basically a loop calling actions
-#
-# The simulation maintains:
-# - the current time
-# - dt of each loop
-#
-# Sub steps can be defined if more loops are required between two frames
-#
-# Functions called at each step are stored in a list
-# The call to the function can be disabled
-# Enabling / disabling functions can be driven by time (ie event)
-
-# =============================================================================================================================
-# Action / Event
-#
-# Actions are called at each loop.
-# An Action maintains a enabled flag which can incremented / decremented to disable or reenabled the action
-# Action have a start time and a duration. By default, start time is 0 and duration is None for actions always active.
-#
-# Main loop is made of
-#
-# def step():
-#   actions : after = False
-#   exec_step()
-#   actions : after = True
+# ====================================================================================================
+# Action
+# ====================================================================================================
 
 class Action:
 
@@ -57,82 +16,113 @@ class Action:
     ACTIVE      = 1
     DONE        = 2
 
-    def __init__(self, func, *args, start=0, duration=None, after=False, **kwargs):
-        """ An action is a function called at each loop.
+    def __init__(self, func, *args, start=0, duration=None, flags=0, **kwargs):
+        """ Simulation action : calling a function when triggered by the simulation.
 
-        The function must accept simulation as first argument.
-        It can be a method of a Simulation class.
+        An action has basically a start and end time. It can also be an event when it
+        is called only once.
 
-        Hereafter is an example of function simulating gravity;
-
+        The function template is:
         ``` python
-        def gravity(simulation, g=-9.86):
-            simulation.points.speed += (0, 0, g*simulation.dt)
-        ```
+        def func(*args, **kwargs):
+        ``` 
 
-        The argument <#start> specifies when to start the action. The actual time at which the
-        action will start can differ linked to discontinuity of time. The <#started_at> property
-        is initialized with the actual time at which the actions starts. The function can access
-        the exact elapsed time from the actual start by accepting an 'elapsed' argument in kwargs:
-
-        ``` python
-        def func(simulation, elapsed=None):
-            # elapsed (float) : elapsed time since the action started
-            pass
-
-        action = Action(func, ..., elapsed=None)
-        ```
-
-        Properties
-        ----------
-        - func (function) : function to call
-        - args (*args) : arguments to pass the the function
-        - kwargs (**kwargs) : keyword arguments to pass to function
-        - status (enum in (NOT_STARTED, ACTIVE, DONE)) : action status
-        - start (float = 0) : start time
-        - duration (float = None) : duration, (once if numm, never stops if None)
-        - started_at (float) : actual start time
-        - after (bool = False) : action is triggred after exec
+        The func signature is analyzed and some arguments can be added:
+        - simulation : the global simulation
+        - t : actual time
 
         Arguments
         ---------
-            - func (function (simulation, *args, **kwargs)) : the function to call at each loop
-            - *args : args to pass to the function
-            - start (float = 0) : start time
-            - duration (float = None) : duration. Never interrupted if None, is called once if equal to 0.
-            - after (bool = False) : action is triggred after exec
-            - **kwargs : keyword arguments to pass to the function
+        - func (function): the function to call
+        - args : func arguments
+        - start (float = 0) : start time
+        - duration (float = None) : action duration (0 = event : call once, None: call forever)
+        - flags (int = 0) : user flags
+        - kwargs (dict) : function keyword arguments
         """
+        # ----------------------------------------------------------------------------------------------------
+        # Function arguments
+        # ----------------------------------------------------------------------------------------------------
 
-        self.func    = func
-        self.args    = list(args)
-        self.kwargs  = {**kwargs}
+        self.sim_arg_index = None
+        self.kwargs = {}
+        nargs = 0
+        sig = inspect.signature(func)
 
+        for name, param in sig.parameters.items():
+            if isinstance(param.default, type) and (param.default == param.empty):
+                # Note that self is exposed when method is passed as class property
+                # not as instance property
+                if name in ['self', 'simulation']:
+                    self.sim_arg_index = nargs
+                nargs += 1
+            else:
+                self.kwargs[name] = param.default
+                if name == 'simulation':
+                    self.sim_arg_index = None
+
+        # ----- Replace by passed arguments
+        # The number of function positional arguments must match the number of provided arguments
+        # except for self or simulation
+
+        if nargs == len(args):
+            self.args = list(args)
+
+        elif (len(args) == nargs - 1) and (self.sim_arg_index is not None):
+            self.args = [None]*nargs
+            index = 0
+            for v in args:
+                if index == self.sim_arg_index:
+                    index += 1
+                self.args[index] = v
+                index += 1
+
+        else:
+            raise AttributeError(
+                f"Function '{func.__name__}({sig})' takes {nargs} positional arguments, "
+                f"but only {len(args)} have been provided: {args}"
+                )
+
+        # ----- kwargs
+        for k, v in kwargs.items():
+            if not k in self.kwargs:
+                raise AttributeError(
+                    f"Function '{func.__name__}{sig}' doesn't take '{k}' keyword argument")
+
+            self.kwargs[k] = v
+
+        # ----------------------------------------------------------------------------------------------------
+        # Initialize
+        # ----------------------------------------------------------------------------------------------------
+
+        self.func       = func
         self.status     = Action.NOT_STARTED
         self.start      = start
         self.duration   = duration
-        self.after      = after
+        self.flags      = flags
 
         self.started_at = None
 
-    # ====================================================================================================
-    # Representation
+    # ----------------------------------------------------------------------------------------------------
+    # dump
+    # ----------------------------------------------------------------------------------------------------
 
     def __str__(self):
-        if self.start == 0 and self.duration is None:
-            stime = "No timing"
+        if self.duration is None:
+            stime = f"start: {self.start:.2f}, forever"
 
         else:
             if self.duration == 0:
-                stime = f"Event  at {self.start:.2f}"
+                stime = f"event at {self.start:.2f}"
             else:
                 stime = f"start: {self.start:.2f} during {self.duration:.2f}"
-            stime += f" {['Not started', 'Active', 'Done'].index(self.status)}"
+            stime += f" {['Not started', 'Active', 'Done'][self.status]}"
 
-        return f"<Action {self.func.__name__}, {stime}, {'enabled' if self.is_enabled else 'disabled'}>"
+        return f"<Action '{self.func.__name__}', {stime}>" 
 
     # ----------------------------------------------------------------------------------------------------
     # Reset
+    # ----------------------------------------------------------------------------------------------------
 
     def reset(self):
         """ Reset the action
@@ -142,8 +132,13 @@ class Action:
 
     # ====================================================================================================
     # Call the action from the simulation
+    # ====================================================================================================
 
-    def call(self, simulation):
+    def call_function(self, simulation):
+
+        # --------------------------------------------------
+        # Elapsed time
+        # --------------------------------------------------
 
         if self.status == Action.NOT_STARTED:
             # Start time before simulation start time
@@ -154,10 +149,58 @@ class Action:
 
         elapsed = simulation.time - self.started_at
 
-        if 'elapsed' in self.kwargs.keys():
-            self.kwargs['elapsed'] = elapsed
+        # --------------------------------------------------
+        # Simulation and time arguments
+        # --------------------------------------------------
 
-        return self.func(simulation, *self.args, **self.kwargs)
+        for arg_name, value in {
+            'simulation' : simulation,
+            'elapsed': elapsed, 
+            't': simulation.time, 
+            'dt': simulation.delta_time,
+            }.items():
+            if arg_name in self.kwargs:
+                self.kwargs[arg_name] = value
+
+        # Simulation can be self or positional argument
+        # rather than keyword argument
+        if self.sim_arg_index is not None:
+            self.args[self.sim_arg_index] = simulation
+
+        # --------------------------------------------------
+        # Arguments can be functions of time
+        # --------------------------------------------------
+
+        args = list(self.args)
+        for i, v in enumerate(self.args):
+            v = args[i]
+            if hasattr(v, '__call__'):
+                args[i] = v(elapsed)
+
+        kwargs = {}
+        for k, v in self.kwargs.items():
+            if hasattr(v, '__call__'):
+                kwargs[k] = v(elapsed)
+            else:
+                kwargs[k] = v
+
+        # --------------------------------------------------
+        # Trying to call the function
+        # --------------------------------------------------
+
+        try:
+            return self.func(*args, **kwargs)
+        
+        except Exception as e:
+            raise Exception(
+                f"Error while calling {self.func.__name__}{inspect.signature(self.func)}.\n{e}\n"
+                f"args: {args}\n"
+                f"kwargs: {kwargs}\n"
+                f"sim_arg_index: {self.sim_arg_index}")
+    
+    # ====================================================================================================
+    # Loop call : call the function if time conditions are fulfilled
+    # ====================================================================================================
 
     def __call__(self, simulation):
 
@@ -168,9 +211,9 @@ class Action:
         # Already done
         if self.status == Action.DONE:
             return None
-
+        
         # Let's go
-        res = self.call(simulation)
+        res = self.call_function(simulation)
         self.status = Action.ACTIVE
 
         # No more
@@ -180,64 +223,64 @@ class Action:
         # Return the result
         return res
 
-# =============================================================================================================================
-# Simulation
-#
-# A simulation is a list of actions
+# ====================================================================================================
+# Simulation skeleton
+# ====================================================================================================
 
 class Simulation(Animation):
-    def __init__(self, object=None):
-        """ > Simulation
 
-        This class enhances the basic Simulation class defined in Engine.
-        It manages:
-        - a geometry
-        - a target object name
-        - a list of <!Action"Actions>
+    def __init__(self, compute=None, reset=None, view=None):
+        
+        super().__init__(compute=compute, reset=reset, view=view)
 
-        By implementing <#get_animation> and <#set_animation>, the simulation can be baked if it
-        changes only the <#geometry>, otherwise these methods must be overloaded.
+        self._actions = []
 
-        It implements the following animation methods:
-        - reset : reset the actions
-        - before_compute : run the actions before (default)
-        - after_compute : run the actions after (special)
-        - view : call geometry.to_object(target_object)
-        - get_animation : save the geometry
-        - set_animation : restore the geometry
+    # ----------------------------------------------------------------------------------------------------
+    # Dump
+    # ----------------------------------------------------------------------------------------------------
 
-        Properties
-        ----------
-        - actions (list) : list of actions
-        - geometry (Geometry) : animated geometry
-        - object (str or Blender object) : the object to animate
-
-        Arguments
-        ---------
-        - target_object (str or Blender object) : the object to animate
-        """
-        super().__init__()
-
-        self.actions = []
-        self.geometry = None
-        self.object = object
-
-
+    def __str__(self):
+        return f"Simulation: {len(self.actions)} actions>"
+    
     # ====================================================================================================
-    # Actions and event
+    # Property
+    # ====================================================================================================
 
-    @classmethod
-    def str_to_func(cls, func):
+    @property
+    def actions(self):
+        if not hasattr(self, '_actions'):
+            self._actions = []
+        return self._actions
+
+    @property
+    def points(self):
+        if hasattr(self, "geometry"):
+            return self.geometry.points
+        raise Exception(f"'points' property not defined for the class '{type(self).__name__}'")
+    
+    # ====================================================================================================
+    # Actions management
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # An action can be specified by its name
+    # ----------------------------------------------------------------------------------------------------
+
+    def str_to_func(self, func):
         if isinstance(func, str):
-            return getattr(cls, func)
+            return getattr(self, func)
 
         elif hasattr(func, '__func__'):
             return func.__func__
 
         else:
             return func
+        
+    # ----------------------------------------------------------------------------------------------------
+    # Add an action
+    # ----------------------------------------------------------------------------------------------------
 
-    def add_action(self, func, *args, start=0, duration=None, after=False, **kwargs):
+    def add_action(self, func, *args, start=0, duration=None, flags=0, **kwargs):
         """ Add an action to the simulation
 
         To add an event, you can use <#add_event>.
@@ -253,11 +296,16 @@ class Simulation(Animation):
         -------
         - Action : the action added to the simulation
         """
-        action = Action(self.str_to_func(func), *args, start=start, duration=duration, after=after, **kwargs)
+        action = Action(self.str_to_func(func), *args, start=start, duration=duration, flags=flags, **kwargs)
         self.actions.append(action)
+
         return action
 
-    def add_event(self, func, *args, start=0, after=False, **kwargs):
+    # ----------------------------------------------------------------------------------------------------
+    # Add an event
+    # ----------------------------------------------------------------------------------------------------
+
+    def add_event(self, func, *args, start=0, flags=0, **kwargs):
         """ Add an event to the simulation
 
         The event is executed once. To add an action called at each step, use <#add_action>.
@@ -273,65 +321,326 @@ class Simulation(Animation):
         - Action : the event added to the simulation
         """
 
-        action = Action(self.str_to_func(func), *args, start=start, duration=0., after=after, **kwargs)
+        action = Action(self.str_to_func(func), *args, start=start, duration=0., flags=flags, **kwargs)
         self.actions.append(action)
         return action
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Run the actions
+    # ----------------------------------------------------------------------------------------------------
 
-    # ====================================================================================================
-    # Simulation
-
+    def run_actions(self, flags=None):
+        for action in self.actions:
+            if flags is None or (flags & actions.flags):
+                action(self)
+    
     # ----------------------------------------------------------------------------------------------------
     # Reset
+    # ----------------------------------------------------------------------------------------------------
 
     def reset(self):
         """ Reset the simulation
         """
         super().reset()
-
         for action in self.actions:
             action.reset()
 
     # ----------------------------------------------------------------------------------------------------
-    # Before compute
-
-    def before_compute(self):
-
-        super().before_compute()
-
-        for action in self.actions:
-            if action.after:
-                continue
-            action(self)
-
+    # Compute
     # ----------------------------------------------------------------------------------------------------
-    # After compute
 
-    def after_compute(self):
-
-        super().after_compute()
-
-        for action in self.actions:
-            if not action.after:
-                continue
-            action(self)
+    def compute(self):
+        if hasattr(self, '_compute'):
+            self._compute()
+        else:
+            self.run_actions()
 
     # ----------------------------------------------------------------------------------------------------
     # View
+    # ----------------------------------------------------------------------------------------------------
 
     def view(self):
-        if self.geometry is not None and self.object is not None:
-            self.geometry.to_object(self.object)
+        geo = getattr(self, "geometry", None)
+        if (not hasattr(self, '_view')) and (geo is not None):
+            geo.to_object("Simulation")
+        else:
+            super().view()
 
     # ----------------------------------------------------------------------------------------------------
-    # Get animation
+    # Baking
+    # ----------------------------------------------------------------------------------------------------
 
-    def get_animation(self):
-        if self.geometry is None:
-            return {}
-        else:
-            return self.geometry.save()
+    def get_frame_data(self):
+        geo = getattr(self, "geometry", None)
+        if geo is not None:
+            return geo.to_dict()
+    
+    def set_frame_data(self, data):
+        geo = getattr(self, "geometry", None)
+        if geo is not None:
+            self.geometry = geo.from_dict(data)
+            print("LOADED", self.geometry)
+            return True
+        return False
 
-    def set_animation(self, data):
-        if self.geometry is None:
+    # ====================================================================================================
+    # Useful actions
+    # ====================================================================================================
+
+    def change_attribute(self, attribute, value, incr=None, factor=None):
+        """ Modify a points attribute
+
+        ``` python
+        # gravity
+        self.add_action("change_attribute", "accel", value=(0, 0, -9.81))
+        ```
+        """
+        if value is None:
             return
-        self.geometry.restore(data)
+
+        value = np.asarray(value)
+        if factor is not None:
+            shape = self.points[attribute].shape
+
+            factor = np.reshape(factor, (-1,) + (1,)*(len(shape) - 1))
+            value = np.broadcast_to(value, shape)*factor
+
+            print(f"DEBUG -->: {value.shape=}")
+            print(value[:5])
+
+        if incr == '+':
+            self.points[attribute] += value
+        elif incr == '-':
+            self.points[attribute] -= value
+        elif incr == '*':
+            self.points[attribute] *= value
+        elif incr == '/':
+            self.points[attribute] /= value
+        else:
+            self.points[attribute] = value
+
+    # ----------------------------------------------------------------------------------------------------
+    # Gravity
+    # ----------------------------------------------------------------------------------------------------
+
+    def gravity(self, g=np.asarray([0, 0, -9.81]), factor=None):
+        self.change_attribute("accel", value=g, factor=factor)
+
+    # ----------------------------------------------------------------------------------------------------
+    # A force
+    # ----------------------------------------------------------------------------------------------------
+
+    def force(self, force, factor=None):
+        self.change_attribute("force", value=force, factor=factor)
+
+    # ----------------------------------------------------------------------------------------------------
+    # A torque
+    # ----------------------------------------------------------------------------------------------------
+
+    def torque(self, torque, factor=None):
+        self.change_attribute("torque", value=force, factor=factor)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Newton's Law
+    # ----------------------------------------------------------------------------------------------------
+
+    def newton_law(self, G=1, power=2, min_distance=.001):
+        """ Newton's law between points
+        
+        The force between two points is given by:
+        
+        F = G.m1.m2 / dist**p
+        """
+
+        pts = self.points.ravel()
+        if len(pts) < 2:
+            return
+        
+        # Vectors between couples of points
+        v = pts.position - pts.position[:, None]
+
+        # Distance
+        d = np.linalg.norm(v, axis=-1)
+        close = d < min_distance
+
+        d[close] = 1
+        F = (G*v)*d[..., None]**(-power - 1)
+        F *= pts.mass[:, None, None]
+        F *= pts.mass[None, :, None]
+        F[close] = 0
+
+        pts.force += np.sum(F, axis=0)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Central force
+    # ----------------------------------------------------------------------------------------------------
+
+    def central_force(self, location=(0, 0, 0), force_factor=1., power=-2, min_distance=.001):
+
+        pts = self.points.ravel()
+
+        v = pts.position - location
+        d = np.linalg.norm(v, axis=-1)
+        close = d < min_distance
+
+        d[close] = 1
+        F = (force_factor*v)*(d[:, None]**(power - 1))
+        F[close] = 0
+
+        pts.force += F
+
+    # ----------------------------------------------------------------------------------------------------
+    # Centrifugal and Coriolis acceleration
+    # ----------------------------------------------------------------------------------------------------
+
+    def centrifugal(self, location=(0, 0, 0), omega=1, axis=(0, 0, 1), coriolis_factor=1.):
+
+        pts = self.points.ravel()
+
+        axis = np.asarray(axis)
+
+        # Position relatively to the axis of rotation
+        v = pts.position - location
+
+        # Decompose height / vector to axis then distance
+        z  = np.einsum('...i, ...i', v, axis)
+        xy = v - axis*z[..., None]
+
+        d = np.linalg.norm(xy, axis=-1)
+
+        # Centrifugal
+        acc = xy*(omega*omega)
+
+        # Coriolis
+        # Factor articially controls the intensity of the Coriolis force
+
+        acc += np.cross((-2*omega)*axis, pts.speed)*coriolis_factor
+
+        pts.accel += acc
+
+    # ----------------------------------------------------------------------------------------------------
+    # Viscosity :  slow down speed according a power law
+    # ----------------------------------------------------------------------------------------------------
+
+    def viscosity(self, viscosity_factor=1., power=2, max_force=None, fluid_speed=None):
+
+        from collections.abc import Callable
+
+        pts = self.points.ravel()
+        speed = pts.speed
+
+        # Speed relative to fluid speed
+        if fluid_speed is None:
+            pass
+
+        elif callable(fluid_speed):
+            spped -= fluid_speed(pts.position)
+
+        else:
+            speed -= fluid_speed
+
+        # Direction and norm
+        nrm = np.linalg.norm(speed, axis=-1)
+        nrm[nrm < .001] = 1
+        u = speed/nrm[:, None]
+
+        # Raw force
+        if 'viscosity' in pts.actual_names:
+            viscosity_factor = viscosity_factor*pts.viscosity
+        
+        F = viscosity_factor*(nrm**power)
+        
+        # Make sure the force doesn't invese de speed
+        max_F = pts.mass*nrm/self.delta_time
+        F = np.minimum(F, max_F)
+
+        pts.force -= u*F[:, None]
+
+    # ====================================================================================================
+    # Simulation
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Dynamics
+    # ----------------------------------------------------------------------------------------------------
+
+    def compute_motion(self, translation=True, rotation=True, torque=False, flags=None):
+
+        pts = self.points.ravel()
+
+        # ---------------------------------------------------------------------------
+        # Prepare
+        # ---------------------------------------------------------------------------
+
+        # Reset the acceleration and force
+        if translation:
+            pts.accel = 0
+            pts.force = 0
+
+        # Reset angular torque
+        if torque:
+            pts.torque = 0
+
+        # ---------------------------------------------------------------------------
+        # Run the actions
+        # ---------------------------------------------------------------------------
+
+        self.run_actions(flags=flags)
+
+        # ---------------------------------------------------------------------------
+        # Translation
+        # ---------------------------------------------------------------------------
+
+        if translation:
+            F = pts.force
+            mask = pts.mass != 0
+            F[mask] /= pts.mass[mask, None]
+            F[~mask] = 0
+
+            # Full acceleration
+            accel = pts.accel + F
+
+            # Move the particles
+            new_speed = pts.speed + accel*self.delta_time
+            pts.position += (pts.speed + new_speed)*(self.delta_time/2)
+            pts.speed = new_speed
+
+        # ---------------------------------------------------------------------------
+        # Rotation
+        # ---------------------------------------------------------------------------
+
+        if torque:
+            torque = pts.torque
+            mask = pts.moment != 0
+            torque[mask] /= pts.moment[mask, None]
+            torque[~mask] = 0
+
+            omega = pts.omega
+            new_omega = omega + torque*self.delta_time
+            pts.omega = (omega + new_omega)*(self.delta_time/2)
+
+        if rotation:
+            domg = pts.omega*self.delta_time
+            ag = np.linalg.norm(domg, axis=-1)
+            mask = ag != 0
+            domg[mask] = domg[mask]/ag[mask, None]
+            domg[~mask] = (1, 0, 0)
+
+            quat = Quaternion.from_axis_angle(domg, ag)
+            new_rot = quat @ pts.rotation
+            if "euler" in pts.euler:
+                pts.euler = new_rot.as_euler()
+            else:
+                pts.quat = new_rot.as_quaternion()
+
+
+
+    
+
+
+
+
+
+
+    
+

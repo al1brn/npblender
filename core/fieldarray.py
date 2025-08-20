@@ -399,10 +399,28 @@ class FieldArray(object):
     # ====================================================================================================
 
     def get(self, name, default=None):
-        if name not in self._data.dtype.names:
-            return default
+        """ Get attribute by name.
+
+        If name is not an actual field, return default value.
+        Name can be an array.
+        ``` python
+        pos = field_array.get("position", (0, 0, 1))
+        pos = field_array.get([[0, 0, 1], [0, 0, 0]])
+        ```
+        """
+        if isinstance(name, str):
+            if name in self._data.dtype.names:
+                return self[name]
+            else:
+                if default is None:
+                    return None
+                else:
+                    return np.asarray(default)
         else:
-            return self[name]
+            if name is None:
+                return None
+            else:
+                return np.asarray(name)
 
     def __getitem__(self, index):
 
@@ -802,6 +820,8 @@ class FieldArray(object):
         count  = 0
         arrays = {}
         for name, value in fields.items():
+            if value is None:
+                continue
 
             if name not in self._infos:
                 raise ValueError(f"{type(self).__name__}.append > Invalid field name: '{name}' not in {list(self._infos.keys())}")

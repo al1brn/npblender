@@ -263,9 +263,10 @@ def ease(mode='LINEAR', easing='IN', u=0., factor=1., back=1.70158, amplitude=1.
 # Interpolation
 # ====================================================================================================
 
-def maprange(t, mode='LINEAR', easing='IN',
+def maprange(t, 
            t0=0., t1=1., v0=0., v1=1.,
            factor=1., back=1.70158, amplitude=1., period=.3,
+           mode='LINEAR', easing='IN',
            normalized=False):
     """
     If normalized=True, `t` is already u∈[0,1] and we only remap to [v0,v1].
@@ -275,7 +276,13 @@ def maprange(t, mode='LINEAR', easing='IN',
         u = np.asarray(t)
     else:
         t, t0, t1 = map(np.asarray, (t, t0, t1))
-        u = (t - t0) / (t1 - t0)
+        u = np.clip((t - t0) / (t1 - t0), 0, 1)
+
+    # Accept syntax mode='SMOOTH.IN'
+    me = mode.upper().split(".")
+    if len(me) == 2:
+        mode = me[0]
+        easing = me[1]
 
     eased = ease(mode, easing, u, factor, back, amplitude, period)
     v0, v1 = map(np.asarray, (v0, v1))

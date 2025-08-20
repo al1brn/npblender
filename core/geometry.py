@@ -32,6 +32,30 @@ class Geometry:
     domain_names = ["points"]
 
     # ====================================================================================================
+    # From a dict
+    # ====================================================================================================
+
+    @classmethod
+    def from_dict(cls, d):
+        from .mesh import Mesh
+        from .curve import Curve
+        from .cloud import Cloud
+        from .instances import Instances, Meshes
+
+        if d['geometry'] == 'Mesh':
+            return Mesh.from_dict(d)
+        elif d['geometry'] == 'Curve':
+            return Curve.from_dict(d)
+        elif d['geometry'] == 'Cloud':
+            return Cloud.from_dict(d)
+        elif d['geometry'] == 'Instances':
+            return Instances.from_dict(d)
+        elif d['geometry'] == 'Meshes':
+            return Meshes.from_dict(d)
+        else:
+            raise ValueError(f"Unknown geometry {d['geometry']}")
+
+    # ====================================================================================================
     # Copy attributes definition
     # ====================================================================================================
 
@@ -369,12 +393,12 @@ class Geometry:
                     models.append(geo)
                 continue
 
-            # A valide geometry
-            if isinstance(spec, (Mesh, Curve)):
+            # A valid geometry
+            if type(spec).__name__ in ['Mesh', 'Curve']:
                 models.append(spec)
                 continue
 
-            raise ValueError(f"Unknown model (type '{type(spec).__name__}'): {spec}")
+            raise ValueError(f"Unknown model (type '{type(spec)}'): {spec}")
         
         return models
 

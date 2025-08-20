@@ -35,6 +35,8 @@ from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 from . maths import Rotation, Quaternion, Transformation
 from . fieldarray import FieldArray
 from . constants import TYPES, DOMAINS, BL_TYPES, bfloat, bint, bbool
+from . maths import distribs
+
 
 USE_JIT = True
 
@@ -1087,6 +1089,200 @@ class Point(PointDomain):
                 self.quat = r.as_quaternion()
 
         return self
+
+    # ====================================================================================================
+    # Position distributions
+    # ====================================================================================================
+
+    def line_dist(self, point0=(-1, -1, -1), point1=(1, 1, 1), count=10, density=None, seed=None):
+        self.new_vector('tangent')
+        d = distribs.line_dist(point0, point1, count, density, seed)
+        self.append(position=d['points'], tangent=d['tangents'])
+        return self
+
+    def arc_dist(
+        self,
+        radius=1.0,
+        scale=None,
+        center=(0, 0, 0),
+        arc_center=0.0,
+        arc_angle=np.pi/2,
+        use_vonmises=False,
+        count=10,
+        density=None,
+        seed=None,
+    ):
+        self.new_vector('tangent')
+        self.new_float('angle')
+        d = distribs.arc_dist(
+            radius, scale, center, arc_center, arc_angle, use_vonmises, count, density, seed
+        )
+        self.append(position=d['points'], tangent=d['tangents'], angle=d['angles'])
+        return self
+
+    def circle_dist(
+        self,
+        radius=1.0,
+        scale=None,
+        center=(0, 0, 0),
+        count=10,
+        density=None,
+        seed=None,
+    ):
+        self.new_vector('tangent')
+        self.new_float('angle')
+        d = distribs.circle_dist(radius, scale, center, count, density, seed)
+        self.append(position=d['points'], tangent=d['tangents'], angle=d['angles'])
+        return self
+
+    def rect_dist(self, a=1, b=1, center=(0, 0, 0), count=10, density=None, seed=None):
+        d = distribs.rect_dist(a, b, center, count, density, seed)
+        self.append(position=d['points'])
+        return self
+
+
+    def pie_dist(
+        self,
+        radius=1,
+        outer_radius=None,
+        center=None,
+        normal=None,
+        pie_center=0.,
+        pie_angle=np.pi/2,
+        use_vonmises=False,
+        count=10,
+        density=None,
+        seed=None
+    ):
+        self.new_vector('tangent')
+        self.new_float('angle')
+        d = distribs.pie_dist(
+            radius, outer_radius, center, normal, pie_center, pie_angle, use_vonmises, count, density, seed
+        )
+        self.append(position=d['points'], tangent=d['tangents'], angle=d['angles'])
+        return self
+
+    def disk_dist(self, radius=1, outer_radius=None, center=None, normal=None, count=10, density=None, seed=None):
+        self.new_vector('tangent')
+        self.new_float('angle')
+        d = distribs.disk_dist(
+            radius, outer_radius, center, normal, count, density, seed
+        )
+        self.append(position=d['points'], tangent=d['tangents'], angle=d['angles'])
+        return self
+
+    def cylinder_dist(
+        self,
+        radius=1.0,
+        scale=None,
+        height=1.0,
+        center=(0, 0, 0),
+        arc_center=0.0,
+        arc_angle=2*np.pi,
+        use_vonmises=False,
+        count=10,
+        density=None,
+        seed=None,
+    ):
+        self.new_vector('normal')
+        self.new_vector('tangent')
+        self.new_float('angle')
+        d = distribs.cylinder_dist(
+            radius, scale, height, center, arc_center, arc_angle, use_vonmises, count, density, seed
+        )
+        self.append(position=d['points'], normal=d['normals'], tangent=d['tangents'], angle=d['angles'])
+        return self
+
+
+    def sphere_dist(
+        self,
+        radius=1.0,
+        scale=None,
+        center=(0, 0, 0),
+        count=10,
+        density=None,
+        seed=None
+    ):
+        self.new_vector('normal')
+        self.new_float('theta')
+        self.new_float('phi')
+        d = distribs.sphere_dist(radius, scale, center, count, density, seed)
+        self.append(position=d['points'], normal=d['normals'], theta=d['thetas'], phi=d['phis'])
+        return self
+
+    def dome_dist(
+        self,
+        radius=1.0,
+        scale=None,
+        axis=(0, 0, 1),
+        angle=np.pi / 2,
+        use_vonmises=False,
+        center=(0, 0, 0),
+        count=10,
+        density=None,
+        seed=None
+    ):
+        self.new_vector('normal')
+        d = distribs.dome_dist(
+            radius, scale, axis, angle, use_vonmises, center, count, density, seed
+        )
+        self.append(position=d['points'], normal=d['normals'])
+        return self
+
+    def cube_dist(self, size=1, center=(0, 0, 0), count=10, density=None, seed=None):
+        self.append(position = distribs.cube_dist(size, center, count, density, seed)['points'])
+        return self
+
+    def ball_dist(
+        self,
+        radius=1.0,
+        axis=(0, 0, 1),
+        angle=np.pi,
+        use_vonmises=False,
+        center=(0, 0, 0),
+        count=10,
+        density=None,
+        scale=None,
+        seed=None,
+        **kwargs
+    ):
+        self.new_vector('normal')        
+        d = distribs.ball_dist(
+            radius, axis, angle, use_vonmises, center, count, density, scale, seed, **kwargs)
+        self.append(position=d['points'], normal=d['normals'])
+        return self
+    
+    # ====================================================================================================
+    # Speed distributions
+    # ====================================================================================================
+
+    def speed_along(self, speed=1, direction=(0, 0, 1), angle=np.pi/2, scale=None, use_vonmises=False, seed=None):
+        return distribs.dome_dist(
+            radius = self.get(speed),
+            scale = scale,
+            axis = self.get(direction),
+            angle = angle,
+            use_vonmises = use_vonmises,
+            count = len(self),
+            seed = seed,
+            )['points']
+    
+    def disk_speed(self, speed=1, max_speed=None, normal=None, seed=None):
+        return distribs.disk_dist(
+            radius = speed,
+            outer_radius = max_speed,
+            normal=normal,
+            count=len(self),
+            seed=seed)['points']
+
+    def shake_speed(self, speed, scale=None, length_only=False, seed=None):
+        speed = self.get(speed)
+        return distribs.shake_vectors(
+            speed = self.get(speed),
+            scale = scale, 
+            length_only = length_only,
+            seed = seed)
+
 
 # ====================================================================================================
 # Corner Domain
