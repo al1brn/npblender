@@ -831,7 +831,7 @@ class Mesh(Geometry):
         Note that the added geometry can refer to existing vertices. It is appended as is, whithout shifting
         indices.
 
-        To add indenpendant geometry, use_join geometry.
+        To add independant geometry, use join_geometry.
 
         ``` python
         cube = Mesh.cube()
@@ -881,26 +881,64 @@ class Mesh(Geometry):
         # Corners and Faces
         # ----------------------------------------------------------------------------------------------------
 
-        ok = False
-        if faces is None:
-            if corners is None:
-                return
-            else:
-                ok = False
-        else:
-            ok = corners is not None
+        # If corners is provided, faces can be:
+        # - None -> single face made of all corners
+        # - int -> faces are all the same size (len(corners) must be a multiplief of faces)
+        # - array like -> face sizes (len(corners) == np.sum(faces))
+        #
+        # If faces is provided, corners can be:
+        # - None -> faces must be an array of arrays, each array being of list of corners
+        # - not None -> see above
 
-        if not ok:
-            raise AttributeError("Mesh add_geometry> corners and sizes must be both None or both not None.")
-        
-        if np.shape(faces) == ():
-            nfaces = len(corners) // faces
-            if len(corners) % faces != 0:
-                raise ValueError(f"Mesh add_geometry> when faces is a single number {faces}, it must divide the number of corners ({len(corners)}).")
-            faces = np.ones(nfaces, dtype=bint)*faces
-        
-        added['corners'] = self.corners.append(vertex_index=corners, **disp_attrs['corners'])
-        added['faces'] = self.faces.append_sizes(faces, **disp_attrs['faces'])
+        ok_faces = True
+        if corners is None:
+            if faces is None:
+                ok_faces = False
+            else:
+                corners = []
+                sizes = []
+                ok = hasattr(faces, '__len__')
+                if ok:
+                    for face in faces:
+                        ok = hasattr(faces, '__len__') and len(face) > 2
+                        if not ok:
+                            break
+                        corners.extend(face)
+                        sizes.append(len(face))
+                if not ok:
+                    raise ValueError(f"Mesh add_geometry> when corners is None, faces must be None or an array of arrays, each array being of list of corners.")
+                faces = sizes
+
+        else:
+            corners = np.asarray(corners)
+            ncorners = len(corners)
+            if faces is None:
+                faces = [ncorners]
+
+            else:
+                faces = np.asarray(faces)
+                if faces.shape == ():
+                    size = int(faces)
+                    if ncorners % size != 0:
+                        raise ValueError(f"Mesh add_geometry> when faces is a single number {size}, it must divide the number of corners ({ncorners}).")
+                    faces = [size]*(ncorners // size)
+                else:
+                    if np.sum(faces) != ncorners:
+                        raise ValueError(f"Mesh add_geometry> the sum of faces ({np.sum(faces)}) must be equal to the number of corners ({ncorners}).")
+                    
+        if ok_faces:
+            added['corners'] = self.corners.append(vertex_index=corners, **disp_attrs['corners'])
+            added['faces'] = self.faces.append_sizes(faces, **disp_attrs['faces'])
+
+        if False: # OLD
+            if np.shape(faces) == ():
+                nfaces = len(corners) // faces
+                if len(corners) % faces != 0:
+                    raise ValueError(f"Mesh add_geometry> when faces is a single number {faces}, it must divide the number of corners ({len(corners)}).")
+                faces = np.ones(nfaces, dtype=bint)*faces
+            
+            added['corners'] = self.corners.append(vertex_index=corners, **disp_attrs['corners'])
+            added['faces'] = self.faces.append_sizes(faces, **disp_attrs['faces'])
 
         if safe_mode:
             self.check()
@@ -941,7 +979,7 @@ class Mesh(Geometry):
 
         Arguments
         ---------
-            - verts (array of vectors) : the vertices to add
+            - points (array of vectors) : the vertices to add
             - attributes (name=value) : value for named attributes
 
         Returns
@@ -950,96 +988,6 @@ class Mesh(Geometry):
         """
         npoints = len(self.points)
         return self.points.append(position=points, **attributes)
-    
-    # -----------------------------------------------------------------------------------------------------------------------------
-    # Add edges
-    # -----------------------------------------------------------------------------------------------------------------------------
-
-    def add_edges(self, vertices, **attributes):
-        nedges = len(self.edges)
-        return self.edges.append(vertex0=vertices[..., 0], vertex1=vertices[..., 1])
-
-    # -----------------------------------------------------------------------------------------------------------------------------
-    # Add faces
-    # -----------------------------------------------------------------------------------------------------------------------------
-
-    def add_faces(self, corners, faces, use_offset=True, **attributes):
-        """ Add faces.
-
-        Faces can be added in different formats:
-            - a list or 1D-array of ints : a single face
-            - a list of list of ints : a list of faces
-            - a 2D-array of ints : a list of faces of the same size
-            - a tuple (array of ints, array of ints) : sizes and corners
-
-        The offset_index is the value to add to the vertex indices. It allows to add geometry faces defined from
-        index 0 to a geometry with existing vertices.
-
-        ``` python
-        # ----- One face at a time
-
-        mesh = Mesh()
-
-        # Create 8 vertices form a cube
-        mesh.add_verts(Mesh.Cube().points.position)
-
-        # list of ints
-        mesh.add_faces([0, 1, 3, 2])
-
-        # tuple of ints
-        mesh.add_faces((2, 3, 7, 6))
-
-        # array of ints
-        mesh.add_faces(np.array((6, 7, 5, 4)))
-
-        obj = mesh.to_object("Single faces")
-        obj.location.x = -3
-
-        # ----- Several faces
-
-        mesh = Mesh()
-
-        # Create 8 vertices form a cube
-        mesh.add_verts(Mesh.Cube().points.position)
-
-        # list of lists
-        mesh.add_faces( [[0, 1, 3, 2], [2, 3, 7, 6], [6, 7, 5, 4]])
-
-        # Structured array
-        faces = np.reshape([4, 5, 1, 0, 2, 6, 4, 0, 7, 3, 1, 5], (3, 4))
-        mesh.add_faces(faces)
-
-        mesh.to_object("List of faces")
-
-        # ----- Corners and sizes
-
-        mesh = Mesh()
-
-        # Create 8 vertices form a cube
-        mesh.add_verts(Mesh.Cube().points.position)
-
-        mesh.add_faces((
-            [0, 1, 3, 2, 2, 3, 7, 6, 6, 7, 5, 4, 4, 5, 1, 0, 2, 6, 4, 0, 7, 3, 1, 5],
-            [4, 4, 4, 4, 4, 4],
-            ))
-
-        obj = mesh.to_object("Corners, faces")
-        obj.location.x = 3
-        ```
-
-        Arguments
-        ---------
-            - faces (various) : the faces to add
-            - mat (int or array of ints = 0) : material indices of the faces
-            - offset (int) : the offset to add to the vertex indices.
-            - attributes (name=value) : value for named attributes
-
-        Returns
-        -------
-            - array of ints : indices of the created faces
-        """
-        nfaces = len(self.faces)
-        return self.add_geometry(faces=faces, corners=corners, **attributes)
     
     # =============================================================================================================================
     # Split edges
@@ -2439,7 +2387,7 @@ class Mesh(Geometry):
         points[:, 2] = z
 
         loop0 = self.add_points(points)
-        res = self.add_faces(corners=loop0, faces=len(loop0))
+        res = self.add_geometry(corners=loop0) #, faces=len(loop0))
 
         self.bridge_loops(loop0, loop1, close=True)
 

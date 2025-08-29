@@ -68,6 +68,8 @@ image = api_call.get_image(image_index)
 ```
 """
 
+import numpy as np
+
 import asyncio
 import aiohttp
 import time
@@ -75,57 +77,9 @@ from PIL import Image
 from io import BytesIO
 
 from tqdm import tqdm
-#from tqdm.asyncio import tqdm_asyncio
-
-import numpy as np
-
-
-import asyncio
-import aiohttp
-from tqdm.asyncio import tqdm_asyncio
-from tqdm import tqdm
-import time
-
-import asyncio
-import aiohttp
-import time
-from tqdm.asyncio import tqdm_asyncio
-
-import asyncio
-import aiohttp
-import time
-from tqdm.asyncio import tqdm_asyncio
-
-import asyncio
-import aiohttp
-import time
-from tqdm import tqdm
-
-import asyncio
-import aiohttp
-import time
-from tqdm import tqdm
-
-import asyncio
-import aiohttp
-import time
-
-import asyncio
-import aiohttp
-import time
-from tqdm.asyncio import tqdm_asyncio
-
-
-import asyncio
-import aiohttp
-import time
 from tqdm.asyncio import tqdm_asyncio
 from collections import deque
 
-import asyncio
-import aiohttp
-import time
-from tqdm.asyncio import tqdm_asyncio
 
 MAX_INFLIGHT = 6  # Limite de requêtes simultanées
 
@@ -197,161 +151,6 @@ async def dispatch_requests(url, payloads, max_rate=5, method="POST", binary=Fal
     counter["done"] = True
     return results
 
-
-
-
-""" WORK par lot de 5
-
-async def fetch(session, url, payload=None, method='POST', binary=False):
-    try:
-        if method.upper() == "POST":
-            async with session.post(url, json=payload) as response:
-                response.raise_for_status()
-                return await response.read() if binary else await response.json()
-        elif method.upper() == "GET":
-            async with session.get(url, params=payload) as response:
-                response.raise_for_status()
-                return await response.read() if binary else await response.json()
-        else:
-            raise ValueError(f"Unsupported HTTP method: {method}")
-    except Exception as e:
-        return {"error": str(e), "payload": payload}
-
-async def dispatch_requests(url, payloads, max_rate=5, method="POST", binary=False):
-    results = []
-    total = len(payloads)
-
-    async with aiohttp.ClientSession(headers={"Content-Type": "application/json"}) as session:
-        for i in tqdm(range(0, total, max_rate), desc="Requesting", unit="batch"):
-            chunk = payloads[i:i+max_rate]
-            tasks = [fetch(session, url, payload, method, binary) for payload in chunk]
-
-            start = time.perf_counter()
-            chunk_results = await asyncio.gather(*tasks, return_exceptions=False)
-            results.extend(chunk_results)
-
-            # Respect 1 second between batches
-            elapsed = time.perf_counter() - start
-            if elapsed < 1.0:
-                await asyncio.sleep(1.0 - elapsed)
-
-    return results
-"""
-
-
-"""
-
-async def fetch(session, url, payload=None, method='POST', binary=False):
-    try:
-        if method.upper() == "POST":
-            async with session.post(url, json=payload) as response:
-                response.raise_for_status()
-                return await response.read() if binary else await response.json()
-        elif method.upper() == "GET":
-            async with session.get(url, params=payload) as response:
-                response.raise_for_status()
-                return await response.read() if binary else await response.json()
-        else:
-            raise ValueError(f"Unsupported HTTP method: {method}")
-    except Exception as e:
-        return {"error": str(e), "payload": payload}
-
-async def dispatch_requests(url, payloads, max_rate=30, method="POST", binary=False):
-    results = [None] * len(payloads)
-    total = len(payloads)
-
-    start_time = time.perf_counter()
-    interval = 1.0 / max_rate
-
-    async with aiohttp.ClientSession(headers={"Content-Type": "application/json"}) as session:
-        tasks = []
-        for i, payload in enumerate(tqdm(payloads, desc="Sending requests")):
-            # Attente pour respecter le taux
-            now = time.perf_counter()
-            expected_time = start_time + i * interval
-            delay = expected_time - now
-            if delay > 0:
-                await asyncio.sleep(delay)
-
-            tasks.append(
-                asyncio.create_task(
-                    fetch(session, url, payload, method, binary)
-                )
-            )
-
-        responses = await asyncio.gather(*tasks)
-
-    for i, r in enumerate(responses):
-        results[i] = r
-
-    return results
-"""
-
-# ====================================================================================================
-# Send a single HTTP POST or GET request and parse JSON response
-
-async def fetch_OLD(session, url, payload=None, method='POST', binary=False):
-    try:
-        if method.upper() == "POST":
-            async with session.post(url, json=payload) as response:
-                response.raise_for_status()
-                return await response.read() if binary else await response.json()
-
-        elif method.upper() == "GET":
-            async with session.get(url, params=payload) as response:
-                response.raise_for_status()
-                return await response.read() if binary else await response.json()
-
-        else:
-            raise ValueError(f"Unsupported HTTP method: {method}")
-
-    except Exception as e:
-        return {"error": str(e), "payload": payload}
-    
-# ====================================================================================================
-# Dispatch multiple requests asynchronously with rate limiting
-
-async def dispatch_requests_OLD(url, payloads, max_rate=30, method="POST", binary=False):
-    """
-    Send a list of requests asynchronously while respecting a per-second rate limit.
-
-    Parameters
-    ----------
-    url : str
-        The API endpoint.
-    payloads : list[dict]
-        List of request payloads (used for POST body or GET params).
-    method : str
-        "POST" or "GET"
-    max_rate : int
-        Maximum number of requests per second.
-
-    Returns
-    -------
-    list[dict]
-        List of response JSONs or error messages.
-    """
-    results = []
-    total = len(payloads)
-
-    async with aiohttp.ClientSession(headers={"Content-Type": "application/json"}) as session:
-        tasks = []
-
-        for i in tqdm(range(0, total, max_rate), desc="Requesting", unit="batch"):
-            chunk = payloads[i:i+max_rate]
-            start_time = time.perf_counter()
-
-            # Prepare and dispatch requests
-            chunk_tasks = [fetch(session, url, payload, method, binary) for payload in chunk]
-            chunk_results = await asyncio.gather(*chunk_tasks, return_exceptions=False)
-            results.extend(chunk_results)
-
-            # Throttle to keep under max_rate/sec
-            elapsed = time.perf_counter() - start_time
-            if elapsed < 1.0:
-                await asyncio.sleep(1.0 - elapsed)
-
-    return results
 
 # ====================================================================================================
 # Dispatch multiple requests asynchronously with rate limiting

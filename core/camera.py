@@ -172,7 +172,6 @@ def camera_projection(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius=0.
     RIGHT     = 4
     BELOW     = 5
     ABOVE     = 6
-    SLICE_END = 7
 
     DISTANCE = 0
     SIZE     = 1
@@ -248,7 +247,7 @@ class Camera:
     RIGHT     = 4
     BELOW     = 5
     ABOVE     = 6
-    LAST      = 6
+    SLICE_END = 7
 
     DISTANCE = 0
     SIZE     = 1
@@ -602,7 +601,7 @@ class Camera:
             xmin, xmax = np.min(f_proj, axis=0), np.max(f_proj, axis=0)
             size[i_face] = np.linalg.norm(xmax - xmin)
 
-        return vis_faces, size
+        return vis_faces, size, proj
     
     # ----------------------------------------------------------------------------------------------------
     # Visible islands

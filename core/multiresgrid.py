@@ -293,10 +293,6 @@ class MultiResGrid(Mesh):
             UVMap = np.stack((U4.flatten(), V4.flatten()), axis=1),
         )
 
-        #self.points.add_points(vertices)
-        #self.corners.add_corners(corners, UVMap=np.stack((U4.flatten(), V4.flatten()), axis=1)),
-        #self.faces.add_faces([4]*nfinal)
-
     # ====================================================================================================
     # Demo function
 

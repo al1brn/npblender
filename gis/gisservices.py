@@ -285,7 +285,6 @@ class IgnImages(GisService):
             "STYLES"    : "",
         }
 
-        print("PAYLOAD:", payload)
         req["payload"] = payload
 
         if self.cache is not None:
@@ -595,7 +594,14 @@ class IgnAltitudes(GisService):
 
         service.do_calls()
 
-        return service.get_data(alts)
+        data = service.get_data(alts)
+
+        if area.projection == "LAMB93":
+            x, y = area.gps_to_lamb93(data[..., 0], data[..., 1])
+            data[..., 0] = x
+            data[..., 1] = y
+
+        return data
     
     # ====================================================================================================
     # Test resolution
@@ -672,7 +678,4 @@ class RgeAlti:
         x, y = area.grid_lamb93(shape=shape, extend=True)
         return self.load_altitudes(x, y).reshape(np.shape(x) + (3,))
     
-
-
-
 

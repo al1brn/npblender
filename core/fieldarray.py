@@ -95,7 +95,7 @@ class FieldArray(object):
             if data.shape == ():
                 self._length = 1
             else:
-                self._length = len(data)
+                self._length = len(self._data)
             
             # Build infos
             if isinstance(a, FieldArray):
@@ -108,6 +108,7 @@ class FieldArray(object):
                     if shape is not None:
                         shape = shape[1:]
                     self._infos[name] = {'dtype': data[name].dtype, 'shape': shape, 'default': 0, 'optional': False}
+
 
     # ====================================================================================================
     # Clone with another array
@@ -298,7 +299,8 @@ class FieldArray(object):
             return
         
         new_data = np.empty(size, self._data.dtype)
-        new_data[:self._length] = self._data[:self._length].reshape(-1)
+        if self._length:
+            new_data[:self._length] = self._data[:self._length].reshape(-1)
         self._data = new_data
     
     def _data_check(self, new_length):

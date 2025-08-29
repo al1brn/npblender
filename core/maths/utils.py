@@ -75,6 +75,155 @@ def get_axis(v, null=[0, 0, 1]):
     return normalized, norms.reshape(norms.shape[:-1])
 
 # ====================================================================================================
+# Get vectors perpendicular to arguments
+# ====================================================================================================
+
+def get_perp(vectors, default=(0, 0, 1), normalize=False):
+    """
+    Compute a perpendicular vector to each input vector.
+    
+    Parameters
+    ----------
+    vectors : array_like
+        Input vectors of shape (..., 3).
+    default : tuple or array_like, optional
+        Default perpendicular used when the vector is zero.
+    
+    Returns
+    -------
+    perp : ndarray
+        Perpendicular vectors of shape (..., 3).
+    """
+    v = np.asarray(vectors, dtype=bfloat)
+    d = np.asarray(default, dtype=bfloat)
+
+    # Broadcast default to v's shape
+    d = np.broadcast_to(d, v.shape)
+
+    # Norms
+    norms = np.linalg.norm(v, axis=-1, keepdims=True)
+    mask_zero = norms.squeeze(-1) == 0
+
+    # Find a test vector starting with (0, 0, 1) and then (0, 1, 0)
+    test1 = np.array([0.0, 0.0, 1.0], dtype=bfloat)
+    test2 = np.array([0.0, 1.0, 0.0], dtype=bfloat)
+    test = np.where(np.abs(v[...,0]) + np.abs(v[...,1]) < 1e-6, test2, test1)
+
+    # Cross product
+    perp = np.cross(v, test)
+
+    # Result
+
+    if perp.ndim == 1:
+        if mask_zero:
+            perp = d
+    else:
+        perp[mask_zero] = d
+
+    if normalize:
+        n = np.linalg.norm(perp, axis=-1, keepdims=True)
+        perp = perp / np.where(n == 0, 1, n)
+
+    return perp
+
+# ====================================================================================================
+# Get vectors making a given angle with input vectors
+# ====================================================================================================
+
+def get_angled(vectors, angle, default=(0, 0, 1), keep_norm=False,
+               twist=0.0, seed=None, eps=1e-6):
+    """
+    Return a vector making the given angle (radians) with each input vector.
+    The direction around the cone is controlled by `twist` (angle in radians
+    around the input direction). You can set twist='random' to sample a
+    uniform angle in [0, 2*pi).
+
+    Parameters
+    ----------
+    vectors : array_like, shape (..., 3)
+        Input vectors.
+    angle : float or array_like, broadcastable to vectors[..., 0]
+        Cone half-angle (radians) with respect to each input vector.
+    default : array_like, shape (3,)
+        Fallback direction when input vector is zero.
+    keep_norm : bool
+        If True, scale the result by ||vectors|| (zeros stay unit).
+    twist : float or array_like or 'random'
+        Rotation (radians) around the input direction (choose the
+        azimuth on the cone). If 'random', sample uniform in [0, 2*pi).
+    seed : int or None
+        RNG seed when twist='random'.
+    eps : float
+        Tolerance for near-colinearity with z-axis.
+
+    Returns
+    -------
+    w : ndarray, shape (..., 3)
+        Output vectors.
+    """
+    v = np.asarray(vectors, dtype=bfloat)
+    if v.shape[-1] != 3:
+        raise ValueError(f"Expected last dimension = 3, got {v.shape[-1]}")
+    d = np.asarray(default, dtype=bfloat)
+    if d.shape != (3,):
+        raise ValueError("`default` must have shape (3,)")
+
+    # Norms and zero-mask
+    nv = np.linalg.norm(v, axis=-1, keepdims=True)             # (..., 1)
+    mask_zero = (nv[..., 0] < 1e-12)
+
+    # Replace null vectors with default direction, then normalize
+    v_eff = np.where(mask_zero[..., None], d, v)               # (..., 3)
+    n_eff = np.linalg.norm(v_eff, axis=-1, keepdims=True)
+    v_hat = v_eff / np.where(n_eff == 0.0, 1.0, n_eff)         # (..., 3), unit
+
+    # Build an orthonormal basis (p_hat, q_hat) spanning v_hat^⊥
+    xy_sum = np.abs(v_hat[..., 0]) + np.abs(v_hat[..., 1])
+    use_y  = (xy_sum <= eps)
+    z_axis = np.array([0.0, 0.0, 1.0], dtype=bfloat)
+    y_axis = np.array([0.0, 1.0, 0.0], dtype=bfloat)
+    test   = np.where(use_y[..., None], y_axis, z_axis)        # (..., 3)
+
+    p = np.cross(v_hat, test)
+    np_norm_p = np.linalg.norm(p, axis=-1, keepdims=True)
+    p_hat = p / np.where(np_norm_p == 0.0, 1.0, np_norm_p)     # (..., 3), unit
+
+    q = np.cross(v_hat, p_hat)
+    nq = np.linalg.norm(q, axis=-1, keepdims=True)
+    q_hat = q / np.where(nq == 0.0, 1.0, nq)                   # (..., 3), unit
+
+    # Determine twist angle(s)
+    if isinstance(twist, str):
+        if twist != 'random':
+            raise ValueError("`twist` must be a float/array or 'random'.")
+        rng = np.random.default_rng(seed)
+        tw = rng.uniform(0.0, 2.0 * np.pi, size=v.shape[:-1]).astype(bfloat)
+    else:
+        tw = np.asarray(twist, dtype=bfloat)
+
+    # Build the azimuth direction on the cone rim
+    # u_hat = cos(twist)*p_hat + sin(twist)*q_hat
+    ct = np.cos(tw)[..., None]
+    st = np.sin(tw)[..., None]
+    u_hat = ct * p_hat + st * q_hat                             # (..., 3), unit
+
+    # Combine at the requested cone angle: w_hat = cos(a)*v_hat + sin(a)*u_hat
+    ang = np.asarray(angle, dtype=bfloat)
+    c = np.cos(ang)[..., None]
+    s = np.sin(ang)[..., None]
+    w_hat = c * v_hat + s * u_hat                               # (..., 3), unit
+
+    # Optionally keep input norm; keep unit for zero inputs
+    if keep_norm:
+        w = w_hat * nv
+        w[mask_zero] = w_hat[mask_zero]
+        return w
+    else:
+        return w_hat
+
+
+
+# ====================================================================================================
 # flat top gaussian
 # ====================================================================================================
 

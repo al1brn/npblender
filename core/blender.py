@@ -1872,6 +1872,34 @@ def get_temp_folder():
 
 # ====================================================================================================
 # Pillow image
+# ====================================================================================================
+
+# ----------------------------------------------------------------------------------------------------
+# Pillow image to Blender image :full
+# ----------------------------------------------------------------------------------------------------
+
+def pil_to_bl_image(pil_img, name="FromPIL", colorspace='sRGB'):
+    if pil_img.mode == "RGBA":
+        img_rgba = pil_img
+    elif pil_img.mode == "RGB":
+        img_rgba = pil_img.convert("RGBA")
+    elif pil_img.mode in ("L", "LA"):
+        img_rgba = pil_img.convert("RGBA")
+    else:
+        img_rgba = pil_img.convert("RGBA")
+
+    w, h = img_rgba.size
+
+    arr = np.array(img_rgba, dtype=np.float32) / 255.0   # (h, w, 4)
+    arr = np.flipud(arr)
+    flat = np.ascontiguousarray(arr).ravel() # size = w*h*4
+
+    bl_img = bpy.data.images.new(name, width=w, height=h, alpha=True, float_buffer=False)
+    bl_img.colorspace_settings.name = colorspace
+    bl_img.pixels.foreach_set(flat)
+    bl_img.update()
+    return bl_img
+
 
 # ----------------------------------------------------------------------------------------------------
 # Convert a pillow image into a blender image
@@ -1888,7 +1916,7 @@ def pil_to_image(pil_image, name="Pillow"):
     """
 
     image = bpy.data.images.new(name, pil_image.width, pil_image.height)
-    a = np.insert(np.array(pil_image)/255, 3, 1, -1)
+    a = np.insert(np.array(pil_image)/255., 3, 1, -1)
     image.pixels[:] = np.reshape(np.flip(a, axis=0), np.size(a))
 
     return image

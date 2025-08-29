@@ -61,7 +61,7 @@ class Engine:
     # Baking
     bake_file = None
 
-    # random see
+    # random seed
     SEED = 8694853
 
     def __init__(self):
@@ -157,10 +157,11 @@ class Engine:
 
     @property
     def frame_seeds(self):
-        shape = (self.scene_end + 1, self.subframes)
+        shape = (self.scene.frame_end + 1, self.subframes + 1)
         if self._frame_seeds is None or self._frame_seeds.shape != shape:
             rng = np.random.default_rng(self.SEED)
             self._frame_seeds = rng.integers(0, 1<<32, shape)
+
         return self._frame_seeds
 
     @property

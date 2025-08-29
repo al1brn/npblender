@@ -1,5 +1,7 @@
 import numpy as np
 from pyproj import Geod, Transformer
+import requests
+
 
 # ====================================================================================================
 # Geographical area
@@ -38,6 +40,7 @@ class Area:
         if projection == 'GPS':
             x0, y0 = cls.move_gps_point(x, y, -size[0]/2, -size[1]/2)
             x1, y1 = cls.move_gps_point(x, y, size[0]/2, size[1]/2)
+
             return cls(x0, y0, x1, y1, projection=projection)
         
         else:
@@ -422,7 +425,12 @@ class BlenderArea(Area):
         return self.alt_offset + z/self.alt_scale
 
     def grid_to_mesh(self, grid):
-        x, y = self.area_to_xy(grid[..., 0], grid[..., 1])
+        nx, ny, _ = grid.shape
+        if False:
+            x, y = np.meshgrid(np.linspace(self.x0, self.x1, nx), np.linspace(self.y0, self.y1, ny))
+        else:
+            x, y = self.area_to_xy(grid[..., 0], grid[..., 1])
+            
         if grid.shape[-1] == 2:
             return np.stack((x, y), axis=-1)
         else:
