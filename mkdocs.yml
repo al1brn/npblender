@@ -1,0 +1,30 @@
+site_name: NPBlender
+site_description: "NumPy-based geometry for Blender"
+site_author: "Alain Bernard"
+repo_url: https://github.com/al1brn/npblender
+
+theme:
+  name: material
+  language: fr
+  features:
+    - navigation.sections
+    - navigation.instant
+    - navigation.tracking
+    - content.code.copy
+
+nav:
+  - Accueil: index.md
+  - Installation: installation.md
+  - Utilisation:
+      - Aperçu: usage/index.md
+      - Maths: usage/maths.md
+      - Blender: usage/blender.md
+  - Référence API: reference.md
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - tables
+  - admonition
+  - codehilite
+  - footnotes
