@@ -1,0 +1,1 @@
+{"config":{"lang":["fr"],"separator":"[\\s\\-]+","pipeline":["stopWordFilter"]},"docs":[{"location":"","title":"npblender","text":"<p>Numpy for Blender</p> <p>Doc in progress....</p> <p>Update soon :) (this is a test for the workflow)</p>"}]}
