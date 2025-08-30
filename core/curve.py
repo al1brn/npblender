@@ -1,17 +1,41 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# MIT License
+#
+# Copyright (c) 2025 Alain Bernard
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
-Blender Python Geometry module
+Module Name: curve
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2023-11-10
+Last updated: 2025-08-29
 
-Created on Fri Nov 10 11:50:13 2023
+Summary:
+    Curve Geeomety.
 
-@author: alain.bernard
-@email: alain@ligloo.net
+Usage example:
+    >>> from curve import Curve
 
------
-
-Curve geometry.
-
+Notes:
+    - Curve is made of splines.
+    - Splines math relies upon the splinemaths module.
 """
 
 from contextlib import contextmanager
@@ -22,7 +46,7 @@ import bpy
 from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 from . constants import bfloat, bint, bbool
 from . import blender
-from . maths import Transformation, Quaternion, Rotation
+from . maths import Rotation
 from . maths import splinemaths
 
 from . geometry import Geometry

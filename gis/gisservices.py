@@ -1,13 +1,10 @@
 """ Download IGS data from IGN API
 """
 
-import math
-import requests
 from pyproj import Geod, Transformer
 from PIL import Image
 from io import BytesIO
 import numpy as np
-import asyncio
 from .areas import Area,BlenderArea
 from .asyncrequest import load_batch, ApiCall
 from .giscache import GisFiles, AltitudeCache

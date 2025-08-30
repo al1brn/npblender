@@ -1,12 +1,48 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# MIT License
+# 
+# Copyright (c) 2024 Alain Bernard
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
-Created on 2024/11/03
+Module Name: bakefile
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2024-11-03
+Last updated: 2024-11-03
 
-@author: alain
+Summary:
+    This module provides the BakeFile class for managing the storage and retrieval of animation and state data in Blender.
+    Data is stored in compressed, binary form and organized by frame index, allowing for efficient baking and restoration
+    of simulation or animation states.
 
-Bake file
+Usage example:
+    >>> from core.bakefile import BakeFile
+    >>> bfile = BakeFile("my_bake")
+    >>> bfile.write(index=10, data={'array': [1,2,3]}, state={'velocity': 5.0})
+    >>> frame_data = bfile.read(10)
+    >>> print(frame_data['array'])
 
+Notes:
+    - Bake files are stored in Blender's temporary directory or the current working directory if not set.
+    - The module depends on Blender's bpy module and numpy.
+    - Bake files are not deleted automatically; use BakeFile.delete_bake_files() as needed.
 """
 
 from pathlib import Path

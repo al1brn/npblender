@@ -1,12 +1,57 @@
+# MIT License
+# 
+# Copyright (c) 2024 Alain Bernard
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""
+Module Name: areas
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2024-06-11
+Last updated: 2024-06-11
+
+Summary:
+    Expose Area as a rectangle defined with GPS or LAMB93 projection.
+
+Usage example:
+    >>> import areas
+"""
+
 import numpy as np
 from pyproj import Geod, Transformer
 import requests
-
 
 # ====================================================================================================
 # Geographical area
 
 class Area:
+    """
+    Represents a geographic area with associated attributes and methods.
+
+    This class is intended to serve as a base or primary representation of an area in GIS (Geographic Information Systems) applications.
+
+    Attributes:
+        projection (str): The projection type ('GPS', 'LAMB93', or 'BLENDER').
+        unit_scale (int): Scale factor for internal unit conversion based on projection.
+        _x0, _y0, _x1, _y1 (float): Rectangle boundaries (scaled).
+    """
 
     GRID_INDEXING = 'ij'
 

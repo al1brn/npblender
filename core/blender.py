@@ -1,27 +1,74 @@
-# ====================================================================================================
-# File        : blender.py
-# Package     : npblender (Blender with NumPy)
-# Author      : Alain Bernard <lesideesfroides@gmail.com>
-# Created     : 2022-06-29
-# Updated     : 2025-07-21
-# License     : MIT License
+# MIT License
 #
-# Description :
-# -------------
-# This module provides an interface between `npblender` and Blender's internal API for Geometry Nodes.
+# Copyright (c) 2025 Alain Bernard
 #
-# It includes utilities to:
-#   - Access and manipulate mesh data blocks (e.g., Mesh, Curve, PointCloud)
-#   - Read and write geometry attributes from Blender objects
-#   - Create and update attribute layers compatible with Geometry Nodes
-#   - Detect attribute domains and data types
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# Typical usage:
-# --------------
-# from npblender.blender import get_data, get_attributes, get_attribute, set_attribute, create_attribute
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
 #
-# __all__ = [...]  # To be completed with public API functions
-# ====================================================================================================
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""
+Module Name: blender
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2022-06-29
+Last updated: 2025-08-29
+
+Summary:
+This module provides an interface between `npblender` and Blender's internal API for Geometry Nodes.
+
+It includes utilities to:
+  - Access and manipulate mesh data blocks (e.g., Mesh, Curve, PointCloud)
+  - Read and write geometry attributes from Blender objects
+  - Create and update attribute layers compatible with Geometry Nodes
+  - Detect attribute domains and data types
+
+Usage example:
+    >>> import blender
+    >>> obj = blender.get_pbject("Cube")
+    >>> me = blender.get_mesh("Cube")
+"""
+
+__all__ = [
+    "get_collection", "create_collection", "get_temp_collection",
+    "get_object", "get_evaluated", "delete_object", "get_empty",
+    "create_mesh_object", "create_point_cloud_object", "create_curve_object", "create_text_object", 
+    "duplicate", "object_type",
+    "get_select_snapshot", "set_select_snapshot", 
+    "mesh_to_curve", "curve_to_mesh", "mesh_to_point_cloud", "point_cloud_to_mesh",
+    "int_array", "float_array", 
+    "get_mesh", "get_point_cloud", "get_curve", "get_data",
+    "clear_geometry", "get_mesh_vertices", "set_mesh_vertices", "temp_mesh_object",
+    "BMesh", 
+    "merge_by_distance", "merge_by_distance_2D", "remove_doubles", "shade_smooth",
+    "get_point_cloud_points", "set_point_cloud_points",
+    "create_material", "create_materials", "choose_material_type", "set_material", "change_material_image",
+    "get_attributes", "attribute_exists", "get_attribute_info", "get_attribute_names",
+    "get_attribute", "set_attribute", "delete_attribute", "create_attribute", 
+    "create_float_attribute", "create_int_attribute", "create_bool_attribute", "create_vector_attribute",
+    "create_vector2_attribute", "create_color_attribute", "create_byte_color_attribute",
+    "create_quaternion_attribute", "create_matrix_attribute", 
+    "get_temp_folder", "pil_to_bl_image", "pil_to_image", "pil_array_to_image", "get_image_node", 
+    "markers", "fps", "marker_frame", "frtime", "frdur", "frame_at",
+    "data_path_index", "get_fcurve", "fc_clear", "fc_set_kfs", "fc_set_keyframe", "kf_clear", 
+    "set_key_frame", "get_value_at_frame",
+    "KeyFrame", "FCurve",
+    "shape_key_name", "has_shape_keys", "shape_keys_count", "shape_keys_clear", "get_key_block", 
+    "is_viewport", "lock_interface", "render_engine"
+    ]
 
 
 import numpy as np
@@ -42,9 +89,11 @@ from . constants import bfloat, bint, bbool, TYPES, BL_TYPES
 
 # ====================================================================================================
 # Collection
+# ====================================================================================================
 
 # ----------------------------------------------------------------------------------------------------
 # Get an existing collection
+# ----------------------------------------------------------------------------------------------------
 
 def get_collection(spec, halt=True):
     """Get a collection by its name or object.
@@ -78,6 +127,7 @@ def get_collection(spec, halt=True):
 
 # ----------------------------------------------------------------------------------------------------
 # Create a collection
+# ----------------------------------------------------------------------------------------------------
 
 def create_collection(spec, parent=None):
     """Creates a new collection or returns an existing one.
@@ -122,6 +172,7 @@ def create_collection(spec, parent=None):
 
 # ----------------------------------------------------------------------------------------------------
 # Create a temporary collection
+# ----------------------------------------------------------------------------------------------------
 
 def get_temp_collection(name="npblender Temp"):
     """Get or create a temporary collection.
@@ -147,10 +198,12 @@ def get_temp_collection(name="npblender Temp"):
     return coll
 
 # ====================================================================================================
-# Collection
+# Object
+# ====================================================================================================
 
 # ----------------------------------------------------------------------------------------------------
 # Get an existing object
+# ----------------------------------------------------------------------------------------------------
 
 def get_object(spec, halt=True):
     """Get an object by its name or object reference.
@@ -193,6 +246,7 @@ def get_object(spec, halt=True):
 
 # ----------------------------------------------------------------------------------------------------
 # Get an evaluated object
+# ----------------------------------------------------------------------------------------------------
 
 def get_evaluated(spec):
     """Get the evaluated state of a Blender object.
@@ -217,6 +271,7 @@ def get_evaluated(spec):
 
 # ----------------------------------------------------------------------------------------------------
 # Delete object
+# ----------------------------------------------------------------------------------------------------
 
 def delete_object(spec):
     """Deletes a Blender object by its name or reference.
@@ -335,6 +390,7 @@ def create_object(name, collection=None, type='MESH', halt=True, **kwargs):
 
 # ----------------------------------------------------------------------------------------------------
 # Create an empty object
+# ----------------------------------------------------------------------------------------------------
 
 def get_empty(name, collection=None, halt=False):
     """Get or create an empty object.
@@ -369,6 +425,7 @@ def get_empty(name, collection=None, halt=False):
 
 # ----------------------------------------------------------------------------------------------------
 # Create a mesh object
+# ----------------------------------------------------------------------------------------------------
 
 def create_mesh_object(name, collection=None, halt=False):
     """Create a new mesh object or return an existing one.
@@ -403,6 +460,7 @@ def create_mesh_object(name, collection=None, halt=False):
 
 # ----------------------------------------------------------------------------------------------------
 # Create a point cloud object
+# ----------------------------------------------------------------------------------------------------
 
 def create_point_cloud_object(name, collection=None, halt=False):
     """Create a new point cloud object or return an existing one.
@@ -438,6 +496,7 @@ def create_point_cloud_object(name, collection=None, halt=False):
 
 # ----------------------------------------------------------------------------------------------------
 # Create a curve object
+# ----------------------------------------------------------------------------------------------------
 
 def create_curve_object(name, collection=None, halt=False):
     """Create a new curve object or return an existing one.
@@ -473,6 +532,7 @@ def create_curve_object(name, collection=None, halt=False):
 
 # ----------------------------------------------------------------------------------------------------
 # Create a text object
+# ----------------------------------------------------------------------------------------------------
 
 def create_text_object(name, text="Text", collection=None, halt=False):
     """Create a new text object or return an existing one.
@@ -509,6 +569,7 @@ def create_text_object(name, text="Text", collection=None, halt=False):
 
 # ----------------------------------------------------------------------------------------------------
 # Duplicate an object
+# ----------------------------------------------------------------------------------------------------
 
 def duplicate(spec, data=True, actions=True, collection=None):
     """Duplicate a Blender object.
@@ -565,6 +626,7 @@ def duplicate(spec, data=True, actions=True, collection=None):
 
 # ----------------------------------------------------------------------------------------------------
 # Object type: Empty of name to data type
+# ----------------------------------------------------------------------------------------------------
 
 def object_type(spec):
     """Get the type of the specified Blender object's data.
@@ -591,8 +653,9 @@ def object_type(spec):
     else:
         return type(obj.data).__name__
 
-# ====================================================================================================
-# Object selection
+# ----------------------------------------------------------------------------------------------------
+# Snapshot
+# ----------------------------------------------------------------------------------------------------
 
 def get_select_snapshot():
     """Get a snapshot of the current object selection state.
@@ -630,6 +693,14 @@ def set_select_snapshot(d):
             obj = bpy.data.objects.get(name)
             if obj is not None:
                 obj.select_set(value)
+
+# ====================================================================================================
+# Conversions
+# ====================================================================================================
+
+# ----------------------------------------------------------------------------------------------------
+# Mesh to Curve
+# ----------------------------------------------------------------------------------------------------
 
 def mesh_to_curve(spec):
     """Convert a mesh object to a curve object.
@@ -670,6 +741,10 @@ def mesh_to_curve(spec):
 
     return obj
 
+# ----------------------------------------------------------------------------------------------------
+# Curve to Mesh
+# ----------------------------------------------------------------------------------------------------
+
 def curve_to_mesh(spec):
     """Convert a curve object to a mesh object.
 
@@ -709,8 +784,9 @@ def curve_to_mesh(spec):
 
     return obj
 
-# ====================================================================================================
+# ----------------------------------------------------------------------------------------------------
 # Mesh Point Cloud conversion
+# ----------------------------------------------------------------------------------------------------
 
 def mesh_to_point_cloud(spec):
     """Convert a mesh object to a point cloud object.
@@ -751,6 +827,10 @@ def mesh_to_point_cloud(spec):
 
     return obj
 
+# ----------------------------------------------------------------------------------------------------
+# Point Cloud to mesh conversion
+# ----------------------------------------------------------------------------------------------------
+
 def point_cloud_to_mesh(spec):
     """Convert a point cloud object to a mesh object.
 
@@ -790,9 +870,9 @@ def point_cloud_to_mesh(spec):
 
     return obj
 
-
 # ====================================================================================================
 # Access to typed data
+# ====================================================================================================
 
 def int_array(a):
     a = np.asarray(a, dtype=np.int32)
@@ -810,6 +890,7 @@ def float_array(a):
 
 # ----------------------------------------------------------------------------------------------------
 # Mesh data
+# ----------------------------------------------------------------------------------------------------
 
 def get_mesh(spec, halt=True):
     """Get the Mesh data of an object.
@@ -847,8 +928,10 @@ def get_mesh(spec, halt=True):
         raise Exception(f"Object '{obj.name}' is not a Mesh")
 
     return obj.data
+
 # ----------------------------------------------------------------------------------------------------
 # Point Cloud data
+# ----------------------------------------------------------------------------------------------------
 
 def get_point_cloud(spec, halt=True):
     """Get the PointCloud data of an object.
@@ -889,6 +972,7 @@ def get_point_cloud(spec, halt=True):
 
 # ----------------------------------------------------------------------------------------------------
 # Curve data
+# ----------------------------------------------------------------------------------------------------
 
 def get_curve(spec, halt=True):
     """Get the Curve data of an object.
@@ -926,9 +1010,9 @@ def get_curve(spec, halt=True):
 
     return obj.data
 
-
 # ----------------------------------------------------------------------------------------------------
 # Object data
+# ----------------------------------------------------------------------------------------------------
 
 def get_data(spec, halt=True):
     """Get the data block of a Blender object.
@@ -958,9 +1042,9 @@ def get_data(spec, halt=True):
     else:
         return get_object(spec).data
 
-
 # ====================================================================================================
 # Clear Mesh or Curve geometry
+# ====================================================================================================
 
 def clear_geometry(spec):
     """Clear the geometry data of a Blender object if it is a Mesh or Curve.
@@ -995,6 +1079,7 @@ def clear_geometry(spec):
 
 # ----------------------------------------------------------------------------------------------------
 # Get the vertices
+# ----------------------------------------------------------------------------------------------------
 
 def get_mesh_vertices(spec):
     """Get the vertices of a Mesh object.
@@ -1026,6 +1111,7 @@ def get_mesh_vertices(spec):
 
 # ----------------------------------------------------------------------------------------------------
 # Set the vertices
+# ----------------------------------------------------------------------------------------------------
 
 def set_mesh_vertices(spec, verts):
     """Set the vertex coordinates of a Mesh object.
@@ -1065,8 +1151,9 @@ def set_mesh_vertices(spec, verts):
 
     mesh.update()
 
-# ====================================================================================================
+# ----------------------------------------------------------------------------------------------------
 # Temp object
+# ----------------------------------------------------------------------------------------------------
 
 def temp_mesh_object(name="Mesh"):
     """Create a temporary mesh object.
@@ -1087,6 +1174,7 @@ def temp_mesh_object(name="Mesh"):
 
 # ====================================================================================================
 # BMesh class
+# ====================================================================================================
 
 class BMesh:
     """Context manager for accessing and modifying an object's mesh data using bmesh.
@@ -1129,7 +1217,12 @@ class BMesh:
         del self.bm
 
 # ====================================================================================================
-# Remove doubles
+# Mesh operations
+# ====================================================================================================
+
+# ----------------------------------------------------------------------------------------------------
+# Merge by distance
+# ----------------------------------------------------------------------------------------------------
 
 def merge_by_distance(vertices, precision=.0001):
     """
@@ -1163,6 +1256,10 @@ def merge_by_distance(vertices, precision=.0001):
     new_vertices = vertices[unique_indices]
 
     return new_vertices, inverse
+
+# ----------------------------------------------------------------------------------------------------
+# Merge by distance, 2D version
+# ----------------------------------------------------------------------------------------------------
 
 def merge_by_distance_2D(vertices, precision=.0001):
     """
@@ -1198,6 +1295,9 @@ def merge_by_distance_2D(vertices, precision=.0001):
 
     return new_vertices, inv
 
+# ----------------------------------------------------------------------------------------------------
+# Remove doubles
+# ----------------------------------------------------------------------------------------------------
 
 def remove_doubles(spec, threshold=0.0001):
     """Remove duplicate vertices from a mesh object.
@@ -1228,9 +1328,9 @@ def remove_doubles(spec, threshold=0.0001):
         bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=threshold)
     return obj
 
-
-# ====================================================================================================
+# ----------------------------------------------------------------------------------------------------
 # Faces
+# ----------------------------------------------------------------------------------------------------
 
 def shade_smooth(obj, smooth=True):
     """Sets smooth shading on the polygons (faces) of a mesh object.
@@ -1264,6 +1364,7 @@ def shade_smooth(obj, smooth=True):
 
 # ----------------------------------------------------------------------------------------------------
 # Get the points
+# ----------------------------------------------------------------------------------------------------
 
 def get_point_cloud_points(spec):
     """Get the points of a PointCloud object.
@@ -1295,6 +1396,7 @@ def get_point_cloud_points(spec):
 
 # ----------------------------------------------------------------------------------------------------
 # Set the points
+# ----------------------------------------------------------------------------------------------------
 
 def set_point_cloud_points(spec, points):
     """Set the points coordinates of a Point Cloud object.
@@ -1333,7 +1435,12 @@ def set_point_cloud_points(spec, points):
     cloud.points.foreach_set('co', a)
 
 # ====================================================================================================
+# Materials
+# ====================================================================================================
+
+# ----------------------------------------------------------------------------------------------------
 # Create a new material
+# ----------------------------------------------------------------------------------------------------
 
 def create_material(name, reset=False, **kwargs):
     """ Create a material with parameters passed as keyword arguments.
@@ -1407,6 +1514,7 @@ def create_material(name, reset=False, **kwargs):
 
 # ----------------------------------------------------------------------------------------------------
 # Create a series of materials
+# ----------------------------------------------------------------------------------------------------
 
 def create_materials(mat_specs, reset=False, return_names=True):
     """ Create new materials as specified.
@@ -1433,6 +1541,7 @@ def create_materials(mat_specs, reset=False, return_names=True):
 
 # ----------------------------------------------------------------------------------------------------
 # Utility to get the materials prefixed
+# ----------------------------------------------------------------------------------------------------
 
 def choose_material_type(mat_type, rng, materials=None):
     """ Return the materials the name of which is prefixed by a given string.
@@ -1456,6 +1565,10 @@ def choose_material_type(mat_type, rng, materials=None):
         return mats[rng.choice(np.arange(len(mats)))]
     else:
         return None
+    
+# ----------------------------------------------------------------------------------------------------
+# Set material
+# ----------------------------------------------------------------------------------------------------
 
 def set_material(spec, material, faces=None):
 
@@ -1478,6 +1591,10 @@ def set_material(spec, material, faces=None):
             obj.data.polygons.foreach_get('material_index', a.astype(bint))
             a[faces] = mat_index
             obj.data.polygons.foreach_set('material_index', a.astype(bint))
+
+# ----------------------------------------------------------------------------------------------------
+# Change material image
+# ----------------------------------------------------------------------------------------------------
 
 def change_material_image(model, new_name, image, image_nodes=None):
 
@@ -1856,7 +1973,8 @@ def create_matrix_attribute(spec, name, domain='POINT', value=None):
 
 
 # ====================================================================================================
-# Pillow image
+# Temp folder
+# ====================================================================================================
 
 def get_temp_folder():
 
@@ -1902,7 +2020,8 @@ def pil_to_bl_image(pil_img, name="FromPIL", colorspace='sRGB'):
 
 
 # ----------------------------------------------------------------------------------------------------
-# Convert a pillow image into a blender image
+# Convert a pillow image into a blender image OLD
+# ----------------------------------------------------------------------------------------------------
 
 def pil_to_image(pil_image, name="Pillow"):
     """ Convert a Pillow image into a Blender Image.
@@ -1923,6 +2042,7 @@ def pil_to_image(pil_image, name="Pillow"):
 
 # ----------------------------------------------------------------------------------------------------
 # Convert a pillow array into a blender image
+# ----------------------------------------------------------------------------------------------------
 
 def pil_array_to_image(pil_array, name="Pillow"):
     """ Convert a Pillow arrayinto a Blender Image.
@@ -1943,6 +2063,7 @@ def pil_array_to_image(pil_array, name="Pillow"):
 
 # ----------------------------------------------------------------------------------------------------
 # Get the texture image node of a material
+# ----------------------------------------------------------------------------------------------------
 
 def get_image_node(mat, label='Generated'):
     """ Get the node image of a Material shader.
@@ -1973,6 +2094,7 @@ def get_image_node(mat, label='Generated'):
 
 # ====================================================================================================
 # Markers
+# ====================================================================================================
 
 def markers(text, clear=True, start=0):
     """Create markers from a text made of lines.
@@ -2048,6 +2170,10 @@ def markers(text, clear=True, start=0):
     # ----- Synthesis
     print(f"Markers from {start} to {start + frame_max - frame_min}: {total} line(s), {fails} fail(s)")
 
+# ====================================================================================================
+# Infos
+# ====================================================================================================
+
 
 def fps():
     return bpy.context.scene.render.fps
@@ -2069,10 +2195,12 @@ def frame_at(t):
     return bpy.context.scene.frame_start + round(t*fps())
 
 # ====================================================================================================
-# Blender fcurves management
+# FCurves (Not compatible with layerss yet)
+# ====================================================================================================
 
 # ----------------------------------------------------------------------------------------------------
 # Return the data_path and in the index of a name path
+# ----------------------------------------------------------------------------------------------------
 
 def data_path_index(data, name, index=-1):
     """Key frame utility: normalize the syntax name, index of a key frame.
@@ -2117,9 +2245,9 @@ def data_path_index(data, name, index=-1):
 
     return data, attrs[-1], idx
 
-
 # ----------------------------------------------------------------------------------------------------
 # Get a blender fcurve
+# ----------------------------------------------------------------------------------------------------
 
 def get_fcurve(spec, name, index=-1, create=True):
     """ Get a Blender fcurve.
@@ -2172,6 +2300,7 @@ def get_fcurve(spec, name, index=-1, create=True):
 
 # ----------------------------------------------------------------------------------------------------
 # reset keyframes
+# ----------------------------------------------------------------------------------------------------
 
 def fc_clear(fc, frame0=None, frame1=None):
     """ Clear the points of a fcurve.
@@ -2204,6 +2333,7 @@ def fc_clear(fc, frame0=None, frame1=None):
 
 # ----------------------------------------------------------------------------------------------------
 # Set a list of keyframes
+# ----------------------------------------------------------------------------------------------------
 
 def fc_set_kfs(fc, kfs):
 
@@ -2227,9 +2357,9 @@ def fc_set_kfs(fc, kfs):
 
     return fc
 
-
 # ----------------------------------------------------------------------------------------------------
 # Set a new keyframe in a fcurve
+# ----------------------------------------------------------------------------------------------------
 
 def fc_set_keyframe(fc, frame, value, interpolation=None):
     """ Set a new keyframe.
@@ -2263,6 +2393,7 @@ def fc_set_keyframe(fc, frame, value, interpolation=None):
 
 # ----------------------------------------------------------------------------------------------------
 # Keyframe by path
+# ----------------------------------------------------------------------------------------------------
 
 def kf_clear(spec, name, frame0=None, frame1=None):
     """ Clear a keyframe.
@@ -2349,10 +2480,9 @@ def get_value_at_frame(frame, spec, name, index=-1):
     else:
         return fcurve.evaluate(frame)
 
-
-
 # ====================================================================================================
 # A Key frame
+# ====================================================================================================
 
 class KeyFrame:
 
@@ -2417,9 +2547,9 @@ class KeyFrame:
         kf.period            = self.perdio
         kf.type              = self.type
 
-
 # ====================================================================================================
 # A Function curve
+# ====================================================================================================
 
 class FCurve(list):
 
@@ -2437,44 +2567,9 @@ class FCurve(list):
         for kf0, kf1 in zip(self, fc.keyframe_points):
             kf0.to_keyframe(kf1)
 
-
-# ====================================================================================================
-# Shape keys
-#
-# shape keys are organized
-#
-# object
-#      shape_keys (Key)
-#           key_blocks (Prop Collection of ShapeKey)
-#                data (Prop Collection of
-#                     ShapeKeyPoint
-#                     ShapeKeyBezierPoint
-#                     ShapeKeyCurvePoint
-#
-# cube.data.shape_keys.key_blocks[].data[].co
-#
-# A key is either a string (name of the shape) or an int (index in the array)
-# Series are managed through a key name and a number of steps
-
-def get_shape_keys_OLD(spec):
-
-    obj = get_object(spec)
-
-    if obj.data.shape_keys is None:
-        return None
-
-    n = len(obj.data.vertices)
-    a = np.empty(n*3, float)
-
-    verts = np.empty((len(obj.data.shape_keys.key_blocks), len(obj.data.vertices), 3), float)
-    for index, key_block in enumerate(obj.data.shape_keys.key_blocks):
-        key_block.data.foreach_get('co', a)
-        verts[index] = np.reshape(a, (n, 3))
-
-    return verts
-
 # ====================================================================================================
 # Shape Keys
+# ====================================================================================================
 
 def shape_key_name(name="Key", index=0):
     if name == 'Key' and index == 0:
@@ -2546,49 +2641,8 @@ def get_key_block(spec, index, create=False, name=None):
     return kb
 
 # ====================================================================================================
-# Bake a frame
-
-def bake_frame(collection, names=None, frame=None, reset=False):
-
-    from npblender.core.meshbuilder import MeshBuilder
-
-    coll = create_collection(collection)
-
-    # ----- Delete existing frames
-
-    if reset:
-        objs = [obj for obj in coll.objects]
-        for obj in objs:
-            mesh = obj.data
-            bpy.data.objects.remove(obj)
-            bpy.data.meshes.remove(mesh)
-
-    # ----- Build the object
-
-    if names is None or frame is None:
-        return None
-
-    mbs = MeshBuilder()
-
-    for name in names:
-        mb = MeshBuilder.FromObject(name)
-        mbs.append(mb)
-
-    obj = create_mesh_object(f"Frame {frame:03d}", collection=coll)
-    mbs.to_object(obj)
-
-    kf_set(obj, 'hide_render',   0,       True, 'CONSTANT')
-    kf_set(obj, 'hide_render',   frame,   False)
-    kf_set(obj, 'hide_render',   frame+1, True)
-
-    kf_set(obj, 'hide_viewport', 0,       True, 'CONSTANT')
-    kf_set(obj, 'hide_viewport', frame,   False)
-    kf_set(obj, 'hide_viewport', frame+1, True)
-
-    return obj
-
-# ====================================================================================================
 # Rendering
+# ====================================================================================================
 
 def is_viewport():
     return bpy.context.workspace is not None

@@ -1,30 +1,47 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# MIT License
+#
+# Copyright (c) 2025 Alain Bernard
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
-Blender Python Geometry module
+Module Name: cloud
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2023-11-10
+Last updated: 2025-08-29
 
-Created on Fri Nov 10 11:50:13 2023
+Summary:
+    Cloud of points geometry.
 
-@author: alain.bernard
-@email: alain@ligloo.net
-
------
-
-Mesh geometry.
+Usage example:
+    >>> from cloud import Cloud
 
 """
+
+__all__ = ["Cloud"]
 
 from contextlib import contextmanager
 import numpy as np
 
-from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-from . constants import bfloat, bint, bbool
 from . constants import PI, TAU
 from . import blender
-#from . maths import BSplines, Bezier, Poly, Nurbs
-from . maths import Transformation, Quaternion, Rotation
-from . maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_map
-from . maths.topology import border_edges, edges_between, row_edges, col_edges
 from . maths import distribs
 
 from . geometry import Geometry
@@ -38,22 +55,57 @@ DATA_TEMP_NAME = "NPBL_TEMP"
 # ====================================================================================================
 
 class Cloud(Geometry):
+    """
+    Cloud Geometry class representing a collection of points with various attributes.
+
+    This class provides methods to create, manipulate, and transform point clouds, including
+    loading from and saving to Blender data structures, combining multiple clouds, and generating
+    point distributions in various shapes (line, arc, circle, rectangle, pie, disk, cylinder, sphere,
+    dome, cube, ball).
+
+    Attributes:
+        points (Point): The vertices of the cloud with associated attributes.
+
+    Methods:
+        from_geometry: Create a Cloud from another geometry with points.
+        from_cloud: Synonym for from_geometry.
+        capture: Capture data from another Cloud instance.
+        from_data: Initialize from Blender Mesh or PointCloud data.
+        to_data: Write the cloud geometry into a Blender Mesh.
+        from_object: Create a Cloud from a Blender object.
+        to_object: Create or update a Blender object with the cloud data.
+        object: Context manager for temporary Blender object editing.
+        join: Join other Clouds into this one.
+        transform, translate, scale: Geometric transformations.
+        Various distribution methods: line_dist, arc_dist, circle_dist, rect_dist, pie_dist, disk_dist,
+            cylinder_dist, sphere_dist, dome_dist, cube_dist, ball_dist for generating points in shapes.
+    """
+    
 
     def __init__(self, points=None, attr_from=None, **attrs):
-        """ Clod Geometry.
+        """ Cloud Geometry.
+        
+        Initialize a Cloud geometry object.
+        
+        Parameters
+        ----------
+        points : array-like of vectors, optional
+            The vertices of the cloud geometry. Default is None.
+        attr_from : optional
+            An optional source from which to join attributes.
+        **attrs : dict
+            Additional geometry attributes to be added.
 
-        Arguments
-        ---------
-            - points (array of vectors = None) : the vertices
-            - attrs (dict) : other geometry attributes
+        Notes
+        -----
+        - Initializes an empty geometry with a Point container.
+        - Joins attributes from `attr_from` if provided.
+        - Appends given points and attributes to the geometry.
         """
-        # ----- Initialize an empty geometry
 
         self.points = Point()
-
         self.join_attributes(attr_from)
 
-        # ----- Add geometry
         if points is not None:
             self.points.append(position=points, **attrs)
 
@@ -138,7 +190,6 @@ class Cloud(Geometry):
 
     @classmethod
     def from_cloud(cls, other, selection=None):
-
         return cls.from_geometry(other, selection)
  
 
@@ -211,7 +262,7 @@ class Cloud(Geometry):
     def to_data(self, data):
         """ Write the geometry into a Blender Mesh
 
-        > [!CAUTION:
+        > [!CAUTION]:
         > to_data creates a blender Mesh, not PointCloud since the pyton API doesn't allow to dynamically
         > change the number of points
 

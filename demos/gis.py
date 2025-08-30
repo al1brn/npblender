@@ -1,15 +1,8 @@
 import numpy as np
 
 from npblender.core.blender import pil_to_bl_image
-#from npblender.gis import rgealti, bdtopo, asyncrequest, giscache, gisservices
-#from npblender.gis.asyncrequest import ApiCall
 from npblender.gis.gisservices  import Area, BlenderArea, IgnImages, IgnAltitudes #, RgeAlti
-#from npblender.gis.bdtopo import BDTopo
-
 from npblender import Mesh, Curve
-
-#import bpy
-#from PIL import Image
 
 # ====================================================================================================
 # Load an area with satellite image and build a Mesh socle

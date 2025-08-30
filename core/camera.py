@@ -1,3 +1,67 @@
+# MIT License
+#
+# Copyright (c) 2025 Alain Bernard
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""
+Module Name: camera
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2022-11-11
+Last updated: 2025-08-29
+
+Summary:
+
+This module offers:
+- `camera_projection_jit(...)`: Numba-accelerated per-point projection and visibility.
+- `camera_projection(...)`: NumPy reference implementation of the same API.
+- `Camera`: convenience class wrapping Blender camera data and providing:
+    * pixel density vs distance (`pixels_per_meter`)
+    * distance computations
+    * visibility of points, edges, faces, and islands
+
+Conventions:
+- Coordinates are transformed into the camera frame using `camera.matrix_world.inverted()`.
+- Projection is onto the plane `z = cam_z` defined by Blender's `view_frame`.
+- Visibility flags are returned as a (N, 7) boolean array with indices:
+    0: VISIBLE, 1: BACK_FACE, 2: BEHIND, 3: LEFT, 4: RIGHT, 5: BELOW, 6: ABOVE
+- Distances/size are returned as a (N, 2) float array with indices:
+    0: DISTANCE (Euclidean), 1: SIZE (apparent size from `radius`)
+
+Notes:
+- Prefer float32 contiguous arrays for best JIT performance.
+- Back-face test uses dot(normal, point - cam_loc) > 0 as "facing away".
+
+Usage example:
+    >>> from camera import Camera
+    >>> cam = Camera()
+    >>> vis, dist = cam.visible_points(...)
+
+Notes:
+    - Add any relevant implementation details or dependencies.
+    - Update version and dates when modifying this file.
+"""
+
+__all__ = ['Camera']
+
+
 # ====================================================================================================
 # npblender — Camera visibility & projection utilities
 # Part of the npblender package
