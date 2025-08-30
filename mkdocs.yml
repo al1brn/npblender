@@ -14,12 +14,13 @@ theme:
 
 nav:
   - Accueil: index.md
-  - Installation: installation.md
-  - Utilisation:
-      - Aperçu: usage/index.md
-      - Maths: usage/maths.md
-      - Blender: usage/blender.md
-  - Référence API: reference.md
+  #- Installation: installation.md
+  #- Utilisation:
+  #    - Aperçu: usage/index.md
+  #    - Maths: usage/maths.md
+  #    - Blender: usage/blender.md
+  - Référence API:
+      - npblender: api/index.md
 
 markdown_extensions:
   - toc:
@@ -28,3 +29,14 @@ markdown_extensions:
   - admonition
   - codehilite
   - footnotes
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: google   # ou sphinx, selon ton style
+            show_signature: true
+            show_source: true
+  

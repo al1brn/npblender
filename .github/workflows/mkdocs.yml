@@ -12,8 +12,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # utile pour mkdocstrings (git history)
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
-      - run: pip install mkdocs mkdocs-material
-      - run: mkdocs gh-deploy --force
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          pip install mkdocs mkdocs-material
+          pip install mkdocstrings mkdocstrings-python
+      - name: Build and deploy
+        run: mkdocs gh-deploy --force
