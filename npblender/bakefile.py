@@ -33,7 +33,7 @@ Summary:
     of simulation or animation states.
 
 Usage example:
-    >>> from core.bakefile import BakeFile
+    >>> from .bakefile import BakeFile
     >>> bfile = BakeFile("my_bake")
     >>> bfile.write(index=10, data={'array': [1,2,3]}, state={'velocity': 5.0})
     >>> frame_data = bfile.read(10)

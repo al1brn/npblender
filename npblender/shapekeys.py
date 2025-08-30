@@ -520,7 +520,7 @@ class ShapeKeys:
 
     def to_curve_object(self, spec):
 
-        from npblender.core.curve import Curve
+        from npblender import Curve
 
         obj = blender.get_object(spec)
         curve = Curve.FromObject(obj)
@@ -909,7 +909,7 @@ class ShapeKeys_OLD:
     @classmethod
     def FromCurveObject(cls, spec):
 
-        from npblender.core.curve import Curve
+        from npblender import Curve
 
         obj = blender.get_object(spec)
 
@@ -999,7 +999,7 @@ class ShapeKeys_OLD:
 
     def to_curve_object(self, spec):
 
-        from npblender.core.curve import Curve
+        from npblender import Curve
 
         obj = blender.get_object(spec)
         curve = Curve.FromObject(obj)
@@ -1110,8 +1110,8 @@ class ShapeKeys_OLD:
 
 def demo(seed=0):
 
-    from npblender.core.mesh import Mesh
-    from npblender.core.curve import Curve
+    from npblender import Mesh
+    from npblender import Curve
 
 
     rng = np.random.default_rng(seed)

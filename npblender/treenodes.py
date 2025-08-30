@@ -10,7 +10,7 @@ import bpy
 from mathutils import Vector, Color
 import numpy as np
 
-from npblender.core.treearrange import arrange
+from .treearrange import arrange
 
 
 # ====================================================================================================

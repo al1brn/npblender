@@ -3,7 +3,7 @@
 import numpy as np
 
 from npblender import Simulation, Mesh, Curve, noise, maprange, Instances, Cloud, Meshes
-from npblender.core.maths import distribs
+from npblender.maths import distribs
 
 
 def demo(name='explosion', **kwargs):

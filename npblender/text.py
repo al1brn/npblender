@@ -16,9 +16,9 @@ Text.
 import bpy
 import mathutils
 
-from npblender.core import blender
-from npblender.core.curve import Curve
-from npblender.core.mesh import Mesh
+from . import blender
+from .curve import Curve
+from .mesh import Mesh
 
 PROPERTIES = ['align_x', 'align_y', 'family', 'font', 'font_bold', 'font_bold_italic', 'font_italic',
               'shear', 'size', 'small_caps_scale', 'space_character', 'space_line', 'space_word',
