@@ -3362,8 +3362,10 @@
         <p>Add geometry components (vertices, corners, faces, edges) to the mesh.</p>
 <p>This method appends the specified geometry to the mesh without altering existing indices.
 It supports referencing existing vertices through corners or adding new vertices.</p>
-<p>!!! Note:
-    To add independent geometry with new vertices, use <a href="npblender.mesh.Mesh.joint_geometry"><code>Mesh.join_geometry</code></a> instead.</p>
+<blockquote>
+<p>[!NOTE]
+To add independent geometry with new vertices, use <a href="npblender.mesh.Mesh.joint_geometry"><code>Mesh.join_geometry</code></a> instead.</p>
+</blockquote>
 
 
 <p><span class="doc-section-title">Examples:</span></p>
@@ -3684,8 +3686,8 @@ cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], 
 <span class="sd">    This method appends the specified geometry to the mesh without altering existing indices.</span>
 <span class="sd">    It supports referencing existing vertices through corners or adding new vertices.</span>
 
-<span class="sd">    !!! Note:</span>
-<span class="sd">        To add independent geometry with new vertices, use [`Mesh.join_geometry`](npblender.mesh.Mesh.joint_geometry) instead.</span>
+<span class="sd">    &gt; [!NOTE]</span>
+<span class="sd">    &gt; To add independent geometry with new vertices, use [`Mesh.join_geometry`](npblender.mesh.Mesh.joint_geometry) instead.</span>
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
