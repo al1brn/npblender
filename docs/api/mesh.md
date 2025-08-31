@@ -11,5 +11,5 @@
       show_special_members: false
       show_undocumented_members: false
       filters:
-        - "!^_"
-        - "!^__.*__$"
+        - "!^.*\\._.*$"         
+        - "!^.*\\.__.*__($|\\.).*$"  # exclut les dunder
