@@ -37,7 +37,6 @@ plugins:
       handlers:
         python:
           options:
-            #docstring_style: google   # ou sphinx, selon ton style
             docstring_style: numpy             
             docstring_section_style: table     # sections (Arguments, Returns, etc.) en tableau
             separate_signature: true           # signature dans un bloc code sous le heading
@@ -51,5 +50,6 @@ plugins:
             filters:
               - "!^_"            # sécurité : exclut tout ce qui commence par _
               - "!^__.*__$"      # exclut __dunder__
+
 
 
