@@ -835,14 +835,14 @@ class Mesh(Geometry):
             To add independent geometry (with new vertices), use `Mesh.join_geometry` instead.
 
         Examples:
-            cube = Mesh.cube()
-            # Add a triangle on existing vertices
-            # corners argument refers to cube vertices
-            cube.add_geometry(corners=[0, 1, 2], faces=3)
+        >>> cube = Mesh.cube()
+        >>> # Add a triangle on existing vertices
+        >>> # corners argument refers to cube vertices
+        >>> cube.add_geometry(corners=[0, 1, 2], faces=3)
 
-            # Add a triangle with additional vertices
-            # corners argument refers to the new vertices
-            cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
+        >>> # Add a triangle with additional vertices
+        >>> # corners argument refers to the new vertices
+        >>> cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
 
         Parameters
         ----------
