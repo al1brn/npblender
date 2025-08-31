@@ -1015,7 +1015,7 @@ class Mesh(Geometry):
         This method appends the specified geometry to the mesh without altering existing indices.
         It supports referencing existing vertices through corners or adding new vertices.
 
-        > [!NOTE]
+        > ***Note:***
         > To add independent geometry with new vertices, use [`Mesh.join_geometry`](npblender.mesh.Mesh.joint_geometry) instead.
 
         Examples
