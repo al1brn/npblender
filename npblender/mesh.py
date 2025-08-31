@@ -1210,7 +1210,83 @@ class Mesh(Geometry):
     # =============================================================================================================================
 
     def split_edges(self, loop0, loop1, cuts=1):
+        """
+        Subdivide in place the edges whose endpoints match the pairs
+        (loop0[i], loop1[i]) regardless of order (edges are treated as undirected).
 
+        The inputs `loop0` and `loop1` can be:
+        - scalars (a single vertex index),
+        - sequences of the same length,
+        - or a mix of both (a scalar is broadcast to match the length of the other).
+
+        The vertex pairs are normalized by sorting (min, max) so that order does not
+        matter, and then compared against the BMesh edge list to determine which
+        edges should be subdivided.
+
+        Parameters
+        ----------
+        loop0 : int or array-like of int
+            First vertex (or list of vertices) of the edges to be selected.
+            If scalar, it will be broadcast to the length of `loop1` if needed.
+        loop1 : int or array-like of int
+            Second vertex (or list of vertices) of the edges to be selected.
+            If scalar, it will be broadcast to the length of `loop0` if needed.
+        cuts : int, optional
+            Number of cuts per selected edge, as defined by
+            `bmesh.ops.subdivide_edges`. Default is `1`. Must be >= 1.
+
+        Returns
+        -------
+        None
+            Modifies the geometry **in place**. Returns `None`.
+            If no edge matches the given pairs, the function returns immediately
+            without modifying the mesh.
+
+        Notes
+        -----
+        - Edge selection is performed by constructing an array of sorted vertex pairs
+        `(min(v0, v1), max(v0, v1))` and checking membership (via `np.isin` on a
+        structured dtype view) against the BMesh edge list.
+        - Subdivision is executed with `bmesh.ops.subdivide_edges` and
+        `use_grid_fill=False`.
+
+        Examples
+        --------
+        Subdivide a single edge (vertices 12 and 34) with 2 cuts:
+
+        ```python
+        obj = ...  # wrapper object providing .bmesh() and ._bm_edges(...)
+        obj.split_edges(12, 34, cuts=2)
+        ```
+
+        Subdivide multiple edges defined by pairs of vertices:
+
+        ```python
+        v0 = [1, 5, 9]
+        v1 = [2, 6, 10]
+        obj.split_edges(v0, v1, cuts=1)
+        ```
+
+        Use a scalar broadcast against a vector:
+
+        ```python
+        # All edges (7, x) for x in [8, 9, 10]
+        obj.split_edges(7, [8, 9, 10], cuts=1)
+        ```
+
+        See Also
+        --------
+        bmesh.ops.subdivide_edges : The underlying BMesh operator used for subdivision.
+
+        > ***Warning:*** This operation modifies the mesh **in place** and may
+        > create new vertices/edges/faces. Handle undo/history in Blender if needed.
+
+        > ***Caution:*** `use_grid_fill=False` prevents automatic grid filling.
+        > Depending on topology, additional n-gons or triangles may be introduced.
+
+        > ***Note:*** Edges are considered undirected: (a, b) and (b, a) are
+        > equivalent when matching edges.
+        """
         n0 = 1 if np.shape(loop0) == () else len(loop0)
         n1 = 1 if np.shape(loop1) == () else len(loop1)
         n = max(n0, n1)
@@ -1255,14 +1331,70 @@ class Mesh(Geometry):
     # =============================================================================================================================
 
     def bridge_loops(self, loop0, loop1, close=False, segments=1, **attributes):
-        """ Create a grid linking two loops of the same size.
+        """
+        Create a grid connecting two vertex loops of equal size.
 
-        Arguments
-        ---------
-        - loop0 (array of ints) : the first loop
-        - loop1 (array of ints) : the second loop
-        - segments (int = 1) : the number of segments to join the loops
-        - attributes (dict) : attributes to add to the mesh
+        The operation selects the edges forming each loop and bridges them
+        using `bmesh.ops.bridge_loops`. If `segments > 1`, the newly created
+        edges are subdivided to form a denser grid between the loops.
+
+        Parameters
+        ----------
+        loop0 : array-like of int
+            The first loop of vertex indices.
+        loop1 : array-like of int
+            The second loop of vertex indices. Must have the same length as `loop0`.
+        close : bool, optional
+            If True, the loops are treated as closed and the first vertex is
+            appended at the end to close the cycle. Default is False.
+        segments : int, optional
+            Number of segments to subdivide between the loops. Must be >= 1.
+            Default is 1 (no subdivision).
+        **attributes : dict, optional
+            Additional attributes to set on the mesh after bridging (passed as keyword arguments).
+
+        Returns
+        -------
+        None
+            Modifies the mesh **in place**. Returns `None`.
+
+        Notes
+        -----
+        - Edges belonging to each loop are identified by sorting endpoint pairs
+        and matching them against the current BMesh edge list via a structured
+        dtype view and `np.isin`.
+        - Bridging is performed with `bmesh.ops.bridge_loops`.
+        - When `segments > 1`, subdivision of the bridge edges is performed with
+        `bmesh.ops.subdivide_edges` using `cuts=segments - 1` and
+        `use_grid_fill=False`.
+
+        Examples
+        --------
+        Bridge two loops with no subdivision:
+
+        ```python
+        obj.bridge_loops(loop0, loop1, segments=1)
+        ```
+
+        Bridge two closed loops with 3 subdivisions:
+
+        ```python
+        obj.bridge_loops(loop0, loop1, close=True, segments=3)
+        ```
+
+        See Also
+        --------
+        bmesh.ops.bridge_loops : BMesh operator for bridging edge loops.
+        bmesh.ops.subdivide_edges : BMesh operator for subdividing edges.
+
+        > ***Warning:*** This function modifies the mesh **in place** and may create
+        > new vertices/edges/faces. Handle undo/history in Blender if needed.
+
+        > ***Caution:*** Both loops must have the same number of vertices for correct
+        > bridging.
+
+        > ***Note:*** When `close=True`, the first vertex of each loop is duplicated at
+        > the end to ensure cyclic connectivity.
         """
         segments = max(1, segments)
 
@@ -1324,23 +1456,92 @@ class Mesh(Geometry):
     # =============================================================================================================================
 
     def fill_cap(self, loop, mode='NGON', center=None, segments=1, clockwise=False, **attributes):
-        """ Fill a cap between an existing loop
-
-        For NGON mode, center is not required.
-        For FANS mode, a center point is required:
-        - if center is None, it is computed as the center of the loop
-        - if center is an int, it is the index of the point to use
-        - otherwise, the center is considered as the point to use
-
-        Arguments
-        ---------
-        - loop (array of ints) : the circle loop
-        - mode (FillCap = 'NGON') : NGON or FANS
-        - center (point index or point or None) : center of the cap
-        - clockwise (bool = False) : order of the corners in the loop
-        - indexing (str = 'ij') : indexing of the points
-        - attributes (dict) : attributes to add to the mesh (see Geometry.add_geometry(
         """
+        Fill a cap between vertices forming a loop.
+
+        Supports two modes:
+        - **NGON**: creates a single n-gon face from the loop. No center point is required.
+        - **FANS**: creates a fan of triangles around a center point. The center can be:
+        * `None`: automatically computed as the centroid of the loop.
+        * `int`: the index of an existing vertex to use as center.
+        * `array-like`: explicit coordinates of the center, which will be added as a new vertex.
+
+        Parameters
+        ----------
+        loop : array-like of int
+            The vertex indices defining the loop.
+        mode : {'NGON', 'FANS'}, optional
+            Fill mode to use. Default is 'NGON'.
+        center : int or array-like or None, optional
+            Center of the cap (used only in 'FANS' mode).
+            - `None`: computed centroid.
+            - `int`: index of an existing vertex.
+            - array-like: coordinates of a new vertex.
+        segments : int, optional
+            Number of radial subdivisions for FANS mode. Must be >= 1.
+            Default is 1 (no subdivision).
+        clockwise : bool, optional
+            Whether the loop is ordered clockwise. Default is False.
+        **attributes : dict, optional
+            Additional attributes to add to the mesh (passed to `add_geometry`).
+
+        Returns
+        -------
+        dict
+            A dictionary of the newly added geometry, as returned by
+            [`add_geometry`](np.blender.mesh.Mesh.add_geometry). Includes at least keys for
+            'faces' and 'corners'. In FANS mode, also includes the added 'points' if a new
+            center is created.
+
+        Notes
+        -----
+        - In 'NGON' mode, a UV map is generated using [`disk_uv_map`](np.blender.mesh.Mesh.disk_uv_map).
+        - In 'FANS' mode, the fan topology is created with [`fans_corners`](np.blender.mesh.Mesh.fans_corners)
+        and UVs are generated with [`disk_uv_map`](np.blender.mesh.Mesh.disk_uv_map).
+        - If `segments > 1` in FANS mode, radial edges are subdivided using
+        [`split_edges`](np.blender.mesh.Mesh.split_edges).
+
+        Examples
+        --------
+        Fill a loop with an n-gon:
+
+        ```python
+        obj.fill_cap(loop, mode='NGON')
+        ```
+
+        Fill a loop with a triangle fan around an automatically computed center:
+
+        ```python
+        obj.fill_cap(loop, mode='FANS')
+        ```
+
+        Fill a loop with a fan using an existing vertex as the center and add 3 subdivisions:
+
+        ```python
+        obj.fill_cap(loop, mode='FANS', center=42, segments=3)
+        ```
+
+        See Also
+        --------
+        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+            Method used to add the created geometry to the mesh.
+        [`split_edges`](np.blender.mesh.Mesh.split_edges) :
+            Used to subdivide radial edges in FANS mode.
+        [`disk_uv_map`](np.blender.mesh.Mesh.disk_uv_map) :
+            Generates UV coordinates for circular caps.
+        [`fans_corners`](np.blender.mesh.Mesh.fans_corners) :
+            Generates corner topology for FANS mode.
+
+        > ***Warning:*** This function modifies the mesh **in place** and may
+        > create new vertices, faces, and edges.
+
+        > ***Caution:*** In FANS mode, if `center=None`, a new vertex is added at
+        > the centroid of the loop.
+
+        > ***Note:*** The `segments` parameter only applies to FANS mode; NGON
+        > mode always produces a single polygon face.
+        """
+
         if mode == 'NONE':
             # To have en empty dict
             return self.add_geometry()
@@ -1392,7 +1593,31 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def delete_faces(self, selection):
-        """ Delete only faces.
+        """
+        Delete only the selected faces from the mesh.
+
+        Parameters
+        ----------
+        selection : array-like of int or bool
+            Indices or boolean mask specifying which faces to delete.
+
+        Returns
+        -------
+        None
+            Modifies the mesh **in place**. Returns `None`.
+
+        See Also
+        --------
+        [`delete_loops`](np.blender.mesh.Faces.delete_loops) :
+            Method used internally to remove the corners and faces.
+        [`corners`](np.blender.mesh.Mesh.corners) :
+            Corner array of the mesh, used to identify face connectivity.
+
+        > ***Warning:*** This function permanently deletes faces and their
+        > associated corners. Handle undo/history in Blender if needed.
+
+        > ***Note:*** Only faces are removed. Edges and vertices remain in
+        > the mesh unless explicitly deleted by other operations.
         """
         self.faces.delete_loops(selection, self.corners)
 
@@ -1401,17 +1626,63 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def delete_vertices(self, points=None, faces=None, edges=None):
-        """Delete vertices.
-
-        Arguments
-        ---------
-            points : array selection, optional
-                Vertex indices to delete directly.
-            faces : array selection, optional
-                Faces owning vertices to delete.
-            edges : array selection, optional
-                Edges owning vertices to delete.
         """
+        Delete vertices from the mesh, with optional selection by points, faces, or edges.
+
+        A vertex is deleted if it is explicitly listed in `points`, or if it belongs
+        to any of the given `faces` or `edges`.
+
+        Parameters
+        ----------
+        points : array-like of int or bool, optional
+            Vertex indices (or boolean mask) specifying which vertices to delete directly.
+        faces : array-like of int or bool, optional
+            Face indices (or boolean mask). Any vertex belonging to these faces will be deleted.
+        edges : array-like of int or bool, optional
+            Edge indices (or boolean mask). Any vertex belonging to these edges will be deleted.
+
+        Returns
+        -------
+        None
+            Modifies the mesh **in place**. Returns `None`.
+
+        Notes
+        -----
+        - At least one of `points`, `faces`, or `edges` must be provided, otherwise the function does nothing.
+        - The deletion is executed using `bmesh.ops.delete` with `context='VERTS'`.
+
+        Examples
+        --------
+        Delete specific vertices:
+
+        ```python
+        obj.delete_vertices(points=[0, 1, 2])
+        ```
+
+        Delete all vertices belonging to certain faces:
+
+        ```python
+        obj.delete_vertices(faces=[10, 11])
+        ```
+
+        Delete all vertices belonging to certain edges:
+
+        ```python
+        obj.delete_vertices(edges=[5, 6, 7])
+        ```
+
+        See Also
+        --------
+        [`bmesh.ops.delete`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.delete) :
+            Blender BMesh operator used for deleting geometry.
+
+        > ***Warning:*** This function permanently removes vertices and any connected
+        > geometry (edges, faces). Handle undo/history in Blender if needed.
+
+        > ***Note:*** If multiple selectors (`points`, `faces`, `edges`) are provided,
+        > the union of all matched vertices will be deleted.
+        """
+
         go = False
         if points is not None:
             p_sel = set(np.arange(len(self.points))[points])
@@ -1456,20 +1727,55 @@ class Mesh(Geometry):
 
     @classmethod
     def bl_grid(cls, x_segments=1, y_segments=1, size=2, materials=None):
-        """ Create a Grid.
+        """
+        Create a grid mesh.
 
-        Blender constructor for a Grid.
+        Blender constructor for generating a grid primitive using
+        `bmesh.ops.create_grid`.
 
-        Arguments
-        ---------
-            - x_segments (int=1) : number of segments along x axis
-            - y_segments (int=1) : number of segments along y axis
-            - size (float or tuple of floats = 1. : size of the grid
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        x_segments : int, optional
+            Number of segments along the X axis. Default is 1.
+        y_segments : int, optional
+            Number of segments along the Y axis. Default is 1.
+        size : float or tuple of float, optional
+            Size of the grid. If a single float is given, the grid is square.
+            If a tuple is given, defines the grid dimensions along X and Y.
+            Default is 2.
+        materials : list of str, optional
+            List of material names to assign to the grid. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the grid.
+
+        Notes
+        -----
+        - The grid is created using `bmesh.ops.create_grid` with `calc_uvs=True`
+        so UV coordinates are automatically generated.
+
+        Examples
+        --------
+        Create a 10x10 grid of size 5:
+
+        ```python
+        grid = Mesh.bl_grid(x_segments=10, y_segments=10, size=5)
+        ```
+
+        Create a rectangular grid 4x8 of size (2, 5):
+
+        ```python
+        grid = Mesh.bl_grid(x_segments=4, y_segments=8, size=(2, 5))
+        ```
+
+        See Also
+        --------
+        [`bmesh.ops.create_grid`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_grid) :
+            BMesh operator used for creating a grid primitive.
+
+        > ***Note:*** UVs are automatically calculated when the grid is created.
         """
 
         mesh = cls(materials=materials)
@@ -1484,21 +1790,55 @@ class Mesh(Geometry):
     
     @classmethod
     def bl_circle(cls, radius=1, segments=16, fill_tris=False, materials=None):
-        """ Create a Circle.
+        """
+        Create a circle mesh.
 
-        Blender constructor for a Circle.
+        Blender constructor for generating a circle primitive using
+        `bmesh.ops.create_circle`.
 
-        Arguments
-        ---------
-            - radius (float=1.) : circle radius
-            - segments (int=16) : number of segments
-            - fill_tris (bool = False) : fill with triangle fans
-            - materials (list of strs = None) : materials list
-            - transformation (Transformations = None) : the transformation to apply
+        Parameters
+        ----------
+        radius : float, optional
+            Radius of the circle. Default is 1.
+        segments : int, optional
+            Number of segments (vertices) forming the circle. Default is 16.
+        fill_tris : bool, optional
+            If True, fills the circle with a triangle fan. Default is False.
+        materials : list of str, optional
+            List of material names to assign to the circle. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the circle.
+
+        Notes
+        -----
+        - The circle is created using `bmesh.ops.create_circle` with `calc_uvs=True`
+        so UV coordinates are automatically generated.
+        - By default (`fill_tris=False`), the circle is an open ring.
+        With `fill_tris=True`, the circle is filled with triangles (fan topology).
+
+        Examples
+        --------
+        Create an empty circle of radius 2 with 32 segments:
+
+        ```python
+        circle = Mesh.bl_circle(radius=2, segments=32)
+        ```
+
+        Create a filled circle (disk) of radius 1 with 24 segments:
+
+        ```python
+        circle = Mesh.bl_circle(radius=1, segments=24, fill_tris=True)
+        ```
+
+        See Also
+        --------
+        [`bmesh.ops.create_circle`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_circle) :
+            BMesh operator used for creating a circle primitive.
+
+        > ***Note:*** UVs are automatically calculated when the circle is created.
         """
 
         mesh = cls(materials=materials)
@@ -1512,26 +1852,79 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def bl_cone(cls, radius1=1, radius2=0, depth=2, segments=16, side_segments=1, cap_ends=True, cap_tris=False, materials=None):
-        """ Create a Cone.
+    def bl_cone(cls, radius1=1, radius2=0, depth=2, segments=16, side_segments=1,
+                cap_ends=True, cap_tris=False, materials=None):
+        """
+        Create a cone mesh.
 
-        Blender constructor for a Cone.
+        Blender constructor for generating a cone (or cylinder) primitive using
+        `bmesh.ops.create_cone`.
 
-        Arguments
-        ---------
-            - radius1 (float=1.) : base radius
-            - radius2 (float=0.) : top radius
-            - depth (float=2.) : cone height
-            - segments (int=16) : number of segments
-            - cap_ends (bool=True) : fill cap faces
-            - cap_tris (bool = False) : fill with triangle fans
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        radius1 : float, optional
+            Base radius of the cone. Default is 1.
+        radius2 : float, optional
+            Top radius of the cone. If set to 0, produces a true cone; if equal to
+            `radius1`, produces a cylinder. Default is 0.
+        depth : float, optional
+            Height of the cone along the Z axis. Default is 2.
+        segments : int, optional
+            Number of segments around the circumference. Default is 16.
+        side_segments : int, optional
+            Number of subdivisions along the vertical side edges.
+            Default is 1 (no subdivision).
+        cap_ends : bool, optional
+            If True, fill the top and bottom caps. Default is True.
+        cap_tris : bool, optional
+            If True, fill the caps using triangle fans instead of n-gons.
+            Default is False.
+        materials : list of str, optional
+            List of material names to assign to the cone. Default is None.
 
         Returns
         -------
-            - Mesh
-        """
+        Mesh
+            A new mesh instance containing the cone.
 
+        Notes
+        -----
+        - The cone is created using `bmesh.ops.create_cone` with `calc_uvs=True`
+        so UV coordinates are automatically generated.
+        - When `side_segments > 1`, vertical edges crossing the top and bottom are
+        subdivided using `bmesh.ops.subdivide_edges`.
+
+        Examples
+        --------
+        Create a simple cone with radius 1 and height 2:
+
+        ```python
+        cone = Mesh.bl_cone(radius1=1, radius2=0, depth=2, segments=16)
+        ```
+
+        Create a cylinder with 32 segments and subdivided sides:
+
+        ```python
+        cylinder = Mesh.bl_cone(radius1=1, radius2=1, depth=3,
+                                segments=32, side_segments=4)
+        ```
+
+        Create a cone with filled caps using triangle fans:
+
+        ```python
+        cone = Mesh.bl_cone(radius1=1, radius2=0, depth=2,
+                            cap_ends=True, cap_tris=True)
+        ```
+
+        See Also
+        --------
+        [`bmesh.ops.create_cone`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_cone) :
+            BMesh operator used for creating cone and cylinder primitives.
+        [`bmesh.ops.subdivide_edges`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.subdivide_edges) :
+            BMesh operator used for subdividing vertical edges when `side_segments > 1`.
+
+        > ***Note:*** UVs are automatically calculated when the cone is created.
+        """
         mesh = cls(materials=materials)
         with mesh.bmesh() as bm:
             res = bmesh.ops.create_cone(bm, cap_ends=cap_ends, cap_tris=cap_tris, segments=segments, radius1=radius1, radius2=radius2, depth=depth, calc_uvs=True)
@@ -1557,22 +1950,49 @@ class Mesh(Geometry):
     # Primitives
     # ====================================================================================================    
 
-
     # ----------------------------------------------------------------------------------------------------
     # Points
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
     def points_cloud(cls, points=None, materials=None):
-        """ Create a mesh with points at the given positions.
+        """
+        Create a mesh containing only points at the given positions.
 
-        Arguments
-        ---------
-            - position (shaped array (?, 3)=(0, 0, 0) : position of the points
+        Parameters
+        ----------
+        points : array-like of shape (N, 3), optional
+            Coordinates of the points. If None, an empty mesh is created.
+        materials : list of str, optional
+            List of material names to assign to the mesh. Default is None.
 
         Returns
         -------
-            - mesh (Mesh) : the mesh
+        Mesh
+            A new mesh instance containing the given points.
+
+        Notes
+        -----
+        - This method does not create any edges or faces, only isolated points.
+
+        Examples
+        --------
+        Create a point cloud with three points:
+
+        ```python
+        pts = np.array([[0, 0, 0],
+                        [1, 0, 0],
+                        [0, 1, 0]])
+        cloud = Mesh.points_cloud(points=pts)
+        ```
+
+        See Also
+        --------
+        [`Mesh`](np.blender.mesh.Mesh) :
+            The mesh class used to construct and manage geometry.
+
+        > ***Note:*** This constructor is useful for importing raw point data or
+        > initializing a mesh before adding edges and faces.
         """
         return cls(points=points, materials=materials)
     
@@ -1582,17 +2002,66 @@ class Mesh(Geometry):
 
     @classmethod
     def line(cls, start=(0, 0, 0), end=(0, 0, 1), segments=1, materials=None):
-        """ Create a mesh with lines between the given positions.
+        """
+        Create a mesh representing a straight line (or multiple lines) subdivided into segments.
 
-        Arguments
-        ---------
-            - start (vertex =(0, 0, 0) : position of the start of the lines
-            - end (vertex=(0, 0, 1) : position of the end of the lines
-            - count (int=2) : number of points in the line
+        Parameters
+        ----------
+        start : array-like of float, shape (..., 3), optional
+            Coordinates of the start point(s). Can be a single 3D vector or an array of
+            multiple vectors. Default is (0, 0, 0).
+        end : array-like of float, shape (..., 3), optional
+            Coordinates of the end point(s). Can be a single 3D vector or an array of
+            multiple vectors with the same shape as `start`. Default is (0, 0, 1).
+        segments : int, optional
+            Number of line segments (subdivisions) between each pair of start and end points.
+            Must be >= 1. Default is 1.
+        materials : list of str, optional
+            List of material names to assign to the line mesh. Default is None.
 
         Returns
         -------
-            - mesh (Mesh) : the mesh
+        Mesh
+            A new mesh instance containing the subdivided line(s).
+
+        Notes
+        -----
+        - The function interpolates `segments + 1` points between `start` and `end`
+        using `np.linspace`.
+        - If `start` and `end` are arrays of shape `(N, 3)`, the method generates
+        `N` independent polylines, each subdivided into `segments`.
+        - For higher-dimensional batched input, the function reshapes the grid and
+        constructs edges using [`col_edges`](np.blender.mesh.col_edges).
+
+        Examples
+        --------
+        Create a simple line with 5 segments between (0, 0, 0) and (0, 0, 1):
+
+        ```python
+        line = Mesh.line(start=(0, 0, 0), end=(0, 0, 1), segments=5)
+        ```
+
+        Create three parallel lines defined by arrays of start and end points:
+
+        ```python
+        starts = np.array([[0, 0, 0],
+                        [1, 0, 0],
+                        [2, 0, 0]])
+        ends = np.array([[0, 0, 1],
+                        [1, 0, 1],
+                        [2, 0, 1]])
+        lines = Mesh.line(start=starts, end=ends, segments=4)
+        ```
+
+        See Also
+        --------
+        [`border_edges`](np.blender.mesh.border_edges) :
+            Helper for constructing consecutive edges in a single polyline.
+        [`col_edges`](np.blender.mesh.col_edges) :
+            Helper for constructing edges in multi-dimensional point grids.
+
+        > ***Note:*** The line mesh consists only of vertices and edges,
+        > no faces are created.
         """
         segments = max(1, segments)
 
@@ -1616,24 +2085,61 @@ class Mesh(Geometry):
 
     @classmethod
     def grid(cls, size_x=1, size_y=1, vertices_x=3, vertices_y=3, materials=None):
-        """ Create a Grid.
+        """
+        Create a rectangular grid mesh.
 
-        > [!IMPORTANT]
-        > Grid is created with indexing = 'ij': shape = (resolution x, resolution y)
+        The grid is constructed in the XY plane with indexing set to `'ij'`,
+        meaning the generated arrays have shape `(vertices_x, vertices_y)`.
 
-        Arguments
-        ---------
-            - size_x (float=1) : size along x
-            _ size_y (float=1) : size along y
-            - vertices_x (int=3) : number of vertices along x
-            - vertices_y (int=3) : number of vertices along y
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        size_x : float, optional
+            Size of the grid along the X axis. Default is 1.
+        size_y : float, optional
+            Size of the grid along the Y axis. Default is 1.
+        vertices_x : int, optional
+            Number of vertices along the X axis. Must be >= 2. Default is 3.
+        vertices_y : int, optional
+            Number of vertices along the Y axis. Must be >= 2. Default is 3.
+        materials : list of str, optional
+            List of material names to assign to the grid. Default is None.
 
         Returns
         -------
-            - Mesh
-        """
+        Mesh
+            A new mesh instance containing the rectangular grid.
 
+        Notes
+        -----
+        - The grid is created with `'ij'` indexing, so coordinates follow
+        NumPy's `meshgrid(..., indexing='ij')` convention.
+        - UV coordinates are generated using [`grid_uv_map`](np.blender.mesh.grid_uv_map).
+        - The grid topology is built using [`grid_corners`](np.blender.mesh.grid_corners).
+
+        Examples
+        --------
+        Create a 2x2 grid with 10 vertices along X and 5 along Y:
+
+        ```python
+        grid = Mesh.grid(size_x=2, size_y=2, vertices_x=10, vertices_y=5)
+        ```
+
+        Create a square grid of size 5 with default vertex count:
+
+        ```python
+        grid = Mesh.grid(size_x=5, size_y=5)
+        ```
+
+        See Also
+        --------
+        [`grid_corners`](np.blender.mesh.grid_corners) :
+            Helper for constructing the corner topology of the grid.
+        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+            Generates UV coordinates for a regular grid.
+
+        > ***Important:*** The grid is always created with `'ij'` indexing
+        > (shape = `(vertices_x, vertices_y)`).
+        """
         nx = max(2, vertices_x)
         ny = max(2, vertices_y)
 
@@ -1664,18 +2170,57 @@ class Mesh(Geometry):
 
     @classmethod
     def cube(cls, size=2, materials=None):
-        """ Create a Cube.
+        """
+        Create a cube mesh.
 
-        Arguments
-        ---------
-            - size (float=1.) : size of the cube
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        size : float or array-like of shape (3,), optional
+            Size of the cube. If a single float is given, the cube is uniform in all
+            dimensions. If an array of three floats is given, it specifies the size
+            along the X, Y, and Z axes. Default is 2.
+        materials : list of str, optional
+            List of material names to assign to the cube. Default is None.
 
         Returns
         -------
-            - Mesh
-        """
+        Mesh
+            A new mesh instance containing the cube.
 
+        Notes
+        -----
+        - The cube is created centered at the origin with side length `size`.
+        - UV coordinates are assigned so that all six faces are unwrapped into
+        a cross-like layout.
+
+        Examples
+        --------
+        Create a default cube of size 2:
+
+        ```python
+        cube = Mesh.cube()
+        ```
+
+        Create a cube of size 5:
+
+        ```python
+        cube = Mesh.cube(size=5)
+        ```
+
+        Create a rectangular box of dimensions (2, 3, 4):
+
+        ```python
+        box = Mesh.cube(size=(2, 3, 4))
+        ```
+
+        See Also
+        --------
+        [`Mesh`](np.blender.mesh.Mesh) :
+            The mesh class used to construct and manage geometry.
+
+        > ***Note:*** The cube is centered at the origin and scaled by `size/2`
+        > after construction.
+        """
         verts = [[-1., -1., -1.], [-1., -1.,  1.], [-1.,  1., -1.], [-1.,  1.,  1.], [ 1., -1., -1.], [ 1., -1.,  1.], [ 1.,  1., -1.], [ 1.,  1.,  1.],]
         corners = [0, 1, 3, 2,  2, 3, 7, 6,  6, 7, 5, 4,  4, 5, 1, 0,  2, 6, 4, 0,  7, 3, 1, 5]
         faces = [4]*6
@@ -1697,22 +2242,80 @@ class Mesh(Geometry):
 
     @classmethod
     def circle(cls, radius=1, segments=16, fill_segments=0, cap='NONE', materials=None):
-        """ Create a Circle.
+        """
+        Create a circle mesh.
 
-        'fill_segments' argument gives the number of internal circles to create.
-        If zero, the circle if filled with a polygon.
-        If positive, the circle is filled with triangle fans.
+        The circle can be created as:
+        - An open ring (`cap='NONE'`).
+        - A filled n-gon (`cap='NGON'`).
+        - A triangle fan (`cap='FANS'`).
 
-        Arguments
-        ---------
-            - radius (float=1.) : circle radius
-            - segments (int=16) : number of segments
-            - fill_segments (int = 0) : number of internal segments, polygon is None
-            - materials (list of strs = None) : materials list
+        The argument `fill_segments` controls how the interior of the circle is filled:
+        - If `fill_segments == 0` and `cap='NGON'`, the circle is filled with a single polygon.
+        - If `fill_segments > 0`, the circle is filled with concentric rings and
+        triangle fans (not yet implemented in this method, but the behavior
+        corresponds to `cap='FANS'`).
+        
+        > ***Note:*** The [`disk`](np.blender.mesh.Mesh.disk) method provides the same
+        > functionality with `cap='NGON'` as its default mode.
+
+        Parameters
+        ----------
+        radius : float, optional
+            Radius of the circle. Default is 1.
+        segments : int, optional
+            Number of segments (vertices) around the circle. Default is 16.
+        fill_segments : int, optional
+            Number of internal subdivisions (concentric circles). If 0, the circle is
+            filled with a single polygon when `cap='NGON'`. Default is 0.
+        cap : {'NONE', 'NGON', 'FANS'}, optional
+            How to fill the interior of the circle. Default is 'NONE'.
+        materials : list of str, optional
+            List of material names to assign to the circle. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the circle.
+
+        Notes
+        -----
+        - `cap='NONE'`: returns only the ring of edges.
+        - `cap='NGON'`: fills the circle with a polygon face.
+        - `cap='FANS'`: fills the circle with a fan of triangles around a central point.
+        - UV coordinates are generated with [`disk_uv_map`](np.blender.mesh.disk_uv_map).
+        - Fan topology is generated with [`fans_corners`](np.blender.mesh.fans_corners).
+
+        Examples
+        --------
+        Create an open circle with 32 segments:
+
+        ```python
+        circle = Mesh.circle(radius=1, segments=32, cap='NONE')
+        ```
+
+        Create a filled disk using an n-gon:
+
+        ```python
+        circle = Mesh.circle(radius=2, segments=24, cap='NGON')
+        ```
+
+        Create a filled disk with triangle fans:
+
+        ```python
+        circle = Mesh.circle(radius=1, segments=16, cap='FANS')
+        ```
+
+        See Also
+        --------
+        [`disk`](np.blender.mesh.Mesh.disk) :
+            Equivalent method for creating disks (default `cap='NGON'`).
+        [`disk_uv_map`](np.blender.mesh.disk_uv_map) :
+            Generates UV coordinates for circular caps.
+        [`fans_corners`](np.blender.mesh.fans_corners) :
+            Generates corner topology for triangle fans.
+
+        > ***Caution:*** When using `cap='FANS'`, a new center vertex is added.
         """
         ag = np.linspace(0, 2*np.pi, segments, endpoint=False)
         x = radius*np.cos(ag)
@@ -1745,9 +2348,6 @@ class Mesh(Geometry):
                 materials   = materials,
             )
 
-        #mesh = cls(points=points)
-        #mesh.fill_cap(np.arange(segments), mode=cap, center=segments, clockwise=True)
-
         assert(False)
     
     # ----------------------------------------------------------------------------------------------------
@@ -1756,10 +2356,56 @@ class Mesh(Geometry):
 
     @classmethod
     def disk(cls, radius=1, segments=16, fill_segments=0, cap='NGON', materials=None):
-        """ Create a disk.
+        """
+        Create a disk mesh.
 
-        Same as circle but default cap is NGON
-        """    
+        This is equivalent to [`circle`](np.blender.mesh.Mesh.circle), but with
+        `cap='NGON'` as the default filling mode.
+
+        Parameters
+        ----------
+        radius : float, optional
+            Radius of the disk. Default is 1.
+        segments : int, optional
+            Number of segments (vertices) around the disk. Default is 16.
+        fill_segments : int, optional
+            Number of internal subdivisions (concentric circles).
+            Default is 0 (single n-gon when `cap='NGON'`).
+        cap : {'NONE', 'NGON', 'FANS'}, optional
+            How to fill the interior of the disk. Default is 'NGON'.
+        materials : list of str, optional
+            List of material names to assign to the disk. Default is None.
+
+        Returns
+        -------
+        Mesh
+            A new mesh instance containing the disk.
+
+        Examples
+        --------
+        Create a default disk of radius 2 with 32 segments:
+
+        ```python
+        disk = Mesh.disk(radius=2, segments=32)
+        ```
+
+        Create a disk filled with triangle fans:
+
+        ```python
+        disk = Mesh.disk(radius=1, segments=16, cap='FANS')
+        ```
+
+        See Also
+        --------
+        [`circle`](np.blender.mesh.Mesh.circle) :
+            General method for circle/disk creation with customizable cap.
+        [`disk_uv_map`](np.blender.mesh.disk_uv_map) :
+            Generates UV coordinates for circular caps.
+        [`fans_corners`](np.blender.mesh.fans_corners) :
+            Generates corner topology for triangle fans.
+
+        > ***Note:*** This method is a shorthand for `circle(..., cap='NGON')`.
+        """
         return cls.circle(radius=radius, segments=segments, fill_segments=fill_segments, cap=cap, materials=materials)
     
     # ----------------------------------------------------------------------------------------------------
@@ -1767,23 +2413,78 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def cone(cls, vertices=32, side_segments=1, fill_segments=1, radius_top=0, radius_bottom=1, depth=2, fill_type='NGON', materials=None):
-        """ Create a Cone.
+    def cone(cls, vertices=32, side_segments=1, fill_segments=1, radius_top=0,
+            radius_bottom=1, depth=2, fill_type='NGON', materials=None):
+        """
+        Create a cone (or cylinder) mesh.
 
-        Arguments
-        ---------
-            - vertices (int=16) : number of segments
-            - side_segments (int = 1) : number of vertical segments
-            - fill_segments (int = 1) : number of internal circles on the caps
-            - radius_top (float=0) : top radius
-            - radius_bottom (float=1) : bottom radius
-            - depth (float=2.) : cylinder height
-            - fill_type (str or couple of strs ='NGON' in 'NGON', 'FANS', 'NONE') : cap filling
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        vertices : int, optional
+            Number of vertices around the circumference. Default is 32.
+        side_segments : int, optional
+            Number of subdivisions along the vertical side edges.
+            Default is 1 (no subdivision).
+        fill_segments : int, optional
+            Number of concentric circles added to the caps. Currently unused.
+            Default is 1.
+        radius_top : float, optional
+            Radius of the top face. Default is 0 (cone).
+        radius_bottom : float, optional
+            Radius of the bottom face. Default is 1.
+        depth : float, optional
+            Height of the cone along the Z axis. Default is 2.
+        fill_type : {'NGON', 'FANS', 'NONE'}, optional
+            Type of filling for the top and bottom caps:
+            - `'NGON'`: fill with n-gons.
+            - `'FANS'`: fill with triangle fans.
+            - `'NONE'`: no cap filling.
+            Default is `'NGON'`.
+        materials : list of str, optional
+            List of material names to assign to the mesh. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the cone.
+
+        Notes
+        -----
+        - If both `radius_top` and `radius_bottom` are zero, the result is an empty mesh.
+        - Internally calls [`bl_cone`](np.blender.mesh.Mesh.bl_cone) with
+        `cap_ends` and `cap_tris` derived from `fill_type`.
+        - UVs are generated automatically by Blender's cone operator.
+
+        Examples
+        --------
+        Create a simple cone of height 2 and base radius 1:
+
+        ```python
+        cone = Mesh.cone(vertices=32, radius_top=0, radius_bottom=1, depth=2)
+        ```
+
+        Create a cylinder with 16 vertices and subdivided sides:
+
+        ```python
+        cylinder = Mesh.cone(vertices=16, radius_top=1, radius_bottom=1,
+                            depth=3, side_segments=3)
+        ```
+
+        Create a cone with triangle fan caps:
+
+        ```python
+        cone = Mesh.cone(vertices=24, radius_top=0, radius_bottom=2,
+                        depth=4, fill_type='FANS')
+        ```
+
+        See Also
+        --------
+        [`bl_cone`](np.blender.mesh.Mesh.bl_cone) :
+            Low-level constructor for cones and cylinders.
+        [`bl_circle`](np.blender.mesh.Mesh.bl_circle) :
+            For creating circle primitives with optional triangle fan filling.
+
+        > ***Note:*** Use `fill_type='NONE'` to create an open-ended cone or cylinder.
         """
         # Empty geometry if fhe two radius are null
         if radius_top == 0 and radius_bottom == 0:
@@ -1807,21 +2508,70 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def cylinder(cls, vertices=32, side_segments=1, radius=1, depth=2, fill_type='NGON', materials=None):
-        """ Create a Cylinder.
+    def cylinder(cls, vertices=32, side_segments=1, radius=1, depth=2,
+                fill_type='NGON', materials=None):
+        """
+        Create a cylinder mesh.
 
-        Arguments
-        ---------
-            - vertices (int=16) : number of segments
-            - side_segments (int = 1) : number of vertical segments
-            - radius (float=1.) : radius
-            - depth (float=2.) : cylinder height
-            - fill_type (str or couple of strs ='NGON' in 'NGON', 'TRIANGLE_FAN', 'NONE') : cap filling
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        vertices : int, optional
+            Number of vertices around the circumference. Default is 32.
+        side_segments : int, optional
+            Number of subdivisions along the vertical side edges.
+            Default is 1 (no subdivision).
+        radius : float, optional
+            Radius of both the top and bottom faces. Default is 1.
+        depth : float, optional
+            Height of the cylinder along the Z axis. Default is 2.
+        fill_type : {'NGON', 'FANS', 'NONE'}, optional
+            Type of filling for the top and bottom caps:
+            - `'NGON'`: fill with n-gons.
+            - `'FANS'`: fill with triangle fans.
+            - `'NONE'`: no cap filling.
+            Default is `'NGON'`.
+        materials : list of str, optional
+            List of material names to assign to the mesh. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the cylinder.
+
+        Notes
+        -----
+        - Internally calls [`bl_cone`](np.blender.mesh.Mesh.bl_cone) with `radius1 = radius2 = radius`.
+        - UVs are generated automatically by Blender's cone operator.
+
+        Examples
+        --------
+        Create a default cylinder of radius 1 and height 2:
+
+        ```python
+        cyl = Mesh.cylinder()
+        ```
+
+        Create a cylinder with 64 vertices and 4 vertical subdivisions:
+
+        ```python
+        cyl = Mesh.cylinder(vertices=64, side_segments=4, radius=2, depth=5)
+        ```
+
+        Create an open cylinder without caps:
+
+        ```python
+        cyl = Mesh.cylinder(radius=1, depth=3, fill_type='NONE')
+        ```
+
+        See Also
+        --------
+        [`bl_cone`](np.blender.mesh.Mesh.bl_cone) :
+            Low-level constructor for cones and cylinders.
+        [`cone`](np.blender.mesh.Mesh.cone) :
+            Generalized method for cones and cylinders.
+
+        > ***Note:*** This method is a convenience wrapper for `bl_cone` with
+        > equal top and bottom radii.
         """
         mesh = cls.bl_cone(
             radius1       = radius,
@@ -1833,7 +2583,6 @@ class Mesh(Geometry):
             cap_tris      = fill_type == 'FANS',
             materials     = materials,
         )
-
         return mesh
 
     # ----------------------------------------------------------------------------------------------------
@@ -1842,15 +2591,53 @@ class Mesh(Geometry):
 
     @classmethod
     def pyramid(cls, size=1, materials=None):
-        """ Create a Pyramid.
+        """
+        Create a pyramid mesh.
 
-        Arguments
-        ---------
-            - size (float=1.) : size
+        The pyramid is generated as a cone with 3 vertices at the base (a triangle)
+        and an apex at the top.
+
+        Parameters
+        ----------
+        size : float, optional
+            Size of the pyramid. Determines both the base dimensions and the height.
+            Default is 1.
+        materials : list of str, optional
+            List of material names to assign to the mesh. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the pyramid.
+
+        Notes
+        -----
+        - The base radius is scaled by `size * sqrt(3)/2` so that the pyramid has
+        approximately unit proportions when `size=1`.
+        - Internally calls [`cone`](np.blender.mesh.Mesh.cone) with `vertices=3`.
+
+        Examples
+        --------
+        Create a default pyramid of size 1:
+
+        ```python
+        pyramid = Mesh.pyramid()
+        ```
+
+        Create a larger pyramid of size 5:
+
+        ```python
+        pyramid = Mesh.pyramid(size=5)
+        ```
+
+        See Also
+        --------
+        [`cone`](np.blender.mesh.Mesh.cone) :
+            Generalized method for cones and pyramids.
+        [`bl_cone`](np.blender.mesh.Mesh.bl_cone) :
+            Low-level constructor for cone-based primitives.
+
+        > ***Note:*** This method is equivalent to creating a triangular-based cone.
         """
         return cls.cone(vertices=3, radius_bottom=size*0.8660254037844386, depth=size, materials=materials)
 
@@ -1860,19 +2647,55 @@ class Mesh(Geometry):
 
     @classmethod
     def uvsphere(cls, segments=32, rings=16, radius=1, materials=None):
-        """ Create a uv sphere.
+        """
+        Create a UV sphere mesh.
 
-        Arguments
-        ---------
-            - segments (int=32) : number of segments
-            - rings (int=16) : number of rings
-            - radius (float=1.) : radius
-            - materials (list of strs = None) : materials list
-            - transformation (Transformations = None) : the transformation to apply
+        Parameters
+        ----------
+        segments : int, optional
+            Number of longitudinal segments (meridians). Default is 32.
+        rings : int, optional
+            Number of latitudinal rings (parallels). Default is 16.
+        radius : float, optional
+            Radius of the sphere. Default is 1.
+        materials : list of str, optional
+            List of material names to assign to the sphere. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the UV sphere.
+
+        Notes
+        -----
+        - The sphere is created using [`bmesh.ops.create_uvsphere`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_uvsphere)
+        with `calc_uvs=True` so UV coordinates are automatically generated.
+        - The geometry is distributed evenly in the UV parameterization, which means
+        denser vertices near the poles.
+
+        Examples
+        --------
+        Create a default UV sphere of radius 1:
+
+        ```python
+        sphere = Mesh.uvsphere()
+        ```
+
+        Create a high-resolution sphere:
+
+        ```python
+        sphere = Mesh.uvsphere(segments=64, rings=32, radius=2)
+        ```
+
+        See Also
+        --------
+        [`icosphere`](np.blender.mesh.Mesh.icosphere) :
+            Alternative sphere primitive with more uniform vertex distribution.
+        [`bmesh.ops.create_uvsphere`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_uvsphere) :
+            BMesh operator used for creating UV spheres.
+
+        > ***Note:*** Use [`icosphere`](np.blender.mesh.Mesh.icosphere) if you need
+        > a more uniform tessellation without poles.
         """
         mesh = cls(materials=materials)
         with mesh.bmesh() as bm:
@@ -1886,20 +2709,57 @@ class Mesh(Geometry):
 
     @classmethod
     def icosphere(cls, radius=1, subdivisions=2, materials=None):
-        """ Create a IcoSphere.
+        """
+        Create an icosphere mesh.
 
-        Blender constructor for a IcoSphere.
-
-        Arguments
-        ---------
-            - radius (float=1.) : radius
-            - subdivisions (int=2) : number subdivisions
-            - materials (list of strs = None) : materials list
-            - transformation (Transformations = None) : the transformation to apply
+        Parameters
+        ----------
+        radius : float, optional
+            Radius of the icosphere. Default is 1.
+        subdivisions : int, optional
+            Number of recursive subdivisions applied to the base icosahedron.
+            Higher values yield smoother spheres. Clamped to a maximum of 10.
+            Default is 2.
+        materials : list of str, optional
+            List of material names to assign to the icosphere. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the icosphere.
+
+        Notes
+        -----
+        - The icosphere is created using
+        [`bmesh.ops.create_icosphere`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_icosphere)
+        with `calc_uvs=True` so UV coordinates are automatically generated.
+        - Unlike a UV sphere, an icosphere has more uniform vertex distribution,
+        making it suitable for certain simulation and subdivision tasks.
+        - Subdivisions are internally capped at 10 for performance reasons.
+
+        Examples
+        --------
+        Create a default icosphere of radius 1 with 2 subdivisions:
+
+        ```python
+        ico = Mesh.icosphere()
+        ```
+
+        Create a larger icosphere with 4 subdivisions:
+
+        ```python
+        ico = Mesh.icosphere(radius=3, subdivisions=4)
+        ```
+
+        See Also
+        --------
+        [`uvsphere`](np.blender.mesh.Mesh.uvsphere) :
+            Sphere primitive based on UV parameterization.
+        [`bmesh.ops.create_icosphere`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_icosphere) :
+            BMesh operator used for creating icospheres.
+
+        > ***Note:*** Use [`uvsphere`](np.blender.mesh.Mesh.uvsphere) when you
+        > require consistent UV mapping, and `icosphere` for uniform tessellation.
         """
         subdivisions = min(10, subdivisions)
 
@@ -1915,20 +2775,67 @@ class Mesh(Geometry):
 
     @classmethod
     def torus(cls, major_segments=48, minor_segments=12, major_radius=1., minor_radius=0.25, materials=None):
-        """ Create a Torus.
+        """
+        Create a torus mesh.
 
-        Arguments
-        ---------
-            - major_segments (int=48) : number of segments for the major radius
-            - minor_segments (int=12) : number of segments for the minor radius
-            - major_radius (float=1.) : major radius
-            - minor_radius (float=.25) : minor radius
-            - materials (list of strs = None) : materials list
-            - transformation (Transformations = None) : the transformation to apply
+        Parameters
+        ----------
+        major_segments : int, optional
+            Number of segments around the major (outer) radius. Default is 48.
+        minor_segments : int, optional
+            Number of segments around the minor (inner) radius (the cross-section). Default is 12.
+        major_radius : float, optional
+            The distance from the center of the torus to the center of the tube. Default is 1.
+        minor_radius : float, optional
+            The radius of the tube itself. Default is 0.25.
+        materials : list of str, optional
+            List of material names to assign to the torus. Default is None.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new mesh instance containing the torus.
+
+        Notes
+        -----
+        - The torus is constructed by sweeping a circle of radius `minor_radius`
+        around a larger circle of radius `major_radius`.
+        - The transformation of the cross-section is handled by
+        [`Transformation`](np.blender.transform.Transformation) and
+        [`Rotation`](np.blender.rotation.Rotation).
+        - UV coordinates are generated using [`grid_uv_map`](np.blender.mesh.grid_uv_map),
+        resulting in a square parameterization.
+        - Topology is constructed with [`grid_corners`](np.blender.mesh.grid_corners)
+        with both axes closed.
+
+        Examples
+        --------
+        Create a standard torus:
+
+        ```python
+        torus = Mesh.torus()
+        ```
+
+        Create a torus with a larger tube and finer resolution:
+
+        ```python
+        torus = Mesh.torus(major_segments=64, minor_segments=32,
+                        major_radius=2, minor_radius=0.5)
+        ```
+
+        See Also
+        --------
+        [`grid_corners`](np.blender.mesh.grid_corners) :
+            Helper for constructing the corner topology of the torus grid.
+        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+            Generates UV coordinates for grid-like surfaces.
+        [`Transformation`](np.blender.transform.Transformation) :
+            Used to position and orient the swept circle.
+        [`Rotation`](np.blender.rotation.Rotation) :
+            Used to orient the minor circle along the sweep path.
+
+        > ***Note:*** UV coordinates are generated with an offset of π to match
+        > Blender's default torus orientation.
         """
         # Major backbone
         maj_ag = np.linspace(0, 2*np.pi, major_segments, endpoint=False, dtype=bfloat) + np.pi # + pi to match blender uv
@@ -1967,15 +2874,39 @@ class Mesh(Geometry):
 
     @classmethod
     def monkey(cls, materials=None):
-        """ Create a Monkey.
+        """
+        Create the famous Blender "Suzanne" monkey mesh.
 
-        Arguments
-        ---------
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        materials : list of str, optional
+            List of material names to assign to the mesh. Default is None.
 
         Returns
         -------
-            - MeshBuilder
+        Mesh
+            A new mesh instance containing the Suzanne primitive.
+
+        Notes
+        -----
+        - The monkey head is created using
+        [`bmesh.ops.create_monkey`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_monkey).
+        - Suzanne is often used as a test model and is considered Blender’s mascot.
+
+        Examples
+        --------
+        Create a Suzanne mesh:
+
+        ```python
+        monkey = Mesh.monkey()
+        ```
+
+        See Also
+        --------
+        [`bmesh.ops.create_monkey`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_monkey) :
+            BMesh operator used to generate the Suzanne primitive.
+
+        > ***Note:*** Suzanne is widely used as a benchmark and test object in Blender.
         """
         mesh = cls(materials=materials)
         with mesh.bmesh() as bm:
@@ -1988,8 +2919,82 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def arrow(cls, vector=(0, 0, 1), radius=.05, angle=24., segments=8, adjust_norm=None, materials=None):
+    def arrow(cls, vector=(0, 0, 1), radius=.05, angle=24., segments=8,
+            adjust_norm=None, materials=None):
+        """
+        Create an arrow mesh oriented along a given vector.
 
+        The arrow is composed of a cylindrical shaft and a conical head,
+        proportionally scaled to the length of the input vector.
+
+        Parameters
+        ----------
+        vector : array-like of float, shape (3,), optional
+            Direction and length of the arrow. The norm of the vector defines the
+            arrow length. Default is (0, 0, 1).
+        radius : float, optional
+            Radius of the cylindrical shaft. Default is 0.05.
+        angle : float, optional
+            Opening angle of the conical head in degrees. Default is 24.
+        segments : int, optional
+            Number of segments around the circumference. Default is 8.
+        adjust_norm : {callable, float, None}, optional
+            - If callable: a function applied to the vector norm to adjust the
+            arrow length.
+            - If float: the arrow length is clamped to this maximum.
+            - If None: use the norm of `vector` directly. Default is None.
+        materials : list of str, optional
+            List of material names to assign to the arrow. Default is None.
+
+        Returns
+        -------
+        Mesh
+            A new mesh instance containing the arrow.
+
+        Notes
+        -----
+        - The shaft is created with [`cylinder`](np.blender.mesh.Mesh.cylinder).
+        - The head is created with [`cone`](np.blender.mesh.Mesh.cone) using
+        `fill_type='FANS'` for proper triangulation.
+        - The arrow is aligned to `vector` using
+        [`Rotation.look_at`](np.blender.rotation.Rotation.look_at).
+        - A small correction is applied to avoid overlap between shaft and head.
+
+        Examples
+        --------
+        Create a default arrow of length 1 along Z:
+
+        ```python
+        arrow = Mesh.arrow()
+        ```
+
+        Create an arrow along vector (1, 2, 0.5) with custom shaft radius:
+
+        ```python
+        arrow = Mesh.arrow(vector=(1, 2, 0.5), radius=0.1)
+        ```
+
+        Create an arrow clamped to maximum length 2:
+
+        ```python
+        arrow = Mesh.arrow(vector=(0, 0, 5), adjust_norm=2)
+        ```
+
+        See Also
+        --------
+        [`cylinder`](np.blender.mesh.Mesh.cylinder) :
+            Used to create the arrow shaft.
+        [`cone`](np.blender.mesh.Mesh.cone) :
+            Used to create the arrow head.
+        [`Rotation.look_at`](np.blender.rotation.Rotation.look_at) :
+            Utility to orient the arrow along a target vector.
+
+        > ***Caution:*** If `vector` has zero length, the arrow cannot be
+        > constructed properly.
+
+        > ***Note:*** The conical head radius is set to `3 * radius` by default,
+        > and its height is determined by the opening `angle`.
+        """
         height = np.linalg.norm(vector)
         if type(adjust_norm).__name__ == 'function':
             height = adjust_norm(height)
@@ -2001,7 +3006,6 @@ class Mesh(Geometry):
 
         cyl_height = height - head_height*.8
 
-        #cyl  = cls.cylinder(vertices=segments, side_segments=2, radius=radius, depth=cyl_height, transformation=Transformations(position=(0, 0, cyl_height/2)), materials=materials)
         cyl = cls.cylinder(vertices=segments, side_segments=2, radius=radius, depth=cyl_height, materials=materials)
         cyl.points.z += cyl_height/2
         cyl.points[[segments + i for i in range(segments)]].position -= (0, 0, cyl_height/2 - .01)
@@ -2011,7 +3015,6 @@ class Mesh(Geometry):
         cone.points.position += (0, 0, height - head_height/2)
 
         arrow = cyl.join(cone)
-        #arrow.points.position = tracker(vector, track_axis='Z') @ arrow.points.position
         arrow.points.position = Rotation.look_at((0, 0, 1), vector) @ arrow.points.position
 
         return arrow
@@ -2021,30 +3024,97 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def vectors_field(cls, locations, vectors, radius=.05, scale_length=1., angle=24., segments=8, head=None, adjust_norm=None, materials=None):
-        """ Create an arrow at each location corresponding to the vectors.
+    def vectors_field(cls, locations, vectors, radius=.05, scale_length=1., angle=24.,
+                    segments=8, head=None, adjust_norm=None, materials=None):
+        """
+        Create an arrow at each `location` oriented and scaled by the corresponding `vector`.
 
-        The arrow length is equal to the corresponding vector lengths.
-        The arrow radius is constant and equal to the value passe in argument for lengths greater that
-        the argument scale_length. When the length is less than this value, the arrow is scaled down.
+        Each arrow consists of a cylindrical shaft and a conical head aligned with the
+        vector direction. Arrow length is derived from the vector norm, optionally
+        transformed by `adjust_norm`. For very short vectors, the arrow is scaled
+        down to preserve proportions.
 
-        Use the adjust_norm argument to transform the vector lengths to arrows lengths.
-
-        Arguments
-        ---------
-            - locations (array of 3-vectors) : vectors locations
-            - vectors (array of 3 vectors) : vectors to visualize
-            - radius (float = .05) : arrow radius
-            - angle (float = 24) : head radius in degrees
-            - segments (int = 8) : number of segments for the section
-            - head (mesh = None) : mesh model for the head. Create a cone if None
-            - adjust_norm (max length or function = None) : max arrow length or function transforming
-                the vector length into arrow length
-            - scale_length (float = 1.) : arrow length below which the arrow radius is scaled
+        Parameters
+        ----------
+        locations : array-like of shape (N, 3)
+            Positions where arrows are placed.
+        vectors : array-like of shape (N, 3)
+            Direction (and base length) of each arrow. Must match the length of `locations`.
+        radius : float, optional
+            Shaft radius for the arrows. Default is 0.05.
+        scale_length : float, optional
+            Length threshold below which arrows are uniformly scaled down (radius and
+            shaft) while keeping proportions. Default is 1.0.
+        angle : float, optional
+            Opening angle (in degrees) of the conical head. Default is 24.
+        segments : int, optional
+            Number of radial segments for both shaft and head. Default is 8.
+        head : Mesh or None, optional
+            Optional mesh to use as the arrow head. If `None`, a cone is created.
+            When provided, its Z size defines the head height.
+        adjust_norm : {callable, float, None}, optional
+            Controls how vector norms are mapped to arrow lengths:
+            - callable: applied to the array of norms.
+            - float: acts as a maximum length (clamp).
+            - None: use the raw norms. Default is None.
+        materials : list of str, optional
+            Material names to assign to created geometry. Default is None.
 
         Returns
         -------
-            - Mesh Object
+        Mesh
+            A mesh containing all arrows.
+
+        Notes
+        -----
+        - The head radius is `3 * radius`; its height is derived from `angle` via
+        `head_height = head_radius / tan(angle)`.
+        - Arrows with very small vectors are handled specially to avoid degenerate
+        geometry (a minimum total length of approximately `2 * head_height` is enforced).
+        - Alignment is achieved with [`Rotation.look_at`](np.blender.rotation.Rotation.look_at).
+        - The shaft is built from [`cylinder`](np.blender.mesh.Mesh.cylinder), and the
+        head from [`cone`](np.blender.mesh.Mesh.cone) (when `head is None`).
+
+        Examples
+        --------
+        Create a field of unit arrows from a grid:
+
+        ```python
+        P = np.stack(np.meshgrid(np.linspace(-1, 1, 5),
+                                np.linspace(-1, 1, 5),
+                                [0.0], indexing='ij'), axis=-1).reshape(-1, 3)
+        V = np.tile(np.array([0, 0, 1.0]), (len(P), 1))
+        field = Mesh.vectors_field(P, V, radius=0.03, segments=12)
+        ```
+
+        Clamp arrow lengths to 2 units:
+
+        ```python
+        field = Mesh.vectors_field(P, V * 5.0, adjust_norm=2.0)
+        ```
+
+        Map norms nonlinearly (e.g., sqrt):
+
+        ```python
+        field = Mesh.vectors_field(P, V, adjust_norm=np.sqrt)
+        ```
+
+        See Also
+        --------
+        [`arrow`](np.blender.mesh.Mesh.arrow) :
+            Convenience method to create a single arrow.
+        [`cylinder`](np.blender.mesh.Mesh.cylinder) :
+            Used to create the arrow shafts.
+        [`cone`](np.blender.mesh.Mesh.cone) :
+            Used to create the arrow heads (when `head is None`).
+        [`Rotation.look_at`](np.blender.rotation.Rotation.look_at) :
+            Used to orient arrows along their vectors.
+
+        > ***Caution:*** `locations` and `vectors` must have the same length (N).
+        > Mismatched inputs will lead to incorrect alignment or runtime errors.
+
+        > ***Note:*** Zero-length vectors are handled safely; corresponding arrows
+        > collapse to length 0 and are effectively omitted.
         """
         locations = np.atleast_2d(locations)
         vectors = np.atleast_2d(vectors)
@@ -2133,7 +3203,6 @@ class Mesh(Geometry):
                 translation = locations[small, None],
                 )
             small_arrows.points.reshape(-1)
-
             
         # ---------------------------------------------------------------------------
         # Long arrows
@@ -2182,77 +3251,88 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     @classmethod
-    def chain_link(cls, major_segments=48, minor_segments=12, radius=1., section=0.5, length=4., materials=None):
-        """ Create a chain link.
+    def chain_link(cls, major_segments=48, minor_segments=12, radius=1., section=0.5,
+                length=4., materials=None):
+        """
+        Create a single chain link (oval torus with straightened sides).
 
-        ``` python
-        # ----- Some maths
+        The link is built from a torus of major radius `radius` and tube radius
+        `section / 2`. If `length > 2 * radius`, the torus is split in half,
+        translated to open a gap of size `delta = length - 2 * radius`, mirrored,
+        then the opposite borders are bridged to form the elongated link. UVs are
+        adjusted to keep a clean seam layout.
 
-        # Chain follows a catenary curve
-        def catenary(t):
-            return np.stack((t, np.zeros_like(t), np.cosh(t)), axis=-1)
-
-        # Orientation is given by the derivative
-        def derivative(t):
-            dt = 1/10000
-            return (catenary(t + dt) - catenary(t - dt))/(2*dt)
-
-        # Catenary length
-        pts = catenary(np.linspace(-1, 1, 1000))
-        cat_s = np.cumsum(np.linalg.norm(pts[1:] - pts[:-1], axis=-1))
-        cat_len = cat_s[-1]
-
-        # Catenary inverse : t from length
-        def cat_inverse(l):
-            return 2*np.argmin(np.abs(cat_s - l))/1000 - 1
-
-        # ----- Let's build the geometry
-
-        # One chain link
-        section = .02
-        length  = .15
-        link = MeshBuilder.ChainLink(radius=.04, section=section, length=length)
-
-        # Link length taking into account the section
-        l = length - 2*section
-
-        # Number of links
-        count = round(cat_len / l)
-
-        # The chain
-        chain = link*count
-
-        # Rotate pi/2 one on two
-        eulers = Eulers(shape=count)
-        eulers[[i % 2 == 1 for i in range(count)]] = (0, np.pi/2, 0)
-
-        chain.rotate(eulers)
-        chain.rotate_z(np.pi/2)
-
-        # Location of each link
-        t = np.array([cat_inverse(l*i) for i in range(count)])
-
-        chain.toward(derivative(t), track_axis='X', up_axis='Z')
-        chain.translate(catenary(t))
-
-        # To object
-        chain.to_object("Catenary")
-        ```
-
-        Arguments
-        ---------
-            - major_segments (int=48) : number of segments for the link
-            - minor_segments (int=12) : number of segments for the section
-            - radius (float=1.) : radius of the link
-            - section (float=.5) : section (diameter)
-            - length (float=4.) : total length of the link
-            - materials (list of strs = None) : materials list
+        Parameters
+        ----------
+        major_segments : int, optional
+            Number of segments around the major loop. Default is 48.
+        minor_segments : int, optional
+            Number of segments around the tube section. Default is 12.
+        radius : float, optional
+            Major radius of the link (half the distance between opposite sides on
+            the long axis before elongation). Default is 1.0.
+        section : float, optional
+            Diameter of the link cross-section (tube thickness). Default is 0.5.
+        length : float, optional
+            Target overall length of the link along its long axis. If close to
+            `2 * radius`, the result is essentially a pure torus. Default is 4.0.
+        materials : list of str, optional
+            Material names to assign to the link. Default is None.
 
         Returns
         -------
-            - MeshBuilder
-        """
+        Mesh
+            A new mesh instance containing the chain link.
 
+        Notes
+        -----
+        - Construction steps:
+        1) Create a torus with [`torus`](np.blender.mesh.Mesh.torus).
+        2) Delete approximately half the vertices on the negative Y side with
+            [`delete_vertices`](np.blender.mesh.Mesh.delete_vertices).
+        3) Duplicate and mirror the remaining half to the other side.
+        4) Bridge the facing border loops with
+            [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) (twice, crossing).
+        5) Recompute and assign UVs using [`grid_uv_map`](np.blender.mesh.grid_uv_map)
+            to distribute the texture coordinates and minimize stretching.
+        - When `length - 2 * radius` is smaller than ~`radius / 10`, the method
+        returns the original torus since elongation would be negligible.
+
+        Examples
+        --------
+        Create a standard chain link:
+
+        ```python
+        link = Mesh.chain_link(major_segments=64, minor_segments=16,
+                            radius=0.5, section=0.12, length=1.6)
+        ```
+
+        Create a thicker, longer link:
+
+        ```python
+        link = Mesh.chain_link(radius=1.0, section=0.25, length=3.0)
+        ```
+
+        See Also
+        --------
+        [`torus`](np.blender.mesh.Mesh.torus) :
+            Base primitive used to start the link.
+        [`delete_vertices`](np.blender.mesh.Mesh.delete_vertices) :
+            Used to remove half of the torus before mirroring.
+        [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) :
+            Used to reconnect mirrored borders.
+        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+            Generates UVs for the final link surface.
+        [`from_mesh`](np.blender.mesh.Mesh.from_mesh) :
+            Utility for duplicating mesh halves before joining.
+
+        > ***Caution:*** Very small `section` relative to `major_segments` can
+        > create skinny triangles near the bridged areas. Increase segment counts
+        > or `section` for cleaner topology.
+
+        > ***Note:*** If `length <= 2 * radius`, no elongation is performed and
+        > the result is (nearly) identical to a torus of the given parameters.
+        """
         delta = length - 2*radius
 
         # Starting from a torus
@@ -2313,17 +3393,70 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def extrude_vertices(self, selection, offset, **attributes):
-        """ Extrude individual vertices
+        """
+        Extrude individual vertices by creating new points displaced by `offset`
+        and connecting each original vertex to its duplicate with an edge.
 
-        Arguments
-        ---------
-            - selection (selector) : points selection, all if None
-            - offset (vector or array of vectors) : extrusion vector
-            - attributes (dict) : points attributes
+        Parameters
+        ----------
+        selection : array-like of int or bool, or None
+            Vertex indices or boolean mask selecting the vertices to extrude.
+            If `None`, all vertices are extruded.
+        offset : array-like, shape (3,) or (N, 3)
+            Extrusion vector(s). Can be a single 3D vector applied to every
+            selected vertex, or an array of vectors with one per selected vertex.
+        **attributes : dict, optional
+            Optional attributes to attach to the created geometry (forwarded to
+            [`add_geometry`](np.blender.mesh.Mesh.add_geometry)).
 
         Returns
         -------
-            - dictionnary of the created geometry : vertex indices, face indices
+        dict
+            Dictionary describing the created geometry as returned by
+            [`add_geometry`](np.blender.mesh.Mesh.add_geometry). Contains at least:
+            - `'points'`: indices of newly added vertices.
+            - `'edges'`: indices of newly added edges.
+
+        Raises
+        ------
+        AttributeError
+            If `offset` is neither a single `(3,)` vector nor an array of shape
+            `(len(loop), 3)`.
+
+        Notes
+        -----
+        - New vertices are positioned at `points[selection] + offset`.
+        - One edge is created between each original vertex and its newly created
+        counterpart using [`edges_between`](np.blender.mesh.edges_between).
+
+        Examples
+        --------
+        Extrude all vertices by (0, 0, 1):
+
+        ```python
+        added = Mesh.extrude_vertices(selection=None, offset=(0, 0, 1))
+        ```
+
+        Extrude a subset with per-vertex offsets:
+
+        ```python
+        sel = np.array([0, 2, 5, 7])
+        offs = np.random.randn(len(sel), 3) * 0.1
+        added = Mesh.extrude_vertices(selection=sel, offset=offs)
+        ```
+
+        See Also
+        --------
+        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+            Adds new points/edges/faces and returns their indices.
+        [`edges_between`](np.blender.mesh.edges_between) :
+            Builds edge pairs between two index arrays of equal length.
+
+        > ***Caution:*** When `offset` is an array, its length must match the
+        > number of selected vertices.
+
+        > ***Note:*** This operation creates only points and edges. Faces are not
+        > generated automatically.
         """
         inds = np.arange(len(self.points))
         if selection is not None:
@@ -2340,19 +3473,83 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def extrude_loop(self, loop, offset, close=False, clockwise=False, **attributes):
-        """ Extrude a loop of vertices.
+        """
+        Extrude a loop of vertices by duplicating the loop, offsetting it, and
+        creating a quad strip between the original and the offset loop.
 
-        Arguments
-        ---------
-            - loop (array of ints) : vertex indices
-            - offset (float = 1) : multiplicator of the direction vector
-            - direction (vector = None) : extrusion direction, normal if None
-            - clockwise (bool=False) : faces orientation
-            - attributes : attribute for the new geometry
+        Parameters
+        ----------
+        loop : array-like of int
+            Vertex indices defining the loop to extrude. Must contain at least 2 vertices.
+        offset : array-like, shape (3,) or (N, 3)
+            Extrusion vector(s). A single 3D vector is broadcast to all vertices in
+            `loop`, or provide one vector per vertex (N == len(loop)).
+        close : bool, optional
+            If True, treats the input as a closed loop and connects the last vertex
+            back to the first when building side quads. Default is False.
+        clockwise : bool, optional
+            Controls the orientation (winding) of the generated faces and the UV
+            layout. Default is False.
+        **attributes : dict, optional
+            Extra attributes intended for the new geometry (see ***Caution***).
 
         Returns
         -------
-            - dictionnary of the created geometry : vertex indices, face indices
+        dict
+            Dictionary describing the created geometry as returned by
+            [`add_geometry`](np.blender.mesh.Mesh.add_geometry). Contains at least:
+            - `'points'`: indices of the duplicated (offset) vertices.
+            - `'corners'`: indices of the generated quad strip corners.
+            - `'faces'`: face arity (4 for quads).
+
+        Raises
+        ------
+        AttributeError
+            If `offset` is neither a single `(3,)` vector nor an array of shape
+            `(len(loop), 3)`.
+
+        Notes
+        -----
+        - New vertices are computed as `points[loop] + offset` (with broadcasting if
+        `offset` is a single vector).
+        - Side faces are constructed using the topology from
+        [`grid_corners`](np.blender.mesh.grid_corners) with two rows (original and
+        offset loop).
+        - UVs for the side strip are generated by
+        [`grid_uv_map`](np.blender.mesh.grid_uv_map) with matching parameters.
+
+        Examples
+        --------
+        Extrude an open loop along a single vector:
+
+        ```python
+        new = Mesh.extrude_loop(loop, offset=(0, 0, 1), close=False)
+        ```
+
+        Extrude a closed loop with per-vertex offsets and flipped winding:
+
+        ```python
+        offs = np.random.randn(len(loop), 3) * 0.02
+        new = Mesh.extrude_loop(loop, offset=offs, close=True, clockwise=True)
+        ```
+
+        See Also
+        --------
+        [`extrude_vertices`](np.blender.mesh.Mesh.extrude_vertices) :
+            Extrude isolated vertices with edges to their duplicates.
+        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+            Adds the new points/corners/faces and returns their indices.
+        [`grid_corners`](np.blender.mesh.grid_corners) :
+            Builds the quad topology of the side strip.
+        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+            Generates UVs for the side strip.
+
+        > ***Caution:*** `offset` must be either a single `(3,)` vector or an array
+        > of shape `(len(loop), 3)`. Any other shape will raise an error.
+
+        > ***Caution:*** The `attributes` kwargs are currently **not forwarded** to
+        > `add_geometry` in this implementation. If you need them applied, pass
+        > them through explicitly in the call to `add_geometry`.
         """
         loop = np.atleast_1d(loop)
         if len(loop) < 2:
@@ -2378,22 +3575,79 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def extrude_faces(self, selection, offset=None, scale=1.):
-        """ Extrude individual faces.
+        """
+        Extrude individual faces by duplicating them, optionally displacing
+        them by `offset`, and connecting side faces.
 
-        If offset is None, faces are extruder along their normal
-
-        Arguments
-        ---------
-            - selection : indices of the faces to extrude
-            - offset (vector or array of vectors) : the extrusion vector
-            - scale (float = 1) : scale factor for offsets
-            - dissolve (bool = True) : remove starting faces
+        Parameters
+        ----------
+        selection : array-like of int or bool, or None
+            Indices (or mask) of faces to extrude. If `None`, all faces are extruded.
+        offset : array-like, shape (3,) or (N, 3), optional
+            Extrusion vector(s). A single vector is broadcast to all faces.
+            If `None`, each face is extruded along its own normal.
+        scale : float, optional
+            Scale factor applied to `offset` (or to the face normal if `offset=None`).
+            Default is 1.0.
+        dissolve : bool, optional
+            Not implemented in this version. Placeholder for removing the starting
+            faces after extrusion.
 
         Returns
         -------
-            - dictionnary : 'top' : extruded faces, 'side' : extruded side faces
-        """
+        dict
+            Dictionary with two keys:
+            - `'top'`: indices of the extruded (displaced) faces.
+            - `'side'`: indices of the side faces connecting the original and new faces.
 
+        Raises
+        ------
+        ValueError
+            If `offset` cannot be broadcast to shape `(len(faces), 3)`.
+        AssertionError
+            If a side edge of an extruded face does not have exactly two linked faces.
+
+        Notes
+        -----
+        - Uses [`bmesh.ops.extrude_discrete_faces`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.extrude_discrete_faces)
+        to duplicate each selected face independently.
+        - If `offset` is `None`, displacement is along each face's local normal.
+        - Side faces are identified by checking edges linked to the extruded faces.
+
+        Examples
+        --------
+        Extrude all faces along their normals:
+
+        ```python
+        res = Mesh.extrude_faces(selection=None, scale=0.2)
+        ```
+
+        Extrude a subset of faces by a fixed offset:
+
+        ```python
+        res = Mesh.extrude_faces(selection=[0, 2, 5], offset=(0, 0, 1))
+        ```
+
+        Extrude faces with per-face offsets:
+
+        ```python
+        offs = np.random.randn(len(sel), 3) * 0.1
+        res = Mesh.extrude_faces(selection=sel, offset=offs)
+        ```
+
+        See Also
+        --------
+        [`extrude_vertices`](np.blender.mesh.Mesh.extrude_vertices) :
+            Extrude isolated vertices.
+        [`extrude_loop`](np.blender.mesh.Mesh.extrude_loop) :
+            Extrude a vertex loop into a quad strip.
+
+        > ***Caution:*** If `offset` is given per-face, its length must match the
+        > number of extruded faces or broadcasting will fail.
+
+        > ***Note:*** Side face indices may be repeated if multiple extrusions
+        > share edges.
+        """
         # Selected faces indices
         faces_sel = np.arange(len(self.faces))
         if selection is not None:
@@ -2445,19 +3699,71 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def extrude_region(self, selection, offset=(0, 0, 1), dissolve=False):
-        """ Extrude individual faces.
+        """
+        Extrude a connected face region, translate the new geometry by `offset`,
+        and optionally dissolve the original faces.
 
-        Arguments
-        ---------
-            - selection : indices of the faces to extrude
-            - offset (vector = (0, 0, 1)) : the extrusion vector
-            - dissolve (bool = True) : remove starting faces
+        Parameters
+        ----------
+        selection : array-like of int or bool, or None
+            Indices (or mask) of faces to extrude. If `None`, all faces are used.
+        offset : array-like of float, shape (3,), optional
+            Translation vector applied to the newly created vertices of the region.
+            Default is (0, 0, 1).
+        dissolve : bool, optional
+            If True, delete the original (pre-extrusion) faces after the region
+            has been extruded. Default is False.
 
         Returns
         -------
-            - dictionnary : 'top' : extruded faces, 'side' : extruded side faces
-        """
+        dict
+            Dictionary with two keys:
+            - `'top'`: indices of the newly extruded faces (translated region).
+            - `'side'`: indices of the side faces that connect original and new faces.
 
+        Raises
+        ------
+        AssertionError
+            If a side edge of an extruded face does not have exactly two linked faces
+            (non-manifold condition).
+
+        Notes
+        -----
+        - Region extrusion is performed via
+        [`bmesh.ops.extrude_face_region`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.extrude_face_region),
+        then the new vertices are moved using `bmesh.ops.translate`.
+        - Side faces are discovered by scanning the edges of the extruded faces and
+        collecting the adjacent face opposite to each extruded face.
+
+        Examples
+        --------
+        Extrude a region upward and keep the original faces:
+
+        ```python
+        res = Mesh.extrude_region(selection=[0, 1, 2], offset=(0, 0, 0.2), dissolve=False)
+        ```
+
+        Extrude a region and dissolve the starting faces:
+
+        ```python
+        res = Mesh.extrude_region(selection=mask, offset=(0.1, 0, 0), dissolve=True)
+        ```
+
+        See Also
+        --------
+        [`extrude_faces`](np.blender.mesh.Mesh.extrude_faces) :
+            Extrude faces individually (discrete), not as a connected region.
+        [`extrude_loop`](np.blender.mesh.Mesh.extrude_loop) :
+            Create a quad strip by offsetting a vertex loop.
+        [`extrude_vertices`](np.blender.mesh.Mesh.extrude_vertices) :
+            Duplicate and connect selected vertices.
+
+        > ***Caution:*** `offset` must be a 3D vector. Non-3D inputs may cause the
+        > translation operator to fail.
+
+        > ***Note:*** With `dissolve=True`, the original faces are removed, leaving
+        > only the extruded shell.
+        """
         # Selected faces indices
         faces_sel = np.arange(len(self.faces))
         if selection is not None:
@@ -2516,28 +3822,60 @@ class Mesh(Geometry):
     # inset faces
     # ----------------------------------------------------------------------------------------------------
 
-    def inset_faces(self, selection, thickness=0.1, depth=0.0, use_even_offset=True, use_relative_offset=False):
-        """ Extrude individual faces.
+    def inset_faces(self, selection, thickness=0.1, depth=0.0,
+                    use_even_offset=True, use_relative_offset=False):
+        """
+        Inset selected faces individually, optionally adding depth (local extrusion).
 
-        If offset is None, faces are extruder along their normal
-
-        Arguments
-        ---------
-        selection : selection on faces
-            indices of the faces to inset
-        thickness : float
-            Inset thickness.
-        depth : float
-            Inset depth (extrusion).
-        use_even_offset : bool
-            Keep consistent thickness.
-        use_relative_offset : bool
-            Offset relative to face size.
+        Parameters
+        ----------
+        selection : array-like of int or bool, or None
+            Indices (or mask) of faces to inset. If `None`, all faces are used.
+        thickness : float, optional
+            Inset thickness applied per face. Default is 0.1.
+        depth : float, optional
+            Local extrusion depth along each face normal. Default is 0.0.
+        use_even_offset : bool, optional
+            Keep thickness consistent across faces (even offset). Default is True.
+        use_relative_offset : bool, optional
+            Scale thickness relative to face size. Default is False.
 
         Returns
         -------
-        dict with:
-            'faces' : list of new inset faces
+        dict
+            Dictionary with:
+            - `'top'`: indices of the original (selected) faces.
+            - `'side'`: indices of the new faces created by the inset operation
+            (typically the rim/side faces around each inset).
+
+        Notes
+        -----
+        - Implementation uses
+        [`bmesh.ops.inset_individual`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.inset_individual).
+        - The `'top'` entry mirrors the input selection; `'side'` comes from
+        `d["faces"]` returned by the BMesh operator.
+
+        Examples
+        --------
+        Inset a set of faces with even offset:
+
+        ```python
+        res = Mesh.inset_faces(selection=[0, 2, 5], thickness=0.05, depth=0.0)
+        ```
+
+        Inset all faces with relative offset and a small depth:
+
+        ```python
+        res = Mesh.inset_faces(selection=None, thickness=0.02,
+                            depth=0.01, use_relative_offset=True)
+        ```
+
+        See Also
+        --------
+        [`extrude_faces`](np.blender.mesh.Mesh.extrude_faces) :
+            Extrude faces discretely instead of insetting.
+        [`extrude_region`](np.blender.mesh.Mesh.extrude_region) :
+            Extrude connected face regions.
         """
 
         # Selected faces indices
@@ -2576,22 +3914,62 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def solidify_socle(self, shape, z=0, bottom_material_index=0):
-        """ The mesh is supposed to be a grid.
+        """
+        Build a solid base (“socle”) by extruding the outer boundary of a grid mesh
+        down (or up) to a given Z level, then bridging the side wall.
 
-        The socle is buit by extruding the external edges to the value z.
-
-        Arguments
-        ---------
-        - shape (tuple of ints) : the grid shade
-        - z (float) : socle base z
-        - bottom_material_index (int = 0) : base face material index
-        - attributes (dict) : attributes to faces
+        Parameters
+        ----------
+        shape : tuple of int
+            Grid shape `(nx, ny)` of the mesh topology (using `'ij'` indexing).
+        z : float, optional
+            Target Z coordinate for the base ring (the new bottom boundary).
+            Default is 0.
+        bottom_material_index : int, optional
+            Material index assigned to the bottom face created by the operation.
+            Default is 0.
 
         Returns
         -------
-        - bottom face index (int) : the index of bottom face
-        """
+        None
+            Modifies the mesh **in place**. Returns `None`.
+            The bottom face indices produced by [`add_geometry`](np.blender.mesh.Mesh.add_geometry)
+            are stored internally and their `material_index` is set to `bottom_material_index`.
 
+        Notes
+        -----
+        - The outer boundary loop is derived from the provided grid `shape` assuming
+        a regular lattice of `nx * ny` points laid out with NumPy’s `'ij'` indexing.
+        - A new ring of points is created at Z = `z` via [`add_points`](np.blender.mesh.Mesh.add_points).
+        - The vertical side wall is created by bridging loops with
+        [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) using `close=True`.
+        - The bottom face material is assigned by ensuring and editing the optional
+        `material_index` field on `self.faces`.
+
+        Examples
+        --------
+        Solidify a 20×30 grid down to Z = -0.1 with material index 2:
+
+        ```python
+        Mesh.solidify_socle(shape=(20, 30), z=-0.1, bottom_material_index=2)
+        ```
+
+        See Also
+        --------
+        [`add_points`](np.blender.mesh.Mesh.add_points) :
+            Adds the new base ring vertices at Z = `z`.
+        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+            Creates the bottom polygon from the added ring.
+        [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) :
+            Connects the side wall between original and new boundary loops.
+
+        > ***Caution:*** This method assumes the mesh vertices correspond to a regular
+        > `(nx, ny)` grid ordered consistently with `'ij'` indexing; inconsistent
+        > layouts will produce incorrect boundaries.
+
+        > ***Note:*** The function does not return the created face indices; it sets
+        > their `material_index` internally based on `bottom_material_index`.
+        """
         n = shape[0]*shape[1]
         inds = np.arange(n).reshape(shape)
 
@@ -2616,16 +3994,64 @@ class Mesh(Geometry):
 
     def boolean(self, other, operation='DIFFERENCE'):
         """
-        Apply a boolean operation with another object.
+        Apply a boolean CSG operation with another mesh object and return the result.
 
         Parameters
         ----------
         other : Mesh
-            The object to use as boolean operand.
-        operation : str
-            Boolean operation: 'INTERSECT', 'UNION', or 'DIFFERENCE'.
-        """
+            The mesh used as the boolean operand.
+        operation : {'INTERSECT', 'UNION', 'DIFFERENCE'}, optional
+            Type of boolean operation to perform. Default is 'DIFFERENCE'.
 
+        Returns
+        -------
+        Mesh
+            A new mesh instance created from the object after applying the Boolean
+            modifier.
+
+        Notes
+        -----
+        - Internally, a Blender **Boolean** modifier is added to `self`, pointing to
+        `other`, and then applied via `bpy.ops.object.modifier_apply`.
+        - The result is read back as a new mesh using
+        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object).
+        - Context managers [`object`](np.blender.mesh.Mesh.object) are used to obtain
+        temporary Blender objects for both meshes.
+
+        Examples
+        --------
+        Subtract `B` from `A`:
+
+        ```python
+        result = A.boolean(B, operation='DIFFERENCE')
+        ```
+
+        Compute the union:
+
+        ```python
+        result = A.boolean(B, operation='UNION')
+        ```
+
+        Keep only the intersection:
+
+        ```python
+        result = A.boolean(B, operation='INTERSECT')
+        ```
+
+        See Also
+        --------
+        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object) :
+            Converts a Blender object back into a mesh wrapper.
+        [`object`](np.blender.mesh.Mesh.object) :
+            Context manager yielding a temporary Blender object.
+
+        > ***Warning:*** Applying the modifier is **destructive** to the underlying
+        > Blender object for `self` (its mesh data is changed). The method returns
+        > a new mesh instance representing the modified result.
+
+        > ***Caution:*** Ensure `operation` is one of {'INTERSECT', 'UNION',
+        > 'DIFFERENCE'}; other values are invalid for Blender's Boolean modifier.
+        """
         with other.object(0, readonly=True) as other_obj:
 
             with self.object(1) as obj:
@@ -2645,33 +4071,59 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def solidify(self, thickness=.01, offset=-1):
-        """ Boolean difference with another MeshBuilder.
+        """
+        Apply a **Solidify** modifier to give thickness to a surface mesh.
 
-        The methods uses the Solidify Modifier
-
-        ``` python
-        glass = Mesh.Circle(segments=128)
-        glass.extrude_faces(0, -.01)
-        glass.extrude_faces(0, -2)
-        glass.extrude_faces(0, -.01)
-
-        glass.points.translate((0, 0, 2))
-
-        glass = glass.solidify(thickness=.1)
-
-        glass.to_object("Solidify", shade_smooth=True)
-        ```
-
-        Arguments
-        ---------
-            - thickness (float=.01) : thickness
-            - offset (float=-1) : offset
+        Parameters
+        ----------
+        thickness : float, optional
+            Thickness of the shell to generate. Positive values expand outward,
+            negative values inward. Default is 0.01.
+        offset : float, optional
+            Offset factor determining the solidification direction relative to
+            the original surface:
+            -1 → inward, 0 → centered, +1 → outward.
+            Default is -1.
 
         Returns
         -------
-            - MeshBuilder : the result of the solidify operation
-        """
+        Mesh
+            A new mesh instance resulting from the solidify operation.
 
+        Notes
+        -----
+        - Internally creates a Blender **Solidify** modifier with
+        `use_even_offset=True` for consistent thickness.
+        - The modifier is applied destructively via
+        `bpy.ops.object.modifier_apply`, and the resulting mesh is retrieved with
+        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object).
+        - Works best on manifold surfaces (open meshes may produce artifacts).
+
+        Examples
+        --------
+        Solidify a circular glass mesh:
+
+        ```python
+        glass = Mesh.circle(segments=128)
+        glass.extrude_faces(0, -0.01)
+        glass.extrude_faces(0, -2)
+        glass.extrude_faces(0, -0.01)
+        glass.points.translate((0, 0, 2))
+
+        glass = glass.solidify(thickness=0.1)
+        glass.to_object("Solidify", shade_smooth=True)
+        ```
+
+        See Also
+        --------
+        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object) :
+            Converts a Blender object back into a mesh wrapper.
+        [`object`](np.blender.mesh.Mesh.object) :
+            Context manager yielding a temporary Blender object.
+
+        > ***Caution:*** Applying the modifier is **destructive** to the underlying
+        > Blender object; the method returns a new mesh instance of the result.
+        """
         with self.object() as obj:
             mod = obj.modifiers.new("Solidify", 'SOLIDIFY')
 
@@ -2690,11 +4142,44 @@ class Mesh(Geometry):
     # Remove doubles
     # ----------------------------------------------------------------------------------------------------
 
-    def remove_doubles(self, dist=.001):
-        """ Remove doubles.
+    def remove_doubles(self, dist=0.001):
+        """
+        Merge duplicate vertices within a distance threshold.
 
-        Arguments:
-            - dist (float=0.001) : maximum distance between vertices to merge.
+        Parameters
+        ----------
+        dist : float, optional
+            Maximum distance between vertices to be merged. Default is 0.001.
+
+        Returns
+        -------
+        Mesh
+            The current mesh instance (`self`) with duplicate vertices removed.
+
+        Notes
+        -----
+        - Internally uses
+        [`bmesh.ops.remove_doubles`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.remove_doubles).
+        - All vertices in the mesh are considered for merging.
+        - Useful for cleaning geometry after operations that may generate
+        coincident vertices (e.g., mirroring, joining, or extrusion).
+
+        Examples
+        --------
+        Remove doubles with default threshold:
+
+        ```python
+        mesh.remove_doubles()
+        ```
+
+        Remove doubles with a larger threshold:
+
+        ```python
+        mesh.remove_doubles(dist=0.01)
+        ```
+
+        > ***Note:*** This method modifies the mesh **in place** and returns `self`
+        > for chaining.
         """
         with self.bmesh() as bm:
             bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=dist)
@@ -2706,7 +4191,49 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def triangulate(self, selection=None):
+        """
+        Triangulate selected faces (or all faces) and return a new mesh.
 
+        Parameters
+        ----------
+        selection : array-like of int or bool, or None, optional
+            Indices (or mask) of faces to triangulate. If `None`, all faces are
+            triangulated. Default is None.
+
+        Returns
+        -------
+        Mesh or None
+            A new mesh instance with the selected faces triangulated.
+            Returns `None` if no faces were selected.
+
+        Notes
+        -----
+        - Creates a copy of the current mesh with [`Mesh.from_mesh`](np.blender.mesh.Mesh.from_mesh).
+        - Triangulation is applied in-place on the copy via
+        [`bmesh.ops.triangulate`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.triangulate).
+        - The original mesh is left unchanged.
+
+        Examples
+        --------
+        Triangulate all faces:
+
+        ```python
+        tri_mesh = mesh.triangulate()
+        ```
+
+        Triangulate only a subset:
+
+        ```python
+        tri_mesh = mesh.triangulate(selection=[0, 5, 7])
+        ```
+
+        See Also
+        --------
+        [`Mesh.from_mesh`](np.blender.mesh.Mesh.from_mesh) :
+            Utility to duplicate the mesh before applying triangulation.
+
+        > ***Note:*** If `selection` is empty, the method returns `None`.
+        """
         faces_sel = np.arange(len(self.faces))
         if selection is not None:
             faces_sel = faces_sel[selection]
@@ -2728,8 +4255,47 @@ class Mesh(Geometry):
     # Simplify
     # ----------------------------------------------------------------------------------------------------
 
-    def simplified(self, scale, dist=.001):
+    def simplified(self, scale, dist=0.001):
+        """
+        Return a simplified copy of the mesh by merging close vertices,
+        with a fallback to a cubic envelope if the result is too small.
 
+        Parameters
+        ----------
+        scale : float
+            Scale factor applied to the distance threshold.
+        dist : float, optional
+            Base merge distance for vertices. The effective threshold is
+            `dist / scale`. Default is 0.001.
+
+        Returns
+        -------
+        Mesh
+            A simplified copy of the mesh. If the simplification produces
+            fewer than 8 vertices, returns a cubic envelope instead.
+
+        Notes
+        -----
+        - The copy is created with [`Mesh.from_mesh`](np.blender.mesh.Mesh.from_mesh).
+        - Duplicate vertices are merged with [`remove_doubles`](np.blender.mesh.Mesh.remove_doubles).
+        - If too few vertices remain, a fallback is generated using
+        [`get_cubic_envelop`](np.blender.mesh.Mesh.get_cubic_envelop).
+
+        Examples
+        --------
+        Simplify a mesh with scale factor 10:
+
+        ```python
+        simp = mesh.simplified(scale=10, dist=0.002)
+        ```
+
+        See Also
+        --------
+        [`remove_doubles`](np.blender.mesh.Mesh.remove_doubles) :
+            Merges vertices within a distance threshold.
+        [`get_cubic_envelop`](np.blender.mesh.Mesh.get_cubic_envelop) :
+            Provides a fallback cubic mesh when simplification collapses geometry.
+        """
         copy = Mesh.from_mesh(self)
         copy.remove_doubles(dist=dist/scale)
 
@@ -2743,14 +4309,59 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def separate_faces(self, groups=None):
-        """ Split faces into isolated islands
-
-        Arguments
-        ---------
-        - groups (list of ints):
-            group ids of faces
         """
+        Split faces into isolated islands, either one per face or grouped by
+        provided IDs.
 
+        Parameters
+        ----------
+        groups : array-like of int, shape (n_faces,), optional
+            Group IDs for each face. If `None`, each face is isolated as its own
+            island. If provided, must be the same length as the number of faces.
+
+        Returns
+        -------
+        Mesh
+            A new mesh where faces are separated into independent islands with
+            duplicated vertices.
+
+        Raises
+        ------
+        ValueError
+            If `groups` is provided but its shape does not match `(n_faces,)`.
+
+        Notes
+        -----
+        - When `groups` is `None`, the output mesh has one disconnected island per face.
+        - When grouping, faces sharing the same group ID are kept together in the
+        same island, with vertices duplicated so that each group is independent.
+        - Face attributes are preserved except for `'loop_total'` and `'loop_start'`.
+
+        Examples
+        --------
+        Separate every face:
+
+        ```python
+        islands = mesh.separate_faces()
+        ```
+
+        Separate faces into two groups:
+
+        ```python
+        groups = np.array([0, 0, 1, 1, 1, 0])  # one group ID per face
+        split = mesh.separate_faces(groups=groups)
+        ```
+
+        See Also
+        --------
+        [`join_geometry`](np.blender.mesh.Mesh.join_geometry) :
+            Utility to assemble new meshes from points, corners, faces, and attributes.
+        [`join`](np.blender.mesh.Mesh.join) :
+            Used internally to accumulate separated islands.
+
+        > ***Caution:*** The number of groups must equal the number of faces in
+        > the mesh, otherwise a `ValueError` is raised.
+        """
         mesh = Mesh(materials=self.materials)
         attr_names = [name for name in self.faces.actual_names if name not in ['loop_total', 'loop_start']]
 
@@ -2796,6 +4407,74 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def dual(self, center="median"):
+        """
+        Construct the **dual mesh**: one vertex per original face, and one face per
+        original vertex (linking adjacent face-centers around that vertex).
+
+        Parameters
+        ----------
+        center : {'median', 'bounds', 'weighted'}, optional
+            Method to compute the position of each dual vertex (i.e., the center
+            of the corresponding original face):
+            - `'median'`: face median center (`BMFace.calc_center_median`).
+            - `'bounds'`: face bounds center (`BMFace.calc_center_bounds`).
+            - `'weighted'`: area-weighted center (`BMFace.calc_center_median_weighted`).
+            Default is `'median'`.
+
+        Returns
+        -------
+        Mesh
+            The dual mesh, where:
+            - points = centers of original faces,
+            - faces  = polygons formed by chaining the adjacent original faces
+            around each original vertex.
+
+        Raises
+        ------
+        ValueError
+            If `center` is not one of `{'median', 'bounds', 'weighted'}`.
+
+        Notes
+        -----
+        - For each original face `f`, a dual vertex is computed using the chosen
+        center method and stored at index `f.index`.
+        - For each original vertex `v`, its incident faces are **ordered** by
+        walking across `v`’s incident edges (each with exactly two linked faces)
+        to form a cyclic sequence of face indices; this ordered loop becomes a
+        polygon in the dual.
+        - Non-manifold or boundary configurations (edges with a number of linked
+        faces different from 2) are skipped for that vertex; no dual face is
+        created in such cases.
+
+        Examples
+        --------
+        Build the dual using area-weighted face centers:
+
+        ```python
+        d = mesh.dual(center='weighted')
+        ```
+
+        Build the dual with bounds centers:
+
+        ```python
+        d = mesh.dual(center='bounds')
+        ```
+
+        See Also
+        --------
+        [`triangulate`](np.blender.mesh.Mesh.triangulate) :
+            Triangulation can improve robustness before dualization.
+        [`remove_doubles`](np.blender.mesh.Mesh.remove_doubles) :
+            Helpful for cleaning geometry prior to constructing the dual.
+
+        > ***Caution:*** On meshes with boundaries or non-manifold edges, some
+        > vertices may not yield a valid cyclic ordering of adjacent faces; those
+        > dual faces are omitted.
+
+        > ***Note:*** Dualization does not, in general, invert perfectly (i.e.,
+        > the dual of the dual is not guaranteed to reproduce the original mesh),
+        > especially in the presence of boundaries or irregular valences.
+        """
 
         verts = np.empty((len(self.faces), 3), np.float32)
         corners = []
@@ -2910,8 +4589,36 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def faces_neighbors(self):
+        """
+        Compute the neighboring faces for each face, defined as faces sharing
+        at least one edge.
 
-        offset = 0
+        Returns
+        -------
+        list of list of int
+            For each face (by index), a list of indices of adjacent faces.
+
+        Notes
+        -----
+        - Each face’s neighbors are determined by scanning its incident edges
+        and collecting the two faces linked to each edge.
+        - The current face index is excluded from its own neighbor list.
+        - Non-manifold edges (with more or fewer than two linked faces) are not
+        expected; if present, results may be incomplete or inconsistent.
+
+        Examples
+        --------
+        Get adjacency information for all faces:
+
+        ```python
+        neighbors = mesh.faces_neighbors()
+        for i, ns in enumerate(neighbors):
+            print(f"Face {i} neighbors: {ns}")
+        ```
+
+        > ***Note:*** The output is a Python list of lists (not a NumPy array).
+        """
+
         neighbors = []
 
         with self.bmesh() as bm:           
@@ -2931,8 +4638,44 @@ class Mesh(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def get_islands(self):
-        """ Get an island id per face.
         """
+        Compute connected components of faces (islands) and assign an island ID
+        to each face.
+
+        Returns
+        -------
+        ndarray of int, shape (n_faces,)
+            Array of island IDs, one per face. Faces in the same connected
+            component share the same integer ID. Empty mesh returns an empty list.
+
+        Notes
+        -----
+        - Islands are defined as groups of faces connected through shared edges.
+        - A breadth-first search (BFS) is used to traverse each connected component.
+        - IDs are assigned sequentially starting from 0.
+
+        Examples
+        --------
+        Get island IDs for all faces:
+
+        ```python
+        ids = mesh.get_islands()
+        print("Unique islands:", np.unique(ids))
+        ```
+
+        Map faces by island:
+
+        ```python
+        ids = mesh.get_islands()
+        for island_id in np.unique(ids):
+            faces = np.where(ids == island_id)[0]
+            print(f"Island {island_id}: faces {faces}")
+        ```
+
+        > ***Note:*** Non-manifold meshes are still handled, but faces that share
+        > only a vertex (not an edge) are considered separate islands.
+        """
+
         from collections import deque
 
         nfaces = len(self.faces)
@@ -2976,7 +4719,6 @@ class Mesh(Geometry):
 
                             if islands[nb.index] < 0:
                                 q.append(nb)
-                        
 
         return islands
 
@@ -2985,6 +4727,55 @@ class Mesh(Geometry):
     # ====================================================================================================
 
     def bvh_tree(self, count=None):
+        """
+        Build a Blender BVH tree for fast spatial queries (ray casting, overlap,
+        nearest point, etc.).
+
+        Parameters
+        ----------
+        count : int, optional
+            If `None`, build a single BVH tree for the whole mesh.
+            If an integer `count` is provided, the mesh is assumed to represent
+            a batch of `count` sub-meshes laid out in a structured array, and a
+            list of BVH trees (one per sub-mesh) is returned.
+
+        Returns
+        -------
+        BVHTree or list of BVHTree
+            - If `count` is `None`, a single `BVHTree` instance built from the
+            current mesh.
+            - If `count` is an integer, a list of `BVHTree` objects, one for each
+            sub-mesh.
+
+        Notes
+        -----
+        - Internally uses
+        [`mathutils.bvhtree.BVHTree.FromPolygons`](https://docs.blender.org/api/current/mathutils.bvhtree.html#mathutils.bvhtree.BVHTree.FromPolygons).
+        - When `count` is given, vertices are reshaped to `(count, n, 3)` and faces
+        are assumed to be identical across all sub-meshes.
+        - `epsilon=0.0` is used for exact geometry.
+
+        Examples
+        --------
+        Build a single BVH tree:
+
+        ```python
+        tree = mesh.bvh_tree()
+        loc, normal, index, dist = tree.ray_cast((0, 0, 10), (0, 0, -1))
+        ```
+
+        Build multiple BVH trees for a batch of 5 sub-meshes:
+
+        ```python
+        trees = mesh.bvh_tree(count=5)
+        for t in trees:
+            print(t.find_nearest((0, 0, 0)))
+        ```
+
+        > ***Caution:*** When `count` is provided, the mesh must be structured
+        > consistently: faces are taken from the first sub-mesh and reused for all.
+        """
+
         if count is None:
             return BVHTree.FromPolygons(self.points.position, self.faces.sequences(), all_triangles=False, epsilon=0.0)
 
