@@ -44,6 +44,12 @@ plugins:
             line_length: 88                    # wrap propre de la signature
             show_source: false                 # (optionnel) masque le lien "Source"
             merge_init_into_class: true        # doc de __init__ fusionnée dans la classe
-            # petits plus possibles :
-            # show_submodules: false
-            # filters: ["!^_"]                 # cache membres privés
+            show_submodules: false
+            show_private_members: false        # cache _membre
+            show_special_members: false        # cache __dunder__
+            show_undocumented_members: false   # évite d’afficher sans docstring
+            filters:
+              - "!^_"            # sécurité : exclut tout ce qui commence par _
+              - "!^__.*__$"      # exclut __dunder__
+
+
