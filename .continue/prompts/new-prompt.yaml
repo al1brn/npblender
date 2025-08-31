@@ -1,0 +1,15 @@
+name: Function Doc
+version: 0.0.1
+schema: v1
+prompts:
+  - name: New prompt
+    description: New prompt
+    use_selection: true
+    prompt: |-
+      Always and only generate NumPy-style docstrings.
+      Sections: Parameters, Returns, Raises, Notes, Examples.
+      Reuse and improve existing docstrings if present.
+      Incorporate inline comments or example code into the appropriate sections.
+      In Examples, preserve existing code and wrap it in a fenced ```python block (no >>>).
+
+

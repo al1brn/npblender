@@ -1,43 +1,59 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# MIT License
+#
+# Copyright (c) 2025 Alain Bernard
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
-Blender Python Geometry module
+Module Name: mesh
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2023-10-23
+Last updated: 2025-08-31
 
-Created on Fri Nov 10 11:50:13 2023
+Summary:
+    Mesh class.
 
-@author: alain.bernard
-@email: alain@ligloo.net
-
------
-
-Mesh geometry.
-
+Usage example:
+    ```python
+    cube = Mesh.cube()
+    ```
 """
 
 from contextlib import contextmanager
 import numpy as np
 
-from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
-from . constants import bfloat, bint, bbool
-from . constants import FillCap
-from . import blender
-#from . maths import BSplines, Bezier, Poly, Nurbs
-from . maths import Transformation, Quaternion, Rotation
-from . maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_map
-from . maths.topology import border_edges, edges_between, row_edges, col_edges
-
-from . geometry import Geometry
-from . domain import Vertex, Corner, Face, Edge
-
-
 import bpy
 import bmesh
 from mathutils.bvhtree import BVHTree
 
+from . import blender
 
+from .constants import bfloat, bint, bbool
+from .maths import Transformation, Quaternion, Rotation
+from .maths.topology import grid_corners, grid_uv_map, fans_corners, disk_uv_map
+from .maths.topology import border_edges, edges_between, row_edges, col_edges
+
+from .geometry import Geometry
+from .domain import Vertex, Corner, Face, Edge
 
 DATA_TEMP_NAME = "npblender_TEMP"
-
 
 # =============================================================================================================================
 # Mesh Gemetry
@@ -47,17 +63,38 @@ class Mesh(Geometry):
     domain_names = ['points', 'corners', 'faces', 'edges']
 
     def __init__(self, points=None, corners=None, faces=None, edges=None, materials=None, attr_from=None, **attrs):
-        """ Mesh Geometry.
+        """
+        Initialize a Mesh Geometry object.
 
-        Arguments
-        ---------
-            - points (array of vectors = None) : the vertices
-            - corners (array of ints = None) : corners, i.e. indices on the array of points
-            - faces (array of ints = None) : size of the faces, the sum of this array must be equal to the length of the corners array
-            - edges (array of couples of ints = None) : list of edges defined by two vertex indices
-            - materials (str or list of strs = None) : list of materials used in the geometry
-            - attr_from (Geometry) : domain attributes to copy from
-            - **attrs (dict) : other geometry attributes
+        Parameters
+        ----------
+        points : array_like, optional
+            The vertices of the mesh (default is None).
+        corners : array_like of int, optional
+            Corners, i.e., indices on the array of points (default is None).
+        faces : array_like of int, optional
+            Sizes of the faces; the sum of this array must be equal to the length of the corners array (default is None).
+        edges : array_like of tuple of int, optional
+            List of edges defined by pairs of vertex indices (default is None).
+        materials : str or list of str, optional
+            List of materials used in the geometry. If a single string is provided, it is converted to a list containing that string (default is None).
+        attr_from : Geometry, optional
+            Domain attributes to copy from another Geometry object (default is None).
+        **attrs : dict, optional
+            Additional geometry attributes.
+
+        Attributes
+        ----------
+        points : Vertex
+            The vertices of the mesh.
+        corners : Corner
+            The corners of the mesh.
+        faces : Face
+            The faces of the mesh.
+        edges : Edge
+            The edges of the mesh.
+        materials : list of str
+            The list of materials used in the geometry.
         """
 
         # ----- Initialize an empty geometry
@@ -105,6 +142,30 @@ class Mesh(Geometry):
         return cls(points=verts, corners=corners, faces=loops, edges=edges,**attrs)
 
     def check(self, title="Mesh Check", halt=True):
+        """
+        Check if mesh domains (corners, faces, edges) are consistent.
+
+        This method verifies the consistency of the mesh domains by checking the validity
+        of corners, faces, and edges relative to the number of points. In development mode,
+        it raises an exception to prevent Blender from crashing if inconsistencies are found.
+
+        Parameters
+        ----------
+        title : str, optional
+            Title prefix for error messages (default is "Mesh Check").
+        halt : bool, optional
+            If True, raise an exception on failure; otherwise, print a warning (default is True).
+
+        Returns
+        -------
+        bool
+            True if all checks pass; otherwise, raises an exception or prints an error.
+
+        Raises
+        ------
+        Exception
+            If the check fails and halt is True.
+        """
         ok = self.corners.check(len(self.points), halt=False) and \
                self.faces.check(len(self.corners), halt=False) and \
                self.edges.check(len(self.points), halt=False)
@@ -128,6 +189,20 @@ class Mesh(Geometry):
     # =============================================================================================================================
 
     def to_dict(self):
+        """
+        Serialize the Mesh object to a dictionary representation.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the serialized data of the mesh, including:
+            - 'geometry': The type of geometry (always 'Mesh').
+            - 'materials': List of material names.
+            - 'points': Serialized points data.
+            - 'corners': Serialized corners data.
+            - 'faces': Serialized faces data.
+            - 'edges': Serialized edges data.
+        """
         return {
             'geometry':     'Mesh',
             'materials' :   self.materials,
@@ -139,6 +214,19 @@ class Mesh(Geometry):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Create a Mesh instance from a dictionary representation.
+
+        Parameters
+        ----------
+        d : dict
+            Dictionary containing mesh data with keys 'materials', 'points', 'corners', 'faces', and 'edges'.
+
+        Returns
+        -------
+        Mesh
+            A new Mesh instance initialized with the data from the dictionary.
+        """
         mesh = cls()
         mesh.materials  = d['materials']
         mesh.points     = Vertex.from_dict(d['points'])
@@ -152,11 +240,15 @@ class Mesh(Geometry):
     # =============================================================================================================================
 
     def clear_geometry(self):
-        """ Clear the geometry.
-
-        Delete all the content.
         """
+        Clear the geometry by deleting all geometric content.
 
+        This method clears the points, corners, faces, and edges collections,
+        effectively removing all geometric data from the mesh.
+
+        Note:
+            The materials list associated with the mesh remains unchanged.
+        """
         self.points.clear()
         self.corners.clear()
         self.faces.clear()
@@ -172,15 +264,24 @@ class Mesh(Geometry):
 
     @classmethod
     def from_mesh(cls, other, points=None, faces=None, edges=None):
-        """ Create a Mesh from another mesh.
+        """
+        Create a copy of a Mesh object, optionally excluding specified points, faces, or edges.
 
-        Arguments
-        ---------
-            - other (Mesh) : the mesh to copy
+        Parameters
+        ----------
+        other : Mesh
+            The source Mesh object to copy.
+        points : array-like of int, optional
+            Indices of points to exclude from the copy.
+        faces : array-like of int, optional
+            Indices of faces to exclude from the copy.
+        edges : array-like of int, optional
+            Indices of edges to exclude from the copy.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new Mesh instance copied from the source, with specified elements excluded.
         """
         mesh = cls(materials=other.materials)
         mesh.points  = Vertex(other.points,  mode='COPY')
@@ -243,11 +344,23 @@ class Mesh(Geometry):
 
     @classmethod
     def from_mesh_data(cls, data):
-        """ Initialize the geometry from a Blender Mesh
+        """Initialize the geometry from a Blender Mesh data.
 
-        Arguments
-        ---------
-            - mesh (Blender Mesh instance) : the mesh to load
+        This method creates and returns an instance of the mesh class
+        initialized with vertices, edges, faces, corners, materials,
+        and attributes extracted from the provided Blender mesh data.
+
+        Args:
+            data: Blender mesh data or object that can be processed
+                  by the blender.get_mesh function to obtain a Blender Mesh instance.
+
+        Returns:
+            An instance of the mesh class initialized with the geometry
+            and attributes from the Blender Mesh.
+
+        Raises:
+            ImportError: If the local blender module cannot be imported.
+            Any exceptions raised by blender.get_mesh if the data is invalid.
         """
 
         from . import blender
@@ -308,11 +421,26 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def to_mesh_data(self, data):
-        """ Write the geometry into a Blender Mesh
+        """
+        Write the geometry data from this mesh into a Blender Mesh instance.
 
-        Arguments
-        ---------
-            - mesh (Blender Mesh instance) : the mesh to write
+        This method transfers the mesh's vertices, edges, faces, corners, materials,
+        and custom attributes into the provided Blender Mesh data structure.
+
+        Parameters
+        ----------
+        data : Blender Mesh instance
+            The Blender Mesh object to which the geometry will be written.
+
+        Returns
+        -------
+        None
+
+        Side Effects
+        ------------
+        Modifies the provided Blender Mesh instance by clearing its current geometry
+        and populating it with the data from this mesh.
+        Updates the mesh to reflect the changes.
         """
 
         from npblender import blender
@@ -398,24 +526,34 @@ class Mesh(Geometry):
 
     @classmethod
     def from_object(cls, obj, evaluated=False):
-        """ Create a Mesh from an existing object.
+        """
+        Create a Mesh instance from an existing Blender object.
 
-        Arguments
-        ---------
-            - obj (str or Blender object) : the object to initialize from
-            - evaluated (bool = False) : object modified by the modifiers if True, raw vertices otherwise
+        This method initializes a mesh from a Blender object, optionally using the evaluated
+        version of the object (i.e., after applying modifiers).
+
+        Parameters
+        ----------
+        obj : str or bpy.types.Object
+            The Blender object or its name from which to create the mesh.
+        evaluated : bool, optional
+            If True, use the evaluated object with modifiers applied. If False, use the raw mesh data.
+            Default is False.
 
         Returns
         -------
-            - Mesh
+        Mesh
+            A new Mesh instance created from the specified Blender object.
+
+        Raises
+        ------
+        ImportError
+            If the local blender module cannot be imported.
         """
-
-        from . import blender
-
         if evaluated:
             depsgraph = bpy.context.evaluated_depsgraph_get()
             object_eval = blender.get_object(obj).evaluated_get(depsgraph)
-            return cls.FromMeshData(object_eval.data)
+            return cls.from_mesh_data(object_eval.data)
 
         else:
             return cls.from_mesh_data(blender.get_object(obj).data)
@@ -425,24 +563,33 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def to_object(self, obj, shade_smooth=None, shapekeys=None, collection=None):
-        """ Create or update a blender object.
+        """
+        Create or update a Blender mesh object from this mesh data.
 
-        The method 'to_object' creates the whole geometry. It creates a new object if it doesn't already exist.
-        If the object exists, it must be a mesh, there is no object type conversion.
+        This method creates a new Blender mesh object if it does not already exist,
+        or updates the existing object's mesh data. It does not perform object type conversion;
+        the existing object must be a mesh.
 
-        Once the object is created, use the method 'update_object' to change the vertices.
+        After the object is created or updated, use 'update_object' to modify vertices.
 
-        Arguments
-        ---------
-            - obj (str or Blender object) : the object the create
+        Parameters
+        ----------
+        obj : str or bpy.types.Object
+            The Blender object or its name to create or update.
+        shade_smooth : bool or None, optional
+            If specified, sets the shading mode of the mesh polygons to smooth or flat.
+        shapekeys : ShapeKeys or iterable of ShapeKeys, optional
+            Shape keys to apply to the mesh object.
+        collection : bpy.types.Collection or None, optional
+            The collection to which the object should be linked.
 
         Returns
         -------
-            - Blender mesh object
+        bpy.types.Object
+            The created or updated Blender mesh object.
         """
-
-        from npblender import blender
-
+        from .shapekeys import ShapeKeys
+        
         res = blender.create_mesh_object(obj, collection=collection)
         self.to_mesh_data(res.data)
 
@@ -450,12 +597,11 @@ class Mesh(Geometry):
             res.data.polygons.foreach_set('use_smooth', [shade_smooth]*len(res.data.polygons))
 
         if shapekeys is not None:
-            if shapekeys is not None:
-                if isinstance(shapekeys, ShapeKeys):
-                    shapekeys.to_mesh_object(obj)
-                else:
-                    for sks in shapekeys:
-                        sks.to_mesh_object(obj)
+            if isinstance(shapekeys, ShapeKeys):
+                shapekeys.to_mesh_object(obj)
+            else:
+                for sks in shapekeys:
+                    sks.to_mesh_object(obj)
 
         return res
     
@@ -493,28 +639,37 @@ class Mesh(Geometry):
 
     @contextmanager
     def bmesh(self, readonly=False):
-        """ Acces to bmesh api.
+        """
+        Context manager to access and manipulate the mesh using Blender's BMesh API.
 
-        The example below use bmesh to offset the vertices of +1 in the x axis.
+        This method creates a temporary BMesh from the mesh data, yields it for modification,
+        and then writes back the changes to the mesh data unless in readonly mode.
 
-        ``` python
-        mesh = Mesh.Cube()
+        Example usage:
+            ```python
+            mesh = Mesh.Cube()
 
-        # Move the vertices with bmesh
-        with mesh.bmesh() as bm:
-            for v in bm.verts:
-                v.co.x += 1.0
+            # Move the vertices with bmesh
+            with mesh.bmesh() as bm:
+                for v in bm.verts:
+                    v.co.x += 1.0
 
-        # Move the vertices directy in numpy array
-        mesh.points.position[:, 1] += 1
+            # Move the vertices directly in numpy array
+            mesh.points.position[:, 1] += 1
 
-        # Cube moved along x and y
-        mesh.to_object("Cube")
-        ```
+            # Cube moved along x and y
+            mesh.to_object("Cube")
+            ```
 
-        Arguments
-        ---------
-            - readonly (bool=False) : avoid to read back the bmesh if not modications were done
+        Parameters
+        ----------
+        readonly : bool, optional
+            If True, changes made to the BMesh are not written back to the mesh data (default is False).
+
+        Yields
+        ------
+        bmesh.types.BMesh
+            A BMesh object representing the mesh data, which can be modified within the context.
         """
 
         data = bpy.data.meshes.get(DATA_TEMP_NAME)
@@ -541,34 +696,39 @@ class Mesh(Geometry):
 
     @contextmanager
     def blender_data(self, readonly=False):
-        """ Acces to Blender Mesh API.
+        """
+        Context manager to access the Blender Mesh API with a temporary mesh.
 
-        Transfer the geometry to a temporay Blender Mesh.
-        The example below use a blender Mesh to get the normals.
+        This method transfers the current mesh geometry to a temporary Blender Mesh data block,
+        yields it for reading or modification, and optionally captures the changes back into the mesh.
 
-        ``` python
-        mesh = Mesh.Cube()
+        Example usage:
+            ```python
+            mesh = Mesh.Cube()
 
-        with mesh.blender_data() as data:
-            normals = np.array([poly.normal for poly in data.polygons])
+            with mesh.blender_data() as data:
+                normals = np.array([poly.normal for poly in data.polygons])
 
-        print(normals)
+            print(normals)
+            # Output:
+            # [[-1. -0.  0.]
+            #  [ 0.  1.  0.]
+            #  [ 1. -0.  0.]
+            #  [ 0. -1.  0.]
+            #  [ 0.  0. -1.]
+            #  [ 0. -0.  1.]]
+            ```
 
-        # > [[-1. -0.  0.]
-        #    [ 0.  1.  0.]
-        #    [ 1. -0.  0.]
-        #    [ 0. -1.  0.]
-        #    [ 0.  0. -1.]
-        #    [ 0. -0.  1.]]
-        ```
+        Parameters
+        ----------
+        readonly : bool, optional
+            If True, the geometry is not read back from the Blender Mesh after modification.
+            Default is False.
 
-        Arguments
-        ---------
-            - readonly (bool=False) : don't read back the geometry if not modified
-
-        Returns
-        -------
-            - Blender Mesh
+        Yields
+        ------
+        bpy.types.Mesh
+            A temporary Blender Mesh data block representing the mesh geometry.
         """
 
         data = bpy.data.meshes.get(DATA_TEMP_NAME)
@@ -579,8 +739,7 @@ class Mesh(Geometry):
 
         yield data
 
-        # ----- Back
-
+        # Read back changes unless readonly
         if not readonly:
             self.capture(Mesh.from_mesh_data(data))
 
@@ -590,7 +749,30 @@ class Mesh(Geometry):
 
     @classmethod
     def from_model(cls, model, materials=None):
+        """
+        Create a Mesh instance from various types of input models.
 
+        Parameters
+        ----------
+        model : str, bpy.types.Object, dict, Mesh, or bpy.types.Mesh
+            The input model to create the Mesh from. It can be:
+            - A string or Blender object to be evaluated and converted.
+            - A dictionary representing the mesh data.
+            - An existing Mesh instance.
+            - A Blender Mesh data block.
+        materials : list or None, optional
+            Materials to associate with the mesh (currently unused in this method).
+
+        Returns
+        -------
+        Mesh
+            The created Mesh instance based on the input model.
+
+        Raises
+        ------
+        Exception
+            If the type of the model is not supported.
+        """
         if isinstance(model, (str, bpy.types.Object)):
             mesh = cls.from_object(model, evaluated=True)
 
@@ -627,49 +809,50 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def join(self, *others):
-        """ Join other Meshes.
+        """
+        Join other Mesh instances into this mesh.
 
-        Arguments
-        ---------
-            - others (Mesh) : the Mesh to append
+        This method appends the geometry and materials of the given meshes to the current mesh,
+        updating indices to maintain consistency.
+
+        Parameters
+        ----------
+        *others : Mesh
+            One or more Mesh instances to be joined with the current mesh.
+
+        Returns
+        -------
+        self : Mesh
+            The updated mesh instance with joined geometry.
         """
         for other in others:
 
-            # ----------------------------------------------------------------------------------------------------
             # Vertices
-
             v_ofs = len(self.points)
             self.points.extend(other.points)
 
-            # ----------------------------------------------------------------------------------------------------
             # Corners
-
             c_ofs = len(self.corners)
             self.corners.extend(other.corners)
             if len(self.corners):
                 self.corners.vertex_index[c_ofs:] += v_ofs
 
-            # ----------------------------------------------------------------------------------------------------
             # Faces
-
             f_ofs = len(self.faces)
             self.faces.extend(other.faces)
             if len(self.faces):
                 self.faces.loop_start[f_ofs:] += c_ofs
 
-            # ----------------------------------------------------------------------------------------------------
             # Edges
-
             e_ofs = len(self.edges)
             self.edges.extend(other.edges)
             if len(self.edges):
                 self.edges.vertex0[e_ofs:] += v_ofs
                 self.edges.vertex1[e_ofs:] += v_ofs
 
-            # ----- Materials
-
+            # Materials
             remap = np.array([self.get_material_index(mat_name) for mat_name in other.materials])
-            if len(remap)>0:
+            if len(remap) > 0:
                 self.faces.material_index[f_ofs:] = remap[other.faces.material_index]
 
         return self
@@ -826,23 +1009,28 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def add_geometry(self, points=None, corners=None, faces=None, edges=None, safe_mode=False, **attrs):
-        """Add geometry to the mesh.
+        """
+        Add geometry components (vertices, corners, faces, edges) to the mesh.
 
-        This method adds vertices, edges, corners, and faces to the mesh. The added geometry
-        can reference existing vertices and is appended without shifting indices.
+        This method appends the specified geometry to the mesh without altering existing indices.
+        It supports referencing existing vertices through corners or adding new vertices.
 
         Note:
-            To add independent geometry (with new vertices), use `Mesh.join_geometry` instead.
+            To add independent geometry with new vertices, use [`Mesh.join_geometry`](npblender.mesh.Mesh.joint_geometry) instead.
 
-        Examples:
-        >>> cube = Mesh.cube()
-        >>> # Add a triangle on existing vertices
-        >>> # corners argument refers to cube vertices
-        >>> cube.add_geometry(corners=[0, 1, 2], faces=3)
+        Examples
+        --------
+            ``` python
+            cube = Mesh.cube()
+            # Add a triangle on existing vertices
+            # corners argument refers to cube vertices
+            cube.add_geometry(corners=[0, 1, 2], faces=3)
 
-        >>> # Add a triangle with additional vertices
-        >>> # corners argument refers to the new vertices
-        >>> cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
+            # Add a triangle with additional vertices
+            # corners argument refers to the new vertices, passed values [0, 1, 2]
+            # will be shifted to actual values [8, 9, 10]
+            cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
+            ```
 
         Parameters
         ----------
@@ -851,7 +1039,7 @@ class Mesh(Geometry):
         corners : array-like of int, optional
             Indices referring to vertices in the points array.
         faces : int, array-like of int, or list of lists, optional
-            Defines the faces:
+            Defines the faces topology:
             - If `corners` is provided:
                 - None: Single face made of all corners.
                 - int: All faces have the same size (must divide the number of corners).
@@ -875,7 +1063,6 @@ class Mesh(Geometry):
         ValueError
             If faces and corners lengths are inconsistent or invalid.
         """
-
         disp_attrs = self._attributes_per_domain(**attrs)
         added = {'points': [], 'corners': [], 'faces': [], 'edges': []}
 
@@ -960,15 +1147,34 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def join_geometry(self, points=None, corners=None, faces=None, edges=None, safe_mode=False, **attrs):
-        """ Join geometry defined by components.
+        """
+        Join geometry defined by components into the current mesh.
 
-        The geometry passed in argument is consistent and doesn't refer to existing vertices. It is used
-        to build an independant mesh which is then joined.
-        See 'add_geometry' which, on the contrary, can refer to existing vertices.
+        This method creates a new independent mesh from the provided geometry components
+        (points, corners, faces, edges) which do not refer to existing vertices. The new mesh
+        is then joined to the current mesh instance.
+
+        To add geometry using existing vertices, see [`Mesh.add_geometry`](npblender.mesh.Mesh.add_geometry).
+
+        Parameters
+        ----------
+        points : iterable, optional
+            Iterable of points (vertices) to add to the mesh.
+        corners : iterable, optional
+            Iterable of corner indices defining the mesh topology.
+        faces : iterable, optional
+            Iterable of faces defined by indices of corners.
+        edges : iterable, optional
+            Iterable of edges defined by indices of vertices.
+        safe_mode : bool, optional
+            Flag to enable safe mode operations (currently unused).
+        **attrs : dict
+            Additional attributes to be passed to the geometry addition.
 
         Returns
         -------
-            - self
+        self : Mesh
+            The current mesh instance with the new geometry joined.
         """
         mesh = Mesh(attr_from=self)
         mesh.add_geometry(
