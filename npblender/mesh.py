@@ -826,41 +826,54 @@ class Mesh(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def add_geometry(self, points=None, corners=None, faces=None, edges=None, safe_mode=False, **attrs):
-        """ Add geometry
+        """Add geometry to the mesh.
 
-        Note that the added geometry can refer to existing vertices. It is appended as is, whithout shifting
-        indices.
+        This method adds vertices, edges, corners, and faces to the mesh. The added geometry
+        can reference existing vertices and is appended without shifting indices.
 
-        To add independant geometry, use [`Mesh.join_geometry`][npblender.mesh.Mesh.join_geometry].
+        Note:
+            To add independent geometry (with new vertices), use `Mesh.join_geometry` instead.
 
-        ``` python
-        cube = Mesh.cube()
-        # add a triangle on existing vertices
-        # corners argument refers to cube vertices
-        cube.add_geometry(corners=[0, 1, 2], faces=3)
+        Examples:
+            cube = Mesh.cube()
+            # Add a triangle on existing vertices
+            # corners argument refers to cube vertices
+            cube.add_geometry(corners=[0, 1, 2], faces=3)
 
-        # add a triangle with additional vertices
-        # corners argument refers to the new vertices
-        cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
-        ```
+            # Add a triangle with additional vertices
+            # corners argument refers to the new vertices
+            cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
 
         Parameters
         ----------
-        points : array of vectors, optional
-            The vertices.
-        corners : array of ints, optional
-            Indices on the array of points.
-        sizes : array of ints, optional
-            Size of the faces. The sum of this array must equal the length of `corners`.
-        materials : str or list of str, optional
-            List of materials used in the geometry.
+        points : array-like of vectors, optional
+            Vertices to add to the mesh.
+        corners : array-like of int, optional
+            Indices referring to vertices in the points array.
+        faces : int, array-like of int, or list of lists, optional
+            Defines the faces:
+            - If `corners` is provided:
+                - None: Single face made of all corners.
+                - int: All faces have the same size (must divide the number of corners).
+                - array-like: Face sizes; sum must equal the number of corners.
+            - If `corners` is None:
+                - Must be a list of lists, each sublist is a list of corners.
+        edges : array-like of pairs of int, optional
+            Edges defined by pairs of vertex indices.
+        safe_mode : bool, optional
+            If True, perform a mesh integrity check after adding geometry.
         **attrs : dict
-            Other geometry attributes.
+            Additional geometry attributes to apply.
 
         Returns
         -------
         dict
-            A dictionary with keys {'points', 'corners', 'faces', 'edges'} mapping to added geometry indices.
+            Dictionary with keys {'points', 'corners', 'faces', 'edges'} mapping to lists of added geometry indices.
+
+        Raises
+        ------
+        ValueError
+            If faces and corners lengths are inconsistent or invalid.
         """
 
         disp_attrs = self._attributes_per_domain(**attrs)
@@ -936,20 +949,11 @@ class Mesh(Geometry):
             added['corners'] = self.corners.append(vertex_index=corners, **disp_attrs['corners'])
             added['faces'] = self.faces.append_sizes(faces, **disp_attrs['faces'])
 
-        if False: # OLD
-            if np.shape(faces) == ():
-                nfaces = len(corners) // faces
-                if len(corners) % faces != 0:
-                    raise ValueError(f"Mesh add_geometry> when faces is a single number {faces}, it must divide the number of corners ({len(corners)}).")
-                faces = np.ones(nfaces, dtype=bint)*faces
-            
-            added['corners'] = self.corners.append(vertex_index=corners, **disp_attrs['corners'])
-            added['faces'] = self.faces.append_sizes(faces, **disp_attrs['faces'])
-
         if safe_mode:
             self.check()
 
         return added
+
     
     # -----------------------------------------------------------------------------------------------------------------------------
     # Join geometry
