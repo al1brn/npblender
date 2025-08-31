@@ -548,6 +548,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="add_geometry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--add-a-triangle-on-existing-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle on existing vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-cube-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to cube vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--add-a-triangle-with-additional-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle with additional vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to the new vertices
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1453,6 +1495,48 @@
       add_geometry
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="add_geometry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--add-a-triangle-on-existing-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle on existing vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-cube-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to cube vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--add-a-triangle-with-additional-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle with additional vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to the new vertices
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3138,15 +3222,20 @@
 can reference existing vertices and is appended without shifting indices.</p>
 <p>Note:
     To add independent geometry (with new vertices), use <code>Mesh.join_geometry</code> instead.</p>
-<p>Examples:
-    cube = Mesh.cube()
-    # Add a triangle on existing vertices
-    # corners argument refers to cube vertices
-    cube.add_geometry(corners=[0, 1, 2], faces=3)</p>
-<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Add a triangle with additional vertices
-<span class="gh">#</span> corners argument refers to the new vertices
-cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
-</code></pre></div>
+<p>Examples:</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>cube = Mesh.cube()</p>
+<h3 id="npblender.mesh.Mesh.add_geometry--add-a-triangle-on-existing-vertices">Add a triangle on existing vertices<a class="headerlink" href="#npblender.mesh.Mesh.add_geometry--add-a-triangle-on-existing-vertices" title="Permanent link">&para;</a></h3>
+<h3 id="npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-cube-vertices">corners argument refers to cube vertices<a class="headerlink" href="#npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-cube-vertices" title="Permanent link">&para;</a></h3>
+<p>cube.add_geometry(corners=[0, 1, 2], faces=3)</p>
+<h3 id="npblender.mesh.Mesh.add_geometry--add-a-triangle-with-additional-vertices">Add a triangle with additional vertices<a class="headerlink" href="#npblender.mesh.Mesh.add_geometry--add-a-triangle-with-additional-vertices" title="Permanent link">&para;</a></h3>
+<h3 id="npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices">corners argument refers to the new vertices<a class="headerlink" href="#npblender.mesh.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices" title="Permanent link">&para;</a></h3>
+<p>cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)</p>
+</blockquote>
+</blockquote>
+</blockquote>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3451,14 +3540,14 @@ cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], 
 <span class="sd">        To add independent geometry (with new vertices), use `Mesh.join_geometry` instead.</span>
 
 <span class="sd">    Examples:</span>
-<span class="sd">        cube = Mesh.cube()</span>
-<span class="sd">        # Add a triangle on existing vertices</span>
-<span class="sd">        # corners argument refers to cube vertices</span>
-<span class="sd">        cube.add_geometry(corners=[0, 1, 2], faces=3)</span>
+<span class="sd">    &gt;&gt;&gt; cube = Mesh.cube()</span>
+<span class="sd">    &gt;&gt;&gt; # Add a triangle on existing vertices</span>
+<span class="sd">    &gt;&gt;&gt; # corners argument refers to cube vertices</span>
+<span class="sd">    &gt;&gt;&gt; cube.add_geometry(corners=[0, 1, 2], faces=3)</span>
 
-<span class="sd">        # Add a triangle with additional vertices</span>
-<span class="sd">        # corners argument refers to the new vertices</span>
-<span class="sd">        cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)</span>
+<span class="sd">    &gt;&gt;&gt; # Add a triangle with additional vertices</span>
+<span class="sd">    &gt;&gt;&gt; # corners argument refers to the new vertices</span>
+<span class="sd">    &gt;&gt;&gt; cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>

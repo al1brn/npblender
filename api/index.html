@@ -1068,6 +1068,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="add_geometry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--add-a-triangle-on-existing-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle on existing vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--corners-argument-refers-to-cube-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to cube vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--add-a-triangle-with-additional-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle with additional vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to the new vertices
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -2512,6 +2554,48 @@
       add_geometry
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="add_geometry">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--add-a-triangle-on-existing-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle on existing vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--corners-argument-refers-to-cube-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to cube vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--add-a-triangle-with-additional-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      Add a triangle with additional vertices
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices" class="md-nav__link">
+    <span class="md-ellipsis">
+      corners argument refers to the new vertices
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
         
@@ -7140,15 +7224,20 @@ kwargs allows to filter the domains to capture:</p>
 can reference existing vertices and is appended without shifting indices.</p>
 <p>Note:
     To add independent geometry (with new vertices), use <code>Mesh.join_geometry</code> instead.</p>
-<p>Examples:
-    cube = Mesh.cube()
-    # Add a triangle on existing vertices
-    # corners argument refers to cube vertices
-    cube.add_geometry(corners=[0, 1, 2], faces=3)</p>
-<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Add a triangle with additional vertices
-<span class="gh">#</span> corners argument refers to the new vertices
-cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
-</code></pre></div>
+<p>Examples:</p>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>cube = Mesh.cube()</p>
+<h4 id="npblender.Mesh.add_geometry--add-a-triangle-on-existing-vertices">Add a triangle on existing vertices<a class="headerlink" href="#npblender.Mesh.add_geometry--add-a-triangle-on-existing-vertices" title="Permanent link">&para;</a></h4>
+<h4 id="npblender.Mesh.add_geometry--corners-argument-refers-to-cube-vertices">corners argument refers to cube vertices<a class="headerlink" href="#npblender.Mesh.add_geometry--corners-argument-refers-to-cube-vertices" title="Permanent link">&para;</a></h4>
+<p>cube.add_geometry(corners=[0, 1, 2], faces=3)</p>
+<h4 id="npblender.Mesh.add_geometry--add-a-triangle-with-additional-vertices">Add a triangle with additional vertices<a class="headerlink" href="#npblender.Mesh.add_geometry--add-a-triangle-with-additional-vertices" title="Permanent link">&para;</a></h4>
+<h4 id="npblender.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices">corners argument refers to the new vertices<a class="headerlink" href="#npblender.Mesh.add_geometry--corners-argument-refers-to-the-new-vertices" title="Permanent link">&para;</a></h4>
+<p>cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)</p>
+</blockquote>
+</blockquote>
+</blockquote>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
