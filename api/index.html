@@ -7135,18 +7135,19 @@ kwargs allows to filter the domains to capture:</p>
 
     <div class="doc doc-contents ">
 
-        <p>Add geometry</p>
-<p>Note that the added geometry can refer to existing vertices. It is appended as is, whithout shifting
-indices.</p>
-<p>To add independant geometry, use <a class="autorefs autorefs-internal" title="join_geometry" href="mesh/#npblender.mesh.Mesh.join_geometry"><code>Mesh.join_geometry</code></a>.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">cube</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">cube</span><span class="p">()</span>
-<span class="c1"># add a triangle on existing vertices</span>
-<span class="c1"># corners argument refers to cube vertices</span>
-<span class="n">cube</span><span class="o">.</span><span class="n">add_geometry</span><span class="p">(</span><span class="n">corners</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">faces</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-
-<span class="c1"># add a triangle with additional vertices</span>
-<span class="c1"># corners argument refers to the new vertices</span>
-<span class="n">cube</span><span class="o">.</span><span class="n">join_geometry</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">corners</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">faces</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <p>Add geometry to the mesh.</p>
+<p>This method adds vertices, edges, corners, and faces to the mesh. The added geometry
+can reference existing vertices and is appended without shifting indices.</p>
+<p>Note:
+    To add independent geometry (with new vertices), use <code>Mesh.join_geometry</code> instead.</p>
+<p>Examples:
+    cube = Mesh.cube()
+    # Add a triangle on existing vertices
+    # corners argument refers to cube vertices
+    cube.add_geometry(corners=[0, 1, 2], faces=3)</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Add a triangle with additional vertices
+<span class="gh">#</span> corners argument refers to the new vertices
+cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
 </code></pre></div>
 
 
@@ -7166,11 +7167,11 @@ indices.</p>
                 <code>points</code>
             </td>
             <td>
-                  <code>array of vectors</code>
+                  <code>array-like of vectors</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The vertices.</p>
+                <p>Vertices to add to the mesh.</p>
               </div>
             </td>
             <td>
@@ -7182,11 +7183,11 @@ indices.</p>
                 <code>corners</code>
             </td>
             <td>
-                  <code>array of ints</code>
+                  <code>array-like of int</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Indices on the array of points.</p>
+                <p>Indices referring to vertices in the points array.</p>
               </div>
             </td>
             <td>
@@ -7195,34 +7196,56 @@ indices.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>sizes</code>
+                <code>faces</code>
             </td>
             <td>
-                  <code>array of ints</code>
+                  <code>int, array-like of int, or list of lists</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Size of the faces. The sum of this array must equal the length of <code>corners</code>.</p>
+                <p>Defines the faces:
+- If <code>corners</code> is provided:
+    - None: Single face made of all corners.
+    - int: All faces have the same size (must divide the number of corners).
+    - array-like: Face sizes; sum must equal the number of corners.
+- If <code>corners</code> is None:
+    - Must be a list of lists, each sublist is a list of corners.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>materials</code>
+                <code>edges</code>
             </td>
             <td>
-                  <code>str or list of str</code>
+                  <code>array-like of pairs of int</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>List of materials used in the geometry.</p>
+                <p>Edges defined by pairs of vertex indices.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>safe_mode</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, perform a mesh integrity check after adding geometry.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -7234,7 +7257,7 @@ indices.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Other geometry attributes.</p>
+                <p>Additional geometry attributes to apply.</p>
               </div>
             </td>
             <td>
@@ -7260,7 +7283,30 @@ indices.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A dictionary with keys {'points', 'corners', 'faces', 'edges'} mapping to added geometry indices.</p>
+                <p>Dictionary with keys {'points', 'corners', 'faces', 'edges'} mapping to lists of added geometry indices.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If faces and corners lengths are inconsistent or invalid.</p>
               </div>
             </td>
           </tr>

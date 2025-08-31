@@ -2592,11 +2592,7 @@
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2800</span>
-<span class="normal">2801</span>
-<span class="normal">2802</span>
-<span class="normal">2803</span>
-<span class="normal">2804</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2804</span>
 <span class="normal">2805</span>
 <span class="normal">2806</span>
 <span class="normal">2807</span>
@@ -2668,7 +2664,11 @@
 <span class="normal">2873</span>
 <span class="normal">2874</span>
 <span class="normal">2875</span>
-<span class="normal">2876</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">2876</span>
+<span class="normal">2877</span>
+<span class="normal">2878</span>
+<span class="normal">2879</span>
+<span class="normal">2880</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">_all_primitives</span><span class="p">():</span>
 
     <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -3003,11 +3003,7 @@
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2882</span>
-<span class="normal">2883</span>
-<span class="normal">2884</span>
-<span class="normal">2885</span>
-<span class="normal">2886</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2886</span>
 <span class="normal">2887</span>
 <span class="normal">2888</span>
 <span class="normal">2889</span>
@@ -3058,7 +3054,11 @@
 <span class="normal">2934</span>
 <span class="normal">2935</span>
 <span class="normal">2936</span>
-<span class="normal">2937</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_test_edition</span><span class="p">():</span>
+<span class="normal">2937</span>
+<span class="normal">2938</span>
+<span class="normal">2939</span>
+<span class="normal">2940</span>
+<span class="normal">2941</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_test_edition</span><span class="p">():</span>
     <span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 
     <span class="c1"># extrude vertices</span>
@@ -3133,18 +3133,19 @@
 
     <div class="doc doc-contents ">
 
-        <p>Add geometry</p>
-<p>Note that the added geometry can refer to existing vertices. It is appended as is, whithout shifting
-indices.</p>
-<p>To add independant geometry, use <a class="autorefs autorefs-internal" title="join_geometry" href="#npblender.mesh.Mesh.join_geometry"><code>Mesh.join_geometry</code></a>.</p>
-<div class="codehilite"><pre><span></span><code><span class="n">cube</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">cube</span><span class="p">()</span>
-<span class="c1"># add a triangle on existing vertices</span>
-<span class="c1"># corners argument refers to cube vertices</span>
-<span class="n">cube</span><span class="o">.</span><span class="n">add_geometry</span><span class="p">(</span><span class="n">corners</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">faces</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-
-<span class="c1"># add a triangle with additional vertices</span>
-<span class="c1"># corners argument refers to the new vertices</span>
-<span class="n">cube</span><span class="o">.</span><span class="n">join_geometry</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="p">[[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">corners</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="n">faces</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <p>Add geometry to the mesh.</p>
+<p>This method adds vertices, edges, corners, and faces to the mesh. The added geometry
+can reference existing vertices and is appended without shifting indices.</p>
+<p>Note:
+    To add independent geometry (with new vertices), use <code>Mesh.join_geometry</code> instead.</p>
+<p>Examples:
+    cube = Mesh.cube()
+    # Add a triangle on existing vertices
+    # corners argument refers to cube vertices
+    cube.add_geometry(corners=[0, 1, 2], faces=3)</p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Add a triangle with additional vertices
+<span class="gh">#</span> corners argument refers to the new vertices
+cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
 </code></pre></div>
 
 
@@ -3164,11 +3165,11 @@ indices.</p>
                 <code>points</code>
             </td>
             <td>
-                  <code>array of vectors</code>
+                  <code>array-like of vectors</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>The vertices.</p>
+                <p>Vertices to add to the mesh.</p>
               </div>
             </td>
             <td>
@@ -3180,11 +3181,11 @@ indices.</p>
                 <code>corners</code>
             </td>
             <td>
-                  <code>array of ints</code>
+                  <code>array-like of int</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Indices on the array of points.</p>
+                <p>Indices referring to vertices in the points array.</p>
               </div>
             </td>
             <td>
@@ -3193,34 +3194,56 @@ indices.</p>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>sizes</code>
+                <code>faces</code>
             </td>
             <td>
-                  <code>array of ints</code>
+                  <code>int, array-like of int, or list of lists</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Size of the faces. The sum of this array must equal the length of <code>corners</code>.</p>
+                <p>Defines the faces:
+- If <code>corners</code> is provided:
+    - None: Single face made of all corners.
+    - int: All faces have the same size (must divide the number of corners).
+    - array-like: Face sizes; sum must equal the number of corners.
+- If <code>corners</code> is None:
+    - Must be a list of lists, each sublist is a list of corners.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
             </td>
           </tr>
           <tr class="doc-section-item">
             <td>
-                <code>materials</code>
+                <code>edges</code>
             </td>
             <td>
-                  <code>str or list of str</code>
+                  <code>array-like of pairs of int</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>List of materials used in the geometry.</p>
+                <p>Edges defined by pairs of vertex indices.</p>
               </div>
             </td>
             <td>
-                <em>required</em>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>safe_mode</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, perform a mesh integrity check after adding geometry.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
             </td>
           </tr>
           <tr class="doc-section-item">
@@ -3232,7 +3255,7 @@ indices.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Other geometry attributes.</p>
+                <p>Additional geometry attributes to apply.</p>
               </div>
             </td>
             <td>
@@ -3258,7 +3281,30 @@ indices.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A dictionary with keys {'points', 'corners', 'faces', 'edges'} mapping to added geometry indices.</p>
+                <p>Dictionary with keys {'points', 'corners', 'faces', 'edges'} mapping to lists of added geometry indices.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If faces and corners lengths are inconsistent or invalid.</p>
               </div>
             </td>
           </tr>
@@ -3392,42 +3438,58 @@ indices.</p>
 <span class="normal">949</span>
 <span class="normal">950</span>
 <span class="normal">951</span>
-<span class="normal">952</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">safe_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot; Add geometry</span>
+<span class="normal">952</span>
+<span class="normal">953</span>
+<span class="normal">954</span>
+<span class="normal">955</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">safe_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add geometry to the mesh.</span>
 
-<span class="sd">    Note that the added geometry can refer to existing vertices. It is appended as is, whithout shifting</span>
-<span class="sd">    indices.</span>
+<span class="sd">    This method adds vertices, edges, corners, and faces to the mesh. The added geometry</span>
+<span class="sd">    can reference existing vertices and is appended without shifting indices.</span>
 
-<span class="sd">    To add independant geometry, use [`Mesh.join_geometry`][npblender.mesh.Mesh.join_geometry].</span>
+<span class="sd">    Note:</span>
+<span class="sd">        To add independent geometry (with new vertices), use `Mesh.join_geometry` instead.</span>
 
-<span class="sd">    ``` python</span>
-<span class="sd">    cube = Mesh.cube()</span>
-<span class="sd">    # add a triangle on existing vertices</span>
-<span class="sd">    # corners argument refers to cube vertices</span>
-<span class="sd">    cube.add_geometry(corners=[0, 1, 2], faces=3)</span>
+<span class="sd">    Examples:</span>
+<span class="sd">        cube = Mesh.cube()</span>
+<span class="sd">        # Add a triangle on existing vertices</span>
+<span class="sd">        # corners argument refers to cube vertices</span>
+<span class="sd">        cube.add_geometry(corners=[0, 1, 2], faces=3)</span>
 
-<span class="sd">    # add a triangle with additional vertices</span>
-<span class="sd">    # corners argument refers to the new vertices</span>
-<span class="sd">    cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)</span>
-<span class="sd">    ```</span>
+<span class="sd">        # Add a triangle with additional vertices</span>
+<span class="sd">        # corners argument refers to the new vertices</span>
+<span class="sd">        cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    points : array of vectors, optional</span>
-<span class="sd">        The vertices.</span>
-<span class="sd">    corners : array of ints, optional</span>
-<span class="sd">        Indices on the array of points.</span>
-<span class="sd">    sizes : array of ints, optional</span>
-<span class="sd">        Size of the faces. The sum of this array must equal the length of `corners`.</span>
-<span class="sd">    materials : str or list of str, optional</span>
-<span class="sd">        List of materials used in the geometry.</span>
+<span class="sd">    points : array-like of vectors, optional</span>
+<span class="sd">        Vertices to add to the mesh.</span>
+<span class="sd">    corners : array-like of int, optional</span>
+<span class="sd">        Indices referring to vertices in the points array.</span>
+<span class="sd">    faces : int, array-like of int, or list of lists, optional</span>
+<span class="sd">        Defines the faces:</span>
+<span class="sd">        - If `corners` is provided:</span>
+<span class="sd">            - None: Single face made of all corners.</span>
+<span class="sd">            - int: All faces have the same size (must divide the number of corners).</span>
+<span class="sd">            - array-like: Face sizes; sum must equal the number of corners.</span>
+<span class="sd">        - If `corners` is None:</span>
+<span class="sd">            - Must be a list of lists, each sublist is a list of corners.</span>
+<span class="sd">    edges : array-like of pairs of int, optional</span>
+<span class="sd">        Edges defined by pairs of vertex indices.</span>
+<span class="sd">    safe_mode : bool, optional</span>
+<span class="sd">        If True, perform a mesh integrity check after adding geometry.</span>
 <span class="sd">    **attrs : dict</span>
-<span class="sd">        Other geometry attributes.</span>
+<span class="sd">        Additional geometry attributes to apply.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    dict</span>
-<span class="sd">        A dictionary with keys {&#39;points&#39;, &#39;corners&#39;, &#39;faces&#39;, &#39;edges&#39;} mapping to added geometry indices.</span>
+<span class="sd">        Dictionary with keys {&#39;points&#39;, &#39;corners&#39;, &#39;faces&#39;, &#39;edges&#39;} mapping to lists of added geometry indices.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If faces and corners lengths are inconsistent or invalid.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">disp_attrs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_attributes_per_domain</span><span class="p">(</span><span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
@@ -3500,16 +3562,6 @@ indices.</p>
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mesh add_geometry&gt; the sum of faces (</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">faces</span><span class="p">)</span><span class="si">}</span><span class="s2">) must be equal to the number of corners (</span><span class="si">{</span><span class="n">ncorners</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">ok_faces</span><span class="p">:</span>
-        <span class="n">added</span><span class="p">[</span><span class="s1">&#39;corners&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vertex_index</span><span class="o">=</span><span class="n">corners</span><span class="p">,</span> <span class="o">**</span><span class="n">disp_attrs</span><span class="p">[</span><span class="s1">&#39;corners&#39;</span><span class="p">])</span>
-        <span class="n">added</span><span class="p">[</span><span class="s1">&#39;faces&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">append_sizes</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="o">**</span><span class="n">disp_attrs</span><span class="p">[</span><span class="s1">&#39;faces&#39;</span><span class="p">])</span>
-
-    <span class="k">if</span> <span class="kc">False</span><span class="p">:</span> <span class="c1"># OLD</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">faces</span><span class="p">)</span> <span class="o">==</span> <span class="p">():</span>
-            <span class="n">nfaces</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">corners</span><span class="p">)</span> <span class="o">//</span> <span class="n">faces</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">corners</span><span class="p">)</span> <span class="o">%</span> <span class="n">faces</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mesh add_geometry&gt; when faces is a single number </span><span class="si">{</span><span class="n">faces</span><span class="si">}</span><span class="s2">, it must divide the number of corners (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">corners</span><span class="p">)</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span>
-            <span class="n">faces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">nfaces</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">bint</span><span class="p">)</span><span class="o">*</span><span class="n">faces</span>
-
         <span class="n">added</span><span class="p">[</span><span class="s1">&#39;corners&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">vertex_index</span><span class="o">=</span><span class="n">corners</span><span class="p">,</span> <span class="o">**</span><span class="n">disp_attrs</span><span class="p">[</span><span class="s1">&#39;corners&#39;</span><span class="p">])</span>
         <span class="n">added</span><span class="p">[</span><span class="s1">&#39;faces&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">append_sizes</span><span class="p">(</span><span class="n">faces</span><span class="p">,</span> <span class="o">**</span><span class="n">disp_attrs</span><span class="p">[</span><span class="s1">&#39;faces&#39;</span><span class="p">])</span>
 
@@ -3627,20 +3679,20 @@ indices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">983</span>
-<span class="normal">984</span>
-<span class="normal">985</span>
-<span class="normal">986</span>
-<span class="normal">987</span>
-<span class="normal">988</span>
-<span class="normal">989</span>
-<span class="normal">990</span>
-<span class="normal">991</span>
-<span class="normal">992</span>
-<span class="normal">993</span>
-<span class="normal">994</span>
-<span class="normal">995</span>
-<span class="normal">996</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span>  <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 987</span>
+<span class="normal"> 988</span>
+<span class="normal"> 989</span>
+<span class="normal"> 990</span>
+<span class="normal"> 991</span>
+<span class="normal"> 992</span>
+<span class="normal"> 993</span>
+<span class="normal"> 994</span>
+<span class="normal"> 995</span>
+<span class="normal"> 996</span>
+<span class="normal"> 997</span>
+<span class="normal"> 998</span>
+<span class="normal"> 999</span>
+<span class="normal">1000</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_points</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="p">,</span>  <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Add vertices.</span>
 
 <span class="sd">    Arguments</span>
@@ -3705,11 +3757,7 @@ indices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1780</span>
-<span class="normal">1781</span>
-<span class="normal">1782</span>
-<span class="normal">1783</span>
-<span class="normal">1784</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1784</span>
 <span class="normal">1785</span>
 <span class="normal">1786</span>
 <span class="normal">1787</span>
@@ -3732,7 +3780,11 @@ indices.</p>
 <span class="normal">1804</span>
 <span class="normal">1805</span>
 <span class="normal">1806</span>
-<span class="normal">1807</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1807</span>
+<span class="normal">1808</span>
+<span class="normal">1809</span>
+<span class="normal">1810</span>
+<span class="normal">1811</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">arrow</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">vector</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">radius</span><span class="o">=</span><span class="mf">.05</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mf">24.</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">adjust_norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
     <span class="n">height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">vector</span><span class="p">)</span>
@@ -3822,11 +3874,7 @@ indices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1275</span>
-<span class="normal">1276</span>
-<span class="normal">1277</span>
-<span class="normal">1278</span>
-<span class="normal">1279</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1279</span>
 <span class="normal">1280</span>
 <span class="normal">1281</span>
 <span class="normal">1282</span>
@@ -3845,7 +3893,11 @@ indices.</p>
 <span class="normal">1295</span>
 <span class="normal">1296</span>
 <span class="normal">1297</span>
-<span class="normal">1298</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1298</span>
+<span class="normal">1299</span>
+<span class="normal">1300</span>
+<span class="normal">1301</span>
+<span class="normal">1302</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">bl_circle</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fill_tris</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Circle.</span>
 
@@ -3933,11 +3985,7 @@ indices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1304</span>
-<span class="normal">1305</span>
-<span class="normal">1306</span>
-<span class="normal">1307</span>
-<span class="normal">1308</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1308</span>
 <span class="normal">1309</span>
 <span class="normal">1310</span>
 <span class="normal">1311</span>
@@ -3973,7 +4021,11 @@ indices.</p>
 <span class="normal">1341</span>
 <span class="normal">1342</span>
 <span class="normal">1343</span>
-<span class="normal">1344</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1344</span>
+<span class="normal">1345</span>
+<span class="normal">1346</span>
+<span class="normal">1347</span>
+<span class="normal">1348</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">bl_cone</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">radius1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">radius2</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">side_segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">cap_ends</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">cap_tris</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Cone.</span>
 
@@ -4075,11 +4127,7 @@ indices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1247</span>
-<span class="normal">1248</span>
-<span class="normal">1249</span>
-<span class="normal">1250</span>
-<span class="normal">1251</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1251</span>
 <span class="normal">1252</span>
 <span class="normal">1253</span>
 <span class="normal">1254</span>
@@ -4097,7 +4145,11 @@ indices.</p>
 <span class="normal">1266</span>
 <span class="normal">1267</span>
 <span class="normal">1268</span>
-<span class="normal">1269</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1269</span>
+<span class="normal">1270</span>
+<span class="normal">1271</span>
+<span class="normal">1272</span>
+<span class="normal">1273</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">bl_grid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">x_segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">y_segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Grid.</span>
 
@@ -4476,11 +4528,7 @@ The example below use a blender Mesh to get the normals.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2407</span>
-<span class="normal">2408</span>
-<span class="normal">2409</span>
-<span class="normal">2410</span>
-<span class="normal">2411</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2411</span>
 <span class="normal">2412</span>
 <span class="normal">2413</span>
 <span class="normal">2414</span>
@@ -4500,7 +4548,11 @@ The example below use a blender Mesh to get the normals.</p>
 <span class="normal">2428</span>
 <span class="normal">2429</span>
 <span class="normal">2430</span>
-<span class="normal">2431</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">boolean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="s1">&#39;DIFFERENCE&#39;</span><span class="p">):</span>
+<span class="normal">2431</span>
+<span class="normal">2432</span>
+<span class="normal">2433</span>
+<span class="normal">2434</span>
+<span class="normal">2435</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">boolean</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">,</span> <span class="n">operation</span><span class="o">=</span><span class="s1">&#39;DIFFERENCE&#39;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Apply a boolean operation with another object.</span>
 
@@ -4559,11 +4611,7 @@ The example below use a blender Mesh to get the normals.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1047</span>
-<span class="normal">1048</span>
-<span class="normal">1049</span>
-<span class="normal">1050</span>
-<span class="normal">1051</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1051</span>
 <span class="normal">1052</span>
 <span class="normal">1053</span>
 <span class="normal">1054</span>
@@ -4622,7 +4670,11 @@ The example below use a blender Mesh to get the normals.</p>
 <span class="normal">1107</span>
 <span class="normal">1108</span>
 <span class="normal">1109</span>
-<span class="normal">1110</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bridge_loops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop0</span><span class="p">,</span> <span class="n">loop1</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
+<span class="normal">1110</span>
+<span class="normal">1111</span>
+<span class="normal">1112</span>
+<span class="normal">1113</span>
+<span class="normal">1114</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bridge_loops</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop0</span><span class="p">,</span> <span class="n">loop1</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a grid linking two loops of the same size.</span>
 
 <span class="sd">    Arguments</span>
@@ -4708,11 +4760,7 @@ The example below use a blender Mesh to get the normals.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2777</span>
-<span class="normal">2778</span>
-<span class="normal">2779</span>
-<span class="normal">2780</span>
-<span class="normal">2781</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2781</span>
 <span class="normal">2782</span>
 <span class="normal">2783</span>
 <span class="normal">2784</span>
@@ -4720,7 +4768,11 @@ The example below use a blender Mesh to get the normals.</p>
 <span class="normal">2786</span>
 <span class="normal">2787</span>
 <span class="normal">2788</span>
-<span class="normal">2789</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bvh_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">2789</span>
+<span class="normal">2790</span>
+<span class="normal">2791</span>
+<span class="normal">2792</span>
+<span class="normal">2793</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">bvh_tree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">count</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">BVHTree</span><span class="o">.</span><span class="n">FromPolygons</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">sequences</span><span class="p">(),</span> <span class="n">all_triangles</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 
@@ -4935,11 +4987,7 @@ The example below use a blender Mesh to get the normals.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1974</span>
-<span class="normal">1975</span>
-<span class="normal">1976</span>
-<span class="normal">1977</span>
-<span class="normal">1978</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1978</span>
 <span class="normal">1979</span>
 <span class="normal">1980</span>
 <span class="normal">1981</span>
@@ -5056,7 +5104,11 @@ The example below use a blender Mesh to get the normals.</p>
 <span class="normal">2092</span>
 <span class="normal">2093</span>
 <span class="normal">2094</span>
-<span class="normal">2095</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">2095</span>
+<span class="normal">2096</span>
+<span class="normal">2097</span>
+<span class="normal">2098</span>
+<span class="normal">2099</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">chain_link</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">major_segments</span><span class="o">=</span><span class="mi">48</span><span class="p">,</span> <span class="n">minor_segments</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">section</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">4.</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a chain link.</span>
 
@@ -5282,11 +5334,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1488</span>
-<span class="normal">1489</span>
-<span class="normal">1490</span>
-<span class="normal">1491</span>
-<span class="normal">1492</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1492</span>
 <span class="normal">1493</span>
 <span class="normal">1494</span>
 <span class="normal">1495</span>
@@ -5335,7 +5383,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">1538</span>
 <span class="normal">1539</span>
 <span class="normal">1540</span>
-<span class="normal">1541</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1541</span>
+<span class="normal">1542</span>
+<span class="normal">1543</span>
+<span class="normal">1544</span>
+<span class="normal">1545</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">circle</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fill_segments</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cap</span><span class="o">=</span><span class="s1">&#39;NONE&#39;</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Circle.</span>
 
@@ -5965,11 +6017,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1559</span>
-<span class="normal">1560</span>
-<span class="normal">1561</span>
-<span class="normal">1562</span>
-<span class="normal">1563</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1563</span>
 <span class="normal">1564</span>
 <span class="normal">1565</span>
 <span class="normal">1566</span>
@@ -5999,7 +6047,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">1590</span>
 <span class="normal">1591</span>
 <span class="normal">1592</span>
-<span class="normal">1593</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1593</span>
+<span class="normal">1594</span>
+<span class="normal">1595</span>
+<span class="normal">1596</span>
+<span class="normal">1597</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">cone</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">vertices</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">side_segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">fill_segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">radius_top</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">radius_bottom</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fill_type</span><span class="o">=</span><span class="s1">&#39;NGON&#39;</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Cone.</span>
 
@@ -6092,11 +6144,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1455</span>
-<span class="normal">1456</span>
-<span class="normal">1457</span>
-<span class="normal">1458</span>
-<span class="normal">1459</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1459</span>
 <span class="normal">1460</span>
 <span class="normal">1461</span>
 <span class="normal">1462</span>
@@ -6119,7 +6167,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">1479</span>
 <span class="normal">1480</span>
 <span class="normal">1481</span>
-<span class="normal">1482</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1482</span>
+<span class="normal">1483</span>
+<span class="normal">1484</span>
+<span class="normal">1485</span>
+<span class="normal">1486</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">cube</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Cube.</span>
 
@@ -6209,11 +6261,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1599</span>
-<span class="normal">1600</span>
-<span class="normal">1601</span>
-<span class="normal">1602</span>
-<span class="normal">1603</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1603</span>
 <span class="normal">1604</span>
 <span class="normal">1605</span>
 <span class="normal">1606</span>
@@ -6237,7 +6285,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">1624</span>
 <span class="normal">1625</span>
 <span class="normal">1626</span>
-<span class="normal">1627</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1627</span>
+<span class="normal">1628</span>
+<span class="normal">1629</span>
+<span class="normal">1630</span>
+<span class="normal">1631</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">cylinder</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">vertices</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">side_segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">fill_type</span><span class="o">=</span><span class="s1">&#39;NGON&#39;</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Cylinder.</span>
 
@@ -6290,10 +6342,10 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1184</span>
-<span class="normal">1185</span>
-<span class="normal">1186</span>
-<span class="normal">1187</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">):</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1188</span>
+<span class="normal">1189</span>
+<span class="normal">1190</span>
+<span class="normal">1191</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Delete only faces.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">faces</span><span class="o">.</span><span class="n">delete_loops</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">corners</span><span class="p">)</span>
@@ -6332,11 +6384,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1193</span>
-<span class="normal">1194</span>
-<span class="normal">1195</span>
-<span class="normal">1196</span>
-<span class="normal">1197</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1197</span>
 <span class="normal">1198</span>
 <span class="normal">1199</span>
 <span class="normal">1200</span>
@@ -6376,7 +6424,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">1234</span>
 <span class="normal">1235</span>
 <span class="normal">1236</span>
-<span class="normal">1237</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">1237</span>
+<span class="normal">1238</span>
+<span class="normal">1239</span>
+<span class="normal">1240</span>
+<span class="normal">1241</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete vertices.</span>
 
 <span class="sd">    Arguments</span>
@@ -6450,13 +6502,13 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1547</span>
-<span class="normal">1548</span>
-<span class="normal">1549</span>
-<span class="normal">1550</span>
-<span class="normal">1551</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1551</span>
 <span class="normal">1552</span>
-<span class="normal">1553</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1553</span>
+<span class="normal">1554</span>
+<span class="normal">1555</span>
+<span class="normal">1556</span>
+<span class="normal">1557</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">disk</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">fill_segments</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">cap</span><span class="o">=</span><span class="s1">&#39;NGON&#39;</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a disk.</span>
 
@@ -6485,11 +6537,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2588</span>
-<span class="normal">2589</span>
-<span class="normal">2590</span>
-<span class="normal">2591</span>
-<span class="normal">2592</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2592</span>
 <span class="normal">2593</span>
 <span class="normal">2594</span>
 <span class="normal">2595</span>
@@ -6593,7 +6641,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">2693</span>
 <span class="normal">2694</span>
 <span class="normal">2695</span>
-<span class="normal">2696</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">dual</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">):</span>
+<span class="normal">2696</span>
+<span class="normal">2697</span>
+<span class="normal">2698</span>
+<span class="normal">2699</span>
+<span class="normal">2700</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">dual</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="s2">&quot;median&quot;</span><span class="p">):</span>
 
     <span class="n">verts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">faces</span><span class="p">),</span> <span class="mi">3</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">corners</span> <span class="o">=</span> <span class="p">[]</span>
@@ -6820,11 +6872,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2170</span>
-<span class="normal">2171</span>
-<span class="normal">2172</span>
-<span class="normal">2173</span>
-<span class="normal">2174</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2174</span>
 <span class="normal">2175</span>
 <span class="normal">2176</span>
 <span class="normal">2177</span>
@@ -6881,7 +6929,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">2228</span>
 <span class="normal">2229</span>
 <span class="normal">2230</span>
-<span class="normal">2231</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
+<span class="normal">2231</span>
+<span class="normal">2232</span>
+<span class="normal">2233</span>
+<span class="normal">2234</span>
+<span class="normal">2235</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">1.</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Extrude individual faces.</span>
 
 <span class="sd">    If offset is None, faces are extruder along their normal</span>
@@ -7000,11 +7052,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2132</span>
-<span class="normal">2133</span>
-<span class="normal">2134</span>
-<span class="normal">2135</span>
-<span class="normal">2136</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2136</span>
 <span class="normal">2137</span>
 <span class="normal">2138</span>
 <span class="normal">2139</span>
@@ -7032,7 +7080,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">2161</span>
 <span class="normal">2162</span>
 <span class="normal">2163</span>
-<span class="normal">2164</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clockwise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
+<span class="normal">2164</span>
+<span class="normal">2165</span>
+<span class="normal">2166</span>
+<span class="normal">2167</span>
+<span class="normal">2168</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="n">close</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">clockwise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Extrude a loop of vertices.</span>
 
 <span class="sd">    Arguments</span>
@@ -7120,11 +7172,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2237</span>
-<span class="normal">2238</span>
-<span class="normal">2239</span>
-<span class="normal">2240</span>
-<span class="normal">2241</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2241</span>
 <span class="normal">2242</span>
 <span class="normal">2243</span>
 <span class="normal">2244</span>
@@ -7186,7 +7234,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">2300</span>
 <span class="normal">2301</span>
 <span class="normal">2302</span>
-<span class="normal">2303</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dissolve</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="normal">2303</span>
+<span class="normal">2304</span>
+<span class="normal">2305</span>
+<span class="normal">2306</span>
+<span class="normal">2307</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">dissolve</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Extrude individual faces.</span>
 
 <span class="sd">    Arguments</span>
@@ -7308,11 +7360,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2105</span>
-<span class="normal">2106</span>
-<span class="normal">2107</span>
-<span class="normal">2108</span>
-<span class="normal">2109</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2109</span>
 <span class="normal">2110</span>
 <span class="normal">2111</span>
 <span class="normal">2112</span>
@@ -7329,7 +7377,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">2123</span>
 <span class="normal">2124</span>
 <span class="normal">2125</span>
-<span class="normal">2126</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
+<span class="normal">2126</span>
+<span class="normal">2127</span>
+<span class="normal">2128</span>
+<span class="normal">2129</span>
+<span class="normal">2130</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extrude_vertices</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">offset</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Extrude individual vertices</span>
 
 <span class="sd">    Arguments</span>
@@ -7373,11 +7425,7 @@ If positive, the circle is filled with triangle fans.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2702</span>
-<span class="normal">2703</span>
-<span class="normal">2704</span>
-<span class="normal">2705</span>
-<span class="normal">2706</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2706</span>
 <span class="normal">2707</span>
 <span class="normal">2708</span>
 <span class="normal">2709</span>
@@ -7388,7 +7436,11 @@ If positive, the circle is filled with triangle fans.</p>
 <span class="normal">2714</span>
 <span class="normal">2715</span>
 <span class="normal">2716</span>
-<span class="normal">2717</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">faces_neighbors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">2717</span>
+<span class="normal">2718</span>
+<span class="normal">2719</span>
+<span class="normal">2720</span>
+<span class="normal">2721</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">faces_neighbors</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
     <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">neighbors</span> <span class="o">=</span> <span class="p">[]</span>
@@ -7445,11 +7497,7 @@ For FANS mode, a center point is required:
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1116</span>
-<span class="normal">1117</span>
-<span class="normal">1118</span>
-<span class="normal">1119</span>
-<span class="normal">1120</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1120</span>
 <span class="normal">1121</span>
 <span class="normal">1122</span>
 <span class="normal">1123</span>
@@ -7503,7 +7551,11 @@ For FANS mode, a center point is required:
 <span class="normal">1171</span>
 <span class="normal">1172</span>
 <span class="normal">1173</span>
-<span class="normal">1174</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fill_cap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;NGON&#39;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clockwise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
+<span class="normal">1174</span>
+<span class="normal">1175</span>
+<span class="normal">1176</span>
+<span class="normal">1177</span>
+<span class="normal">1178</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fill_cap</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;NGON&#39;</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clockwise</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attributes</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Fill a cap between an existing loop</span>
 
 <span class="sd">    For NGON mode, center is not required.</span>
@@ -8146,11 +8198,7 @@ For FANS mode, a center point is required:
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2723</span>
-<span class="normal">2724</span>
-<span class="normal">2725</span>
-<span class="normal">2726</span>
-<span class="normal">2727</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2727</span>
 <span class="normal">2728</span>
 <span class="normal">2729</span>
 <span class="normal">2730</span>
@@ -8194,7 +8242,11 @@ For FANS mode, a center point is required:
 <span class="normal">2768</span>
 <span class="normal">2769</span>
 <span class="normal">2770</span>
-<span class="normal">2771</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_islands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">2771</span>
+<span class="normal">2772</span>
+<span class="normal">2773</span>
+<span class="normal">2774</span>
+<span class="normal">2775</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_islands</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Get an island id per face.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">deque</span>
@@ -8424,11 +8476,7 @@ _ size_y (float=1) : size along y
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1407</span>
-<span class="normal">1408</span>
-<span class="normal">1409</span>
-<span class="normal">1410</span>
-<span class="normal">1411</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1411</span>
 <span class="normal">1412</span>
 <span class="normal">1413</span>
 <span class="normal">1414</span>
@@ -8466,7 +8514,11 @@ _ size_y (float=1) : size along y
 <span class="normal">1446</span>
 <span class="normal">1447</span>
 <span class="normal">1448</span>
-<span class="normal">1449</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1449</span>
+<span class="normal">1450</span>
+<span class="normal">1451</span>
+<span class="normal">1452</span>
+<span class="normal">1453</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">grid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">size_x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">size_y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">vertices_x</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">vertices_y</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Grid.</span>
 
@@ -8570,11 +8622,7 @@ _ size_y (float=1) : size along y
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1677</span>
-<span class="normal">1678</span>
-<span class="normal">1679</span>
-<span class="normal">1680</span>
-<span class="normal">1681</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1681</span>
 <span class="normal">1682</span>
 <span class="normal">1683</span>
 <span class="normal">1684</span>
@@ -8593,7 +8641,11 @@ _ size_y (float=1) : size along y
 <span class="normal">1697</span>
 <span class="normal">1698</span>
 <span class="normal">1699</span>
-<span class="normal">1700</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1700</span>
+<span class="normal">1701</span>
+<span class="normal">1702</span>
+<span class="normal">1703</span>
+<span class="normal">1704</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">icosphere</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">subdivisions</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a IcoSphere.</span>
 
@@ -8679,11 +8731,7 @@ use_relative_offset : bool
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2309</span>
-<span class="normal">2310</span>
-<span class="normal">2311</span>
-<span class="normal">2312</span>
-<span class="normal">2313</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2313</span>
 <span class="normal">2314</span>
 <span class="normal">2315</span>
 <span class="normal">2316</span>
@@ -8732,7 +8780,11 @@ use_relative_offset : bool
 <span class="normal">2359</span>
 <span class="normal">2360</span>
 <span class="normal">2361</span>
-<span class="normal">2362</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">inset_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">use_even_offset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_relative_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="normal">2362</span>
+<span class="normal">2363</span>
+<span class="normal">2364</span>
+<span class="normal">2365</span>
+<span class="normal">2366</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">inset_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">use_even_offset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_relative_offset</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Extrude individual faces.</span>
 
 <span class="sd">    If offset is None, faces are extruder along their normal</span>
@@ -9034,11 +9086,7 @@ See 'add_geometry' which, on the contrary, can refer to existing vertices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">958</span>
-<span class="normal">959</span>
-<span class="normal">960</span>
-<span class="normal">961</span>
-<span class="normal">962</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">962</span>
 <span class="normal">963</span>
 <span class="normal">964</span>
 <span class="normal">965</span>
@@ -9053,7 +9101,11 @@ See 'add_geometry' which, on the contrary, can refer to existing vertices.</p>
 <span class="normal">974</span>
 <span class="normal">975</span>
 <span class="normal">976</span>
-<span class="normal">977</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">join_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">safe_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">):</span>
+<span class="normal">977</span>
+<span class="normal">978</span>
+<span class="normal">979</span>
+<span class="normal">980</span>
+<span class="normal">981</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">join_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">corners</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">edges</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">safe_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Join geometry defined by components.</span>
 
 <span class="sd">    The geometry passed in argument is consistent and doesn&#39;t refer to existing vertices. It is used</span>
@@ -9132,11 +9184,7 @@ See 'add_geometry' which, on the contrary, can refer to existing vertices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1373</span>
-<span class="normal">1374</span>
-<span class="normal">1375</span>
-<span class="normal">1376</span>
-<span class="normal">1377</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1377</span>
 <span class="normal">1378</span>
 <span class="normal">1379</span>
 <span class="normal">1380</span>
@@ -9160,7 +9208,11 @@ See 'add_geometry' which, on the contrary, can refer to existing vertices.</p>
 <span class="normal">1398</span>
 <span class="normal">1399</span>
 <span class="normal">1400</span>
-<span class="normal">1401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1401</span>
+<span class="normal">1402</span>
+<span class="normal">1403</span>
+<span class="normal">1404</span>
+<span class="normal">1405</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">line</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">segments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a mesh with lines between the given positions.</span>
 
@@ -9526,11 +9578,7 @@ See 'add_geometry' which, on the contrary, can refer to existing vertices.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1758</span>
-<span class="normal">1759</span>
-<span class="normal">1760</span>
-<span class="normal">1761</span>
-<span class="normal">1762</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1762</span>
 <span class="normal">1763</span>
 <span class="normal">1764</span>
 <span class="normal">1765</span>
@@ -9542,7 +9590,11 @@ See 'add_geometry' which, on the contrary, can refer to existing vertices.</p>
 <span class="normal">1771</span>
 <span class="normal">1772</span>
 <span class="normal">1773</span>
-<span class="normal">1774</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1774</span>
+<span class="normal">1775</span>
+<span class="normal">1776</span>
+<span class="normal">1777</span>
+<span class="normal">1778</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">monkey</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Monkey.</span>
 
@@ -9944,11 +9996,7 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1355</span>
-<span class="normal">1356</span>
-<span class="normal">1357</span>
-<span class="normal">1358</span>
-<span class="normal">1359</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1359</span>
 <span class="normal">1360</span>
 <span class="normal">1361</span>
 <span class="normal">1362</span>
@@ -9956,7 +10004,11 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 <span class="normal">1364</span>
 <span class="normal">1365</span>
 <span class="normal">1366</span>
-<span class="normal">1367</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1367</span>
+<span class="normal">1368</span>
+<span class="normal">1369</span>
+<span class="normal">1370</span>
+<span class="normal">1371</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">points_cloud</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a mesh with points at the given positions.</span>
 
@@ -10026,11 +10078,7 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1633</span>
-<span class="normal">1634</span>
-<span class="normal">1635</span>
-<span class="normal">1636</span>
-<span class="normal">1637</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1637</span>
 <span class="normal">1638</span>
 <span class="normal">1639</span>
 <span class="normal">1640</span>
@@ -10038,7 +10086,11 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 <span class="normal">1642</span>
 <span class="normal">1643</span>
 <span class="normal">1644</span>
-<span class="normal">1645</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1645</span>
+<span class="normal">1646</span>
+<span class="normal">1647</span>
+<span class="normal">1648</span>
+<span class="normal">1649</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">pyramid</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Pyramid.</span>
 
@@ -10077,16 +10129,16 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2483</span>
-<span class="normal">2484</span>
-<span class="normal">2485</span>
-<span class="normal">2486</span>
-<span class="normal">2487</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2487</span>
 <span class="normal">2488</span>
 <span class="normal">2489</span>
 <span class="normal">2490</span>
 <span class="normal">2491</span>
-<span class="normal">2492</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_doubles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="mf">.001</span><span class="p">):</span>
+<span class="normal">2492</span>
+<span class="normal">2493</span>
+<span class="normal">2494</span>
+<span class="normal">2495</span>
+<span class="normal">2496</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove_doubles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="mf">.001</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Remove doubles.</span>
 
 <span class="sd">    Arguments:</span>
@@ -10153,11 +10205,7 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2535</span>
-<span class="normal">2536</span>
-<span class="normal">2537</span>
-<span class="normal">2538</span>
-<span class="normal">2539</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2539</span>
 <span class="normal">2540</span>
 <span class="normal">2541</span>
 <span class="normal">2542</span>
@@ -10200,7 +10248,11 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 <span class="normal">2579</span>
 <span class="normal">2580</span>
 <span class="normal">2581</span>
-<span class="normal">2582</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">separate_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">2582</span>
+<span class="normal">2583</span>
+<span class="normal">2584</span>
+<span class="normal">2585</span>
+<span class="normal">2586</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">separate_faces</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Split faces into isolated islands</span>
 
 <span class="sd">    Arguments</span>
@@ -10270,15 +10322,15 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2521</span>
-<span class="normal">2522</span>
-<span class="normal">2523</span>
-<span class="normal">2524</span>
-<span class="normal">2525</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2525</span>
 <span class="normal">2526</span>
 <span class="normal">2527</span>
 <span class="normal">2528</span>
-<span class="normal">2529</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">simplified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="mf">.001</span><span class="p">):</span>
+<span class="normal">2529</span>
+<span class="normal">2530</span>
+<span class="normal">2531</span>
+<span class="normal">2532</span>
+<span class="normal">2533</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">simplified</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scale</span><span class="p">,</span> <span class="n">dist</span><span class="o">=</span><span class="mf">.001</span><span class="p">):</span>
 
     <span class="n">copy</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">from_mesh</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
     <span class="n">copy</span><span class="o">.</span><span class="n">remove_doubles</span><span class="p">(</span><span class="n">dist</span><span class="o">=</span><span class="n">dist</span><span class="o">/</span><span class="n">scale</span><span class="p">)</span>
@@ -10353,11 +10405,7 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2437</span>
-<span class="normal">2438</span>
-<span class="normal">2439</span>
-<span class="normal">2440</span>
-<span class="normal">2441</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2441</span>
 <span class="normal">2442</span>
 <span class="normal">2443</span>
 <span class="normal">2444</span>
@@ -10393,7 +10441,11 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 <span class="normal">2474</span>
 <span class="normal">2475</span>
 <span class="normal">2476</span>
-<span class="normal">2477</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">solidify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">offset</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+<span class="normal">2477</span>
+<span class="normal">2478</span>
+<span class="normal">2479</span>
+<span class="normal">2480</span>
+<span class="normal">2481</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">solidify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mf">.01</span><span class="p">,</span> <span class="n">offset</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Boolean difference with another MeshBuilder.</span>
 
 <span class="sd">    The methods uses the Solidify Modifier</span>
@@ -10492,11 +10544,7 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2368</span>
-<span class="normal">2369</span>
-<span class="normal">2370</span>
-<span class="normal">2371</span>
-<span class="normal">2372</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2372</span>
 <span class="normal">2373</span>
 <span class="normal">2374</span>
 <span class="normal">2375</span>
@@ -10525,7 +10573,11 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 <span class="normal">2398</span>
 <span class="normal">2399</span>
 <span class="normal">2400</span>
-<span class="normal">2401</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">solidify_socle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bottom_material_index</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="normal">2401</span>
+<span class="normal">2402</span>
+<span class="normal">2403</span>
+<span class="normal">2404</span>
+<span class="normal">2405</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">solidify_socle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shape</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">bottom_material_index</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; The mesh is supposed to be a grid.</span>
 
 <span class="sd">    The socle is buit by extruding the external edges to the value z.</span>
@@ -10581,11 +10633,7 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1002</span>
-<span class="normal">1003</span>
-<span class="normal">1004</span>
-<span class="normal">1005</span>
-<span class="normal">1006</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1006</span>
 <span class="normal">1007</span>
 <span class="normal">1008</span>
 <span class="normal">1009</span>
@@ -10620,7 +10668,11 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 <span class="normal">1038</span>
 <span class="normal">1039</span>
 <span class="normal">1040</span>
-<span class="normal">1041</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">split_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop0</span><span class="p">,</span> <span class="n">loop1</span><span class="p">,</span> <span class="n">cuts</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="normal">1041</span>
+<span class="normal">1042</span>
+<span class="normal">1043</span>
+<span class="normal">1044</span>
+<span class="normal">1045</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">split_edges</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loop0</span><span class="p">,</span> <span class="n">loop1</span><span class="p">,</span> <span class="n">cuts</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 
     <span class="n">n0</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">loop0</span><span class="p">)</span> <span class="o">==</span> <span class="p">()</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">loop0</span><span class="p">)</span>
     <span class="n">n1</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">loop1</span><span class="p">)</span> <span class="o">==</span> <span class="p">()</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">loop1</span><span class="p">)</span>
@@ -10687,11 +10739,7 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2961</span>
-<span class="normal">2962</span>
-<span class="normal">2963</span>
-<span class="normal">2964</span>
-<span class="normal">2965</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2965</span>
 <span class="normal">2966</span>
 <span class="normal">2967</span>
 <span class="normal">2968</span>
@@ -10732,7 +10780,11 @@ Once duplicated, the vertices can be reshapped to address each instance individu
 <span class="normal">3003</span>
 <span class="normal">3004</span>
 <span class="normal">3005</span>
-<span class="normal">3006</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_curve_REVIEW</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="normal">3006</span>
+<span class="normal">3007</span>
+<span class="normal">3008</span>
+<span class="normal">3009</span>
+<span class="normal">3010</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_curve_REVIEW</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; &gt; Convert mesh to curve</span>
 
 <span class="sd">    Simple conversion when edges domain is defined</span>
@@ -11199,11 +11251,7 @@ If the object exists, it must be a mesh, there is no object type conversion.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1706</span>
-<span class="normal">1707</span>
-<span class="normal">1708</span>
-<span class="normal">1709</span>
-<span class="normal">1710</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1710</span>
 <span class="normal">1711</span>
 <span class="normal">1712</span>
 <span class="normal">1713</span>
@@ -11245,7 +11293,11 @@ If the object exists, it must be a mesh, there is no object type conversion.</p>
 <span class="normal">1749</span>
 <span class="normal">1750</span>
 <span class="normal">1751</span>
-<span class="normal">1752</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1752</span>
+<span class="normal">1753</span>
+<span class="normal">1754</span>
+<span class="normal">1755</span>
+<span class="normal">1756</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">torus</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">major_segments</span><span class="o">=</span><span class="mi">48</span><span class="p">,</span> <span class="n">minor_segments</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">major_radius</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">minor_radius</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a Torus.</span>
 
@@ -11491,11 +11543,7 @@ If the object exists, it must be a mesh, there is no object type conversion.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2498</span>
-<span class="normal">2499</span>
-<span class="normal">2500</span>
-<span class="normal">2501</span>
-<span class="normal">2502</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">2502</span>
 <span class="normal">2503</span>
 <span class="normal">2504</span>
 <span class="normal">2505</span>
@@ -11508,7 +11556,11 @@ If the object exists, it must be a mesh, there is no object type conversion.</p>
 <span class="normal">2512</span>
 <span class="normal">2513</span>
 <span class="normal">2514</span>
-<span class="normal">2515</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">triangulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="normal">2515</span>
+<span class="normal">2516</span>
+<span class="normal">2517</span>
+<span class="normal">2518</span>
+<span class="normal">2519</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">triangulate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">selection</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 
     <span class="n">faces_sel</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">faces</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">selection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -11587,11 +11639,7 @@ If the object exists, it must be a mesh, there is no object type conversion.</p>
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1651</span>
-<span class="normal">1652</span>
-<span class="normal">1653</span>
-<span class="normal">1654</span>
-<span class="normal">1655</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1655</span>
 <span class="normal">1656</span>
 <span class="normal">1657</span>
 <span class="normal">1658</span>
@@ -11607,7 +11655,11 @@ If the object exists, it must be a mesh, there is no object type conversion.</p>
 <span class="normal">1668</span>
 <span class="normal">1669</span>
 <span class="normal">1670</span>
-<span class="normal">1671</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1671</span>
+<span class="normal">1672</span>
+<span class="normal">1673</span>
+<span class="normal">1674</span>
+<span class="normal">1675</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">uvsphere</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">rings</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create a uv sphere.</span>
 
@@ -11697,11 +11749,7 @@ the argument scale_length. When the length is less than this value, the arrow is
 
             <details class="quote">
               <summary>Source code in <code>npblender/mesh.py</code></summary>
-              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1813</span>
-<span class="normal">1814</span>
-<span class="normal">1815</span>
-<span class="normal">1816</span>
-<span class="normal">1817</span>
+              <div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">1817</span>
 <span class="normal">1818</span>
 <span class="normal">1819</span>
 <span class="normal">1820</span>
@@ -11852,7 +11900,11 @@ the argument scale_length. When the length is less than this value, the arrow is
 <span class="normal">1965</span>
 <span class="normal">1966</span>
 <span class="normal">1967</span>
-<span class="normal">1968</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="normal">1968</span>
+<span class="normal">1969</span>
+<span class="normal">1970</span>
+<span class="normal">1971</span>
+<span class="normal">1972</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">vectors_field</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">locations</span><span class="p">,</span> <span class="n">vectors</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">.05</span><span class="p">,</span> <span class="n">scale_length</span><span class="o">=</span><span class="mf">1.</span><span class="p">,</span> <span class="n">angle</span><span class="o">=</span><span class="mf">24.</span><span class="p">,</span> <span class="n">segments</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">head</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">adjust_norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Create an arrow at each location corresponding to the vectors.</span>
 
