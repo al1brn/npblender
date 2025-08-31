@@ -2,7 +2,7 @@
 
 ::: npblender.mesh.Mesh
     options:
-      members: true
+      #members: true
       inherited_members: true
       separate_signature: true
       show_signature: true
