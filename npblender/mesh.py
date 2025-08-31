@@ -831,7 +831,7 @@ class Mesh(Geometry):
         Note that the added geometry can refer to existing vertices. It is appended as is, whithout shifting
         indices.
 
-        To add independant geometry, use join_geometry.
+        To add independant geometry, use [`Mesh.join_geometry`][npblender.mesh.Mesh.join_geometry].
 
         ``` python
         cube = Mesh.cube()
@@ -844,17 +844,23 @@ class Mesh(Geometry):
         cube.join_geometry(points=[[0, 0, 0], [0, 1, 0], [1, 0, 0]], corners=[0, 1, 2], faces=3)
         ```
 
-        Arguments
-        ---------
-            - points (array of vectors = None) : the vertices
-            - corners (array of ints = None) : corners, i.e. indices on the array of points
-            - sizes (array of ints = None) : size of the faces, the sum of this array must be equal to the length of the corners array
-            - materials (str or list of strs = None) : list of materials used in the geometry
-            - **attrs (dict) : other geometry attributes
+        Parameters
+        ----------
+        points : array of vectors, optional
+            The vertices.
+        corners : array of ints, optional
+            Indices on the array of points.
+        sizes : array of ints, optional
+            Size of the faces. The sum of this array must equal the length of `corners`.
+        materials : str or list of str, optional
+            List of materials used in the geometry.
+        **attrs : dict
+            Other geometry attributes.
 
         Returns
         -------
-            - dict : {'points', 'corners', 'faces', 'edges': added geometry indices}
+        dict
+            A dictionary with keys {'points', 'corners', 'faces', 'edges'} mapping to added geometry indices.
         """
 
         disp_attrs = self._attributes_per_domain(**attrs)

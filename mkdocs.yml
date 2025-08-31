@@ -37,7 +37,13 @@ plugins:
       handlers:
         python:
           options:
-            docstring_style: google   # ou sphinx, selon ton style
-            show_signature: true
-            show_source: true
-  
+            #docstring_style: google   # ou sphinx, selon ton style
+            docstring_style: numpy             
+            docstring_section_style: table     # sections (Arguments, Returns, etc.) en tableau
+            separate_signature: true           # signature dans un bloc code sous le heading
+            line_length: 88                    # wrap propre de la signature
+            show_source: false                 # (optionnel) masque le lien "Source"
+            merge_init_into_class: true        # doc de __init__ fusionnée dans la classe
+            # petits plus possibles :
+            # show_submodules: false
+            # filters: ["!^_"]                 # cache membres privés

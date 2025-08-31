@@ -87,3 +87,23 @@ def ensure_package(pkg: str, pip_name: str = None):
     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", pip_name])
 
     return importlib.import_module(pkg)
+
+def uninstall_package(pkg: str, pip_name: str = None):
+    """
+    Uninstall a package inside Blender's Python.
+
+    Args:
+        pkg (str): Module name to remove (e.g. "scipy").
+        pip_name (str): Name to use with pip (defaults to pkg).
+    """
+    pip_name = pip_name or pkg
+
+    # 1. Try to uninstall via pip
+    print(f"[npblender] Uninstalling {pip_name} via pip...")
+    subprocess.check_call([sys.executable, "-m", "pip", "uninstall", "-y", pip_name])
+
+    # 2. Remove from sys.modules if already imported
+    if pkg in sys.modules:
+        del sys.modules[pkg]
+        importlib.invalidate_caches()
+        print(f"[npblender] Removed {pkg} from sys.modules")
