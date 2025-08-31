@@ -1,4 +1,4 @@
-# Mesh - Overview
+# Mesh
 
 `Mesh` is the mesh class of **npblender**. It inherits from `Geometry` and represents a Blender mesh (vertices, edges, faces, loops) while remaining fully NumPy-compatible. The four main domains are: Points, Corners, Faces, and Edges.
 
@@ -105,7 +105,7 @@ This provides a full overview of the `Mesh` class in npblender:
 - A wide set of primitive constructors  
 
 
-# Mesh - Methods
+## Mesh - Methods
 
 ::: npblender.mesh.Mesh
     options:
