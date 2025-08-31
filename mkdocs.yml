@@ -21,6 +21,7 @@ nav:
   #    - Blender: usage/blender.md
   - Référence API:
       - npblender: api/index.md
+      - Mesh: api/mesh.md
 
 markdown_extensions:
   - toc:
