@@ -21,9 +21,17 @@
 - [Meshes][npblender.instances.Meshes]
 
 ### Maths
+- [maths][npblender.maths]
 - [Rotation][npblender.Rotation]
 - [Quaternion][npblender.Quaternion]
 - [Transformation][npblender.Transformation]
 
+### Animation
+- [Camera][npblender.camera.Camera] : for camera culling
+- [engine][npblender.engine.Engine] : animation engine
+- [Animation][npblender.engine.Animation] : root Animation class
+- [Simulation][npblender.simulation.Simulation] : advanced simulation
 
+### Misc
+- [utils][npblender.utils]
 
