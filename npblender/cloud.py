@@ -56,51 +56,40 @@ DATA_TEMP_NAME = "NPBL_TEMP"
 
 class Cloud(Geometry):
     """
-    Cloud Geometry class representing a collection of points with various attributes.
+    Point-cloud geometry container.
 
-    This class provides methods to create, manipulate, and transform point clouds, including
-    loading from and saving to Blender data structures, combining multiple clouds, and generating
-    point distributions in various shapes (line, arc, circle, rectangle, pie, disk, cylinder, sphere,
-    dome, cube, ball).
+    `Cloud` stores a set of points and their attributes, with helpers to
+    import/export from Blender data (Mesh or PointCloud), join other clouds,
+    apply basic transforms, and generate common point distributions.
 
-    Attributes:
-        points (Point): The vertices of the cloud with associated attributes.
+    Attributes
+    ----------
+    points : [Point][npblender.domain.Point]
+        Point domain storing per-point attributes (e.g., `position`, `normal`, ...).
 
-    Methods:
-        from_geometry: Create a Cloud from another geometry with points.
-        from_cloud: Synonym for from_geometry.
-        capture: Capture data from another Cloud instance.
-        from_data: Initialize from Blender Mesh or PointCloud data.
-        to_data: Write the cloud geometry into a Blender Mesh.
-        from_object: Create a Cloud from a Blender object.
-        to_object: Create or update a Blender object with the cloud data.
-        object: Context manager for temporary Blender object editing.
-        join: Join other Clouds into this one.
-        transform, translate, scale: Geometric transformations.
-        Various distribution methods: line_dist, arc_dist, circle_dist, rect_dist, pie_dist, disk_dist,
-            cylinder_dist, sphere_dist, dome_dist, cube_dist, ball_dist for generating points in shapes.
+    Notes
+    -----
+    - This class focuses on **point-only** data. For topological data
+      (faces/edges), use [`Mesh`](npblender.mesh.Mesh).
+    - Blender interoperability accepts both `bpy.types.Mesh` and
+      `bpy.types.PointCloud` when reading, but writing currently targets a
+      Mesh data block (see [`to_data`](npblender.cloud.Cloud.to_data)).
     """
-    
 
     def __init__(self, points=None, attr_from=None, **attrs):
-        """ Cloud Geometry.
-        
-        Initialize a Cloud geometry object.
-        
+        """
+        Initialize an empty cloud, optionally with points and attributes.
+
         Parameters
         ----------
-        points : array-like of vectors, optional
-            The vertices of the cloud geometry. Default is None.
-        attr_from : optional
-            An optional source from which to join attributes.
-        **attrs : dict
-            Additional geometry attributes to be added.
-
-        Notes
-        -----
-        - Initializes an empty geometry with a Point container.
-        - Joins attributes from `attr_from` if provided.
-        - Appends given points and attributes to the geometry.
+        points : array-like of shape (N, 3) or (N, D), optional
+            Coordinates to append as `points.position`. If extra keys are present,
+            pass them via `**attrs`.
+        attr_from : object, optional
+            Source whose attribute schemas should be merged into this geometry,
+            see [`join_attributes`](npblender.geometry.Geometry.join_attributes).
+        **attrs
+            Additional per-point attributes to append alongside `points`.
         """
 
         self.points = Point()
@@ -125,6 +114,14 @@ class Cloud(Geometry):
     # ====================================================================================================
 
     def to_dict(self):
+        """
+        Serialize the cloud to a plain Python dictionary.
+
+        Returns
+        -------
+        dict
+            A dictionary with keys: ``"geometry"`` (``"Cloud"``) and ``"points"``.
+        """
         return {
             'geometry': 'Cloud',
             'points':    self.points.to_dict(),
@@ -132,6 +129,19 @@ class Cloud(Geometry):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Deserialize a cloud from a dictionary produced by `to_dict`.
+
+        Parameters
+        ----------
+        d : dict
+            Serialized payload with at least the ``"points"`` key.
+
+        Returns
+        -------
+        Cloud
+            New instance with points loaded from `d`.
+        """
         cloud = cls()
         cloud.points = Point.from_dict(d['points'])
         return cloud
@@ -141,9 +151,12 @@ class Cloud(Geometry):
     # ====================================================================================================
 
     def clear_geometry(self):
-        """ Clear the geometry.
+        """
+        Clear all point data (schemas kept, values cleared).
 
-        Delete all the content.
+        Returns
+        -------
+        None
         """
         self.points.clear()
 
@@ -157,16 +170,25 @@ class Cloud(Geometry):
 
     @classmethod
     def from_geometry(cls, other, selection=None):
-        """ Create a Cloud from another gemetry with points domain.
+        """
+        Build a cloud from another geometry that has a point domain.
 
-        Arguments
-        ---------
-            - other (Geometry) : the geometry to copy
-            - selection (selection) : a valid selection on points
+        Parameters
+        ----------
+        other : [Geometry][npblender.geometry.Geometry]
+            Source geometry (must have a `points` domain).
+        selection : selection or None, optional
+            Selection on points **to keep**; if provided, the complement is deleted
+            after copying.
 
         Returns
         -------
-            - Cloud
+        Cloud
+
+        Raises
+        ------
+        ValueError
+            If `other` has no `points` domain.
         """
 
         points = getattr(other, 'points')
@@ -190,6 +212,18 @@ class Cloud(Geometry):
 
     @classmethod
     def from_cloud(cls, other, selection=None):
+        """
+        Synonym of [`from_geometry`](npblender.cloud.Cloud.from_geometry).
+
+        Parameters
+        ----------
+        other : Cloud
+        selection : selection or None, optional
+
+        Returns
+        -------
+        Cloud
+        """
         return cls.from_geometry(other, selection)
  
 
@@ -198,15 +232,18 @@ class Cloud(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def capture(self, other):
-        """ Capture the data of another Mesh.
+        """
+        Capture another cloud's buffers (no copy).
 
-        Arguments
-        ---------
-            - other (Cloud) : the mesh to capture
+        Parameters
+        ----------
+        other : Cloud
+            Source cloud whose `points` buffer is adopted.
 
         Returns
         -------
-            - self
+        Cloud
+            `self`, for chaining.
         """
         self.points  = other.points
 
@@ -220,11 +257,23 @@ class Cloud(Geometry):
 
     @classmethod
     def from_data(cls, data):
-        """ Initialize the geometry from a Blender data (Mesh or PointCloud)
+        """
+        Initialize the cloud from Blender data (Mesh or PointCloud).
 
-        Arguments
-        ---------
-            - data (Blender Mesh or PointCloud) : the data to load
+        Parameters
+        ----------
+        data : bpy.types.Mesh or bpy.types.PointCloud or str
+            A Blender data-block or a resolvable identifier accepted by
+            [`blender.get_data`](npblender.blender.get_data).
+
+        Returns
+        -------
+        Cloud
+
+        Raises
+        ------
+        ValueError
+            If the data-block type is not supported.
         """
 
         import bpy
@@ -260,15 +309,28 @@ class Cloud(Geometry):
     # -----------------------------------------------------------------------------------------------------------------------------
 
     def to_data(self, data):
-        """ Write the geometry into a Blender Mesh
+        """
+        Write this cloud into a Blender **Mesh** data-block.
 
-        > [!CAUTION]:
-        > to_data creates a blender Mesh, not PointCloud since the pyton API doesn't allow to dynamically
-        > change the number of points
+        Parameters
+        ----------
+        data : bpy.types.Mesh or str
+            Target mesh data (or identifier resolvable by
+            [`blender.get_data`](npblender.blender.get_data)). The geometry is
+            cleared and repopulated.
 
-        Arguments
-        ---------
-            - mesh (Blender Mesh instance) : the mesh to write
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        - Vertices are created to match the point count; per-point attributes are
+        written to `data.attributes`.
+
+        > ***Caution:*** This writes to a **Mesh** data-block (not PointCloud)
+        > because Blender’s Python API does not allow changing the point count of
+        > a `PointCloud` at runtime.
         """
 
         from . import blender
@@ -302,18 +364,22 @@ class Cloud(Geometry):
 
     @classmethod
     def from_object(cls, obj, evaluated=False):
-        """ Create a Mesh from an existing object.
+        """
+        Create a cloud from an existing Blender object.
 
-        Arguments
-        ---------
-            - obj (str or Blender object) : the object to initialize from
-            - evaluated (bool = False) : object modified by the modifiers if True, raw vertices otherwise
+        Parameters
+        ----------
+        obj : str or bpy.types.Object
+            Object or name resolvable by [`blender.get_object`](npblender.blender.get_object).
+        evaluated : bool, default=False
+            If True, read from the evaluated object (modifiers applied).
 
         Returns
         -------
-            - Mesh
+        Cloud
         """
 
+        import bpy
         from . import blender
 
         if evaluated:
@@ -329,20 +395,22 @@ class Cloud(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def to_object(self, obj, point_cloud=False, collection=None):
-        """ Create or update a blender object.
+        """
+        Create or update a Blender object from this cloud.
 
-        By default, a mesh object is created. If as_point_cloud is True, the object is the converted
-        to a PointCloud object.
-
-        Arguments
-        ---------
-            - obj (str or Blender object) : the object the create
-            - point_cloud (bool = False) : the object is a PointCloud object if True
-            - collection (str or Blender collection) : the collection to add the object to
+        Parameters
+        ----------
+        obj : str or bpy.types.Object
+            Object or name. If it does not exist, it is created.
+        point_cloud : bool, default=False
+            If True, convert the created mesh object to a `PointCloud` object.
+        collection : str or bpy.types.Collection or None, optional
+            Collection to link a newly created object into.
 
         Returns
         -------
-            - Blender Mesh or PointCloud object
+        bpy.types.Object
+            The created/updated Blender object.
         """
 
         from . import blender
@@ -356,46 +424,6 @@ class Cloud(Geometry):
         return obj
 
     # ====================================================================================================
-    # Object edition
-    # ====================================================================================================
-
-    @contextmanager
-    def object(self, index=0, as_point_cloud=True, readonly=True):
-
-        temp_name = index if isinstance(index, str) else f"BPBL Temp Mesh {index}"
-
-        ctx = bpy.context
-
-        old_sel = [obj.name for obj in bpy.data.objects if obj.select_get()]
-        old_active = ctx.view_layer.objects.active
-        if old_active is None:
-            old_active_name = None
-        else:
-            old_active_name = old_active.name
-
-        bpy.ops.object.select_all(action='DESELECT')        
-
-        obj = self.to_object(temp_name, as_point_cloud=as_point_cloud)
-        obj.select_set(True)
-        bpy.context.view_layer.objects.active = obj        
-
-        yield obj
-
-        if not readonly:
-            self.capture(Mesh.from_object(obj))
-
-        blender.delete_object(obj)
-
-        bpy.ops.object.select_all(action='DESELECT')        
-        for name in old_sel:
-            obj = bpy.data.objects.get(name)
-            if obj is not None:
-                obj.select_set(True)
-
-        if old_active_name is not None:
-            bpy.context.view_layer.objects.active = bpy.data.objects.get(old_active_name)
-
-    # ====================================================================================================
     # Combining
     # ====================================================================================================
 
@@ -404,35 +432,21 @@ class Cloud(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def join(self, *others):
-        """ Join other clouds.
+        """
+        Append other clouds' points to this cloud.
 
-        Arguments
-        ---------
-            - other (Mesh) : the Meshes to append
+        Parameters
+        ----------
+        *others : Geometry
+            One or more Geometries to concatenate.
+
+        Returns
+        -------
+        Cloud
+            `self`, for chaining.
         """
         for other in others:
             self.points.extend(other.points)
-
-        return self
-
-    # =============================================================================================================================
-    # Transformation
-    # =============================================================================================================================
-
-    def transform(self, transfo):
-        self.points.position = transfo @ self.points.position
-        return self
-    
-    def translate(self, translation):
-        self.points.position += translation
-        return self
-
-    def scale(self, scale, pivot=None):
-        if pivot is not None:
-            self.points.position -= pivot
-        self.points.position *= scale
-        if pivot is not None:
-            self.points.position += pivot
 
         return self
 

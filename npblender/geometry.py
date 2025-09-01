@@ -408,7 +408,7 @@ class Geometry:
     # ====================================================================================================
 
     @contextmanager
-    def object(self, index=0, readonly=True):
+    def object(self, index=0, readonly=True, **kwargs):
         """
         Temporary access to a Blender Object built from this geometry.
 
@@ -424,6 +424,8 @@ class Geometry:
             Index or name used to label the temporary object.
         readonly : bool, default=True
             If `False`, re-capture the possibly edited object back into this geometry.
+        kwargs : dict, optional
+            Keyword arguments passed to `self.to_object`.
 
         Yields
         ------
@@ -459,7 +461,7 @@ class Geometry:
 
         bpy.ops.object.select_all(action='DESELECT')        
 
-        obj = self.to_object(temp_name)
+        obj = self.to_object(temp_name, **kwargs)
         obj.select_set(True)
         bpy.context.view_layer.objects.active = obj        
 
@@ -766,7 +768,6 @@ class Geometry:
         return self.transformation(rotation=rotation, pivot=pivot)
     
     def transform(self, transformation):
-    def transform(self, transformation):
         """
         Apply a rotation matrix or batch of matrices.
 
@@ -843,7 +844,7 @@ class Geometry:
         Mesh
             A cube mesh sized to the bounding box.
         """
-        
+
         from .mesh import Mesh
 
         size = self.bounding_box_dims
