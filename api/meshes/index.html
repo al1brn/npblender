@@ -385,6 +385,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.mesh_id" class="md-nav__link">
+    <span class="md-ellipsis">
+      mesh_id
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Meshes.add_materials" class="md-nav__link">
     <span class="md-ellipsis">
       add_materials
@@ -403,9 +412,54 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.check" class="md-nav__link">
+    <span class="md-ellipsis">
+      check
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.clear_geometry" class="md-nav__link">
+    <span class="md-ellipsis">
+      clear_geometry
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Meshes.compute_attribute_on_domain" class="md-nav__link">
     <span class="md-ellipsis">
       compute_attribute_on_domain
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.from_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_dict
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.from_mesh_islands" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_mesh_islands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.from_meshes" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_meshes
     </span>
   </a>
   
@@ -439,6 +493,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.join" class="md-nav__link">
+    <span class="md-ellipsis">
+      join
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Meshes.join_attributes" class="md-nav__link">
     <span class="md-ellipsis">
       join_attributes
@@ -466,6 +529,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.multiply" class="md-nav__link">
+    <span class="md-ellipsis">
+      multiply
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Meshes.object" class="md-nav__link">
     <span class="md-ellipsis">
       object
@@ -475,9 +547,36 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.realize" class="md-nav__link">
+    <span class="md-ellipsis">
+      realize
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Meshes.rotate" class="md-nav__link">
     <span class="md-ellipsis">
       rotate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.set_mesh_points_attribute" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_mesh_points_attribute
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Meshes.to_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_dict
     </span>
   </a>
   
@@ -546,20 +645,155 @@
               Bases: <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code></p>
 
 
-        <p>Instances based on mesh buckets.</p>
-<p>Instances is best for managing a high number of instances with a low number
-of models.
-Meshes manages one mesh per point</p>
-
-
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="k">-</span> mesh (Mesh) : the mesh containing the geometry
-<span class="k">-</span> mesh_id (int = None) : mesh points attribute defining the instances
-<span class="k">-</span> attr_from (Geometry) : geometry where to capture attributes from
-<span class="k">-</span> **attributes (dict) : other geometry attributes
+        <p>Bucketed mesh instances.</p>
+<p><code>Meshes</code> looks like instances, the difference being the each instance is different.</p>
+<p>To allow handling the individual pieces in with vectorization, the pieces are
+groupded in buckets of the same size (same number of vertices).</p>
+<p>It is possible to iterate on pieces sharing the same size:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">bucket</span><span class="p">,</span> <span class="n">offset</span> <span class="ow">in</span> <span class="n">meshes</span><span class="p">:</span>
+    <span class="c1"># bucket is an array (npieces, nverts) of vertex indices in `meshes.mesh.points`</span>
+    <span class="c1"># offset is the first point index in `meshes.points`</span>
+    <span class="c1"># meshes.points[offset:offset + bucket.shape[0]] represent all the bucket pieces</span>
+    <span class="k">pass</span>
 </code></pre></div>
+
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.instances.Meshes.mesh">mesh</span></code></td>
+            <td>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The source mesh containing all vertices (possibly many concatenated copies).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.instances.Meshes.points">points</span></code></td>
+            <td>
+                  <code>[<a class="autorefs autorefs-internal" title="Point (npblender.domain.Point)" href="../point/#npblender.domain.Point">Point</a>][<a class="autorefs autorefs-internal" title="Point (npblender.domain.Point)" href="../point/#npblender.domain.Point">Point</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-piece attributes. At least <code>position</code> is present (piece centroid).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.instances.Meshes.buckets">buckets</span></code></td>
+            <td>
+                  <code><span title="list">list</span>[<span title="numpy.ndarray">ndarray</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of arrays with shape <code>(n_pieces, piece_vertex_count)</code> indexing rows
+into <code>mesh.points</code> for each bucket size.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>Buckets are created by grouping vertices per piece size (same vertex count),
+then stacking each contiguous group into a 2D array; <code>points.position</code>
+holds the centroid of each row and the mesh is recentered so that row-local
+vertices are around the origin. :contentReference[oaicite:1]{index=1}</p>
 </details>
+        <p>Initialize bucketed mesh instances.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>mesh</code>
+            </td>
+            <td>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>] or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Mesh to be bucketized. If <code>None</code>, creates an empty container.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mesh_id</code>
+            </td>
+            <td>
+                  <code><span title="array">array</span> - <span title="like">like</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-vertex group id used to split the mesh into pieces (passed to
+<code>mesh.points.make_buckets</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>attr_from</code>
+            </td>
+            <td>
+                  <code>[<a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a>][<a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a>] or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Geometry to copy attribute schemas from (matching domain names).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**attributes</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Extra per-piece attributes appended to <code>points</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
 
 
@@ -709,6 +943,54 @@ Meshes manages one mesh per point</p>
             <td>
               <div class="doc-md-description">
                 <p><code>max(bounding_box_dims)</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="npblender.instances.Meshes.mesh_id" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">mesh_id</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.instances.Meshes.mesh_id" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">mesh_id</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Per-piece identifiers aligned with the flattened bucket rows.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>numpy.ndarray of dtype int</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Vector of ids assigning each row (piece) to its bucket index. The
+length matches the concatenation of bucket rows (see iteration order). :contentReference[oaicite:7]{index=7}</p>
               </div>
             </td>
           </tr>
@@ -895,6 +1177,166 @@ Meshes manages one mesh per point</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.instances.Meshes.check" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">check</span>
+
+
+<a href="#npblender.instances.Meshes.check" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">check</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Meshes Check&#39;</span><span class="p">,</span> <span class="n">halt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate internal consistency between buckets and points.</p>
+<p>Verifies that the total number of rows across all buckets equals
+<code>len(points)</code>. When invalid, prints diagnostics and either raises
+(if <code>halt=True</code>) or returns <code>False</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>title</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Message prefix for diagnostics.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#34;Meshes Check&#34;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>halt</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, raise via assertion on failure.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True when consistent; False when inconsistent and <code>halt=False</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="AssertionError">AssertionError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If inconsistent and <code>halt=True</code>. :contentReference[oaicite:6]{index=6}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Meshes.clear_geometry" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">clear_geometry</span>
+
+
+<a href="#npblender.instances.Meshes.clear_geometry" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">clear_geometry</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Reset to an empty state.</p>
+<p>Clears the mesh, empties <code>points</code>, and removes all buckets.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>None</code></td>            <td>
+                  <code>contentReference[oaicite:17]{index=17}</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.instances.Meshes.compute_attribute_on_domain" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">compute_attribute_on_domain</span>
 
@@ -1042,6 +1484,267 @@ returns <code>attr</code> unchanged.</p>
 - edges → points: <a href="npblender.domain.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
 - corners → points: <a href="npblender.domain.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
 </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Meshes.from_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_dict</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.instances.Meshes.from_dict" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Deserialize a <code>Meshes</code> produced by <code>to_dict</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>d</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Serialized payload.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Meshes (npblender.instances.Meshes)" href="#npblender.instances.Meshes">Meshes</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Reconstructed instance with mesh, points and buckets restored. :contentReference[oaicite:11]{index=11}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Meshes.from_mesh_islands" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_mesh_islands</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.instances.Meshes.from_mesh_islands" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_mesh_islands</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build <code>Meshes</code> by splitting a mesh into face islands.</p>
+<p>Computes face islands on <code>mesh</code>, transfers the island id to the point
+domain, then uses it as <code>mesh_id</code> to create buckets.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>mesh</code>
+            </td>
+            <td>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source mesh.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Meshes (npblender.instances.Meshes)" href="#npblender.instances.Meshes">Meshes</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>New instance with one piece per island. :contentReference[oaicite:9]{index=9}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Meshes.from_meshes" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_meshes</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.instances.Meshes.from_meshes" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_meshes</span><span class="p">(</span><span class="n">meshes</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Copy-construct a <code>Meshes</code> from another <code>Meshes</code>.</p>
+<p>Duplicates the source mesh, copies the bucket lists, and clones the
+per-piece point domain.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>meshes</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Meshes (npblender.instances.Meshes)" href="#npblender.instances.Meshes">Meshes</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source <code>Meshes</code> to copy from.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Meshes (npblender.instances.Meshes)" href="#npblender.instances.Meshes">Meshes</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="AttributeError">AttributeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>meshes</code> is not a <code>Meshes</code> instance. :contentReference[oaicite:8]{index=8}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1207,6 +1910,105 @@ curves) may override to select only referenced points.</p>
             <td>
               <div class="doc-md-description">
                 <p><code>slice(None)</code> by default.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Meshes.join" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">join</span>
+
+
+<a href="#npblender.instances.Meshes.join" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">join</span><span class="p">(</span><span class="o">*</span><span class="n">others</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Concatenate other <code>Meshes</code> into this one.</p>
+<p>Appends the other mesh data, then merges their buckets: rows with the
+same piece vertex count are concatenated; new sizes create new entries.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>*others</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Meshes (npblender.instances.Meshes)" href="#npblender.instances.Meshes">Meshes</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Other <code>Meshes</code> objects to append.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Meshes (npblender.instances.Meshes)" href="#npblender.instances.Meshes">Meshes</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>, for chaining.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="AttributeError">AttributeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If any input is not a <code>Meshes</code>. :contentReference[oaicite:13]{index=13}</p>
               </div>
             </td>
           </tr>
@@ -1536,6 +2338,99 @@ or <code>None</code> if the object is not found.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.instances.Meshes.multiply" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">multiply</span>
+
+
+<a href="#npblender.instances.Meshes.multiply" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">multiply</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">in_place</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Duplicate all pieces <code>count</code> times.</p>
+<p>Buckets are offset by the source mesh vertex count to index the newly
+appended mesh copies; both the <code>points</code> domain and the <code>mesh</code> are
+multiplied accordingly.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>count</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of copies to create.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>in_place</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, expand this instance; otherwise return a new expanded copy.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Meshes (npblender.instances.Meshes)" href="#npblender.instances.Meshes">Meshes</a> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code> (in place) or a new <code>Meshes</code>; <code>None</code> if <code>count == 0</code>. :contentReference[oaicite:14]{index=14}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.instances.Meshes.object" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">object</span>
 
@@ -1657,6 +2552,53 @@ If <code>readonly=True</code>, the edited object is captured back into <code>sel
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.instances.Meshes.realize" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">realize</span>
+
+
+<a href="#npblender.instances.Meshes.realize" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">realize</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Realize the bucketed pieces into a concrete mesh.</p>
+<p>Copies the source mesh, joins per-piece point attributes (other than
+<code>position</code>) additively into the mesh per-vertex fields for each row,
+and applies per-piece transforms (rotation/scale/translation) to the
+vertices addressed by each bucket.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A mesh with all pieces transformed into world placement. :contentReference[oaicite:12]{index=12}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.instances.Meshes.rotate" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">rotate</span>
 
@@ -1734,6 +2676,180 @@ If <code>readonly=True</code>, the edited object is captured back into <code>sel
             <td>
               <div class="doc-md-description">
                 <p><code>self</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Meshes.set_mesh_points_attribute" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_mesh_points_attribute</span>
+
+
+<a href="#npblender.instances.Meshes.set_mesh_points_attribute" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">set_mesh_points_attribute</span><span class="p">(</span><span class="n">domain_name</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Broadcast a per-piece value to a per-vertex mesh attribute.</p>
+<p>Looks up <code>mesh.points[name]</code>, broadcasts <code>value</code> to <code>(len(self), *attr_shape)</code>,
+then writes the piece value to all vertices of each row in the buckets.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>domain_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Unused placeholder (kept for API symmetry).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the mesh <strong>point</strong> attribute to write.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>value</code>
+            </td>
+            <td>
+                  <code><span title="array">array</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Value(s) per piece, broadcastable to the attribute shape.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="KeyError">KeyError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the mesh point attribute <code>name</code> does not exist. :contentReference[oaicite:18]{index=18}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Meshes.to_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_dict</span>
+
+
+<a href="#npblender.instances.Meshes.to_dict" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_dict</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Serialize to a plain dictionary.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keys: <code>"geometry" = "Meshes"</code>, <code>"points"</code>, <code>"mesh"</code>, <code>"buckets"</code>. :contentReference[oaicite:10]{index=10}</p>
               </div>
             </td>
           </tr>
