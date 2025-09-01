@@ -27,17 +27,57 @@ DATA_TEMP_NAME = "npblender_TEMP"
 # ====================================================================================================
 
 class Instances(Geometry):
+    """
+    Instance container for duplicating geometries.
+
+    `Instances` manages a set of instance transforms (positions, optional scale
+    and rotation) and a list of source models (meshes and/or curves). It can
+    realize instances into concrete geometries or directly create Blender
+    objects.
+
+    Attributes
+    ----------
+    points : [Point][npblender.domain.Point]
+        Per-instance attributes (e.g., `position`, optional `rotation`, `scale`,
+        `model_index`, plus any user fields).
+    models : list[[Geometry][npblender.geometry.Geometry]]
+        List of source models to instance (e.g., [Mesh][npblender.mesh.Mesh],
+        [Curve][npblender.geometry.curve.Curve]).
+    low_resols : list[dict]
+        Optional Level-of-Detail (LOD) entries, each as
+        `{"dist": float, "models": list[Geometry]}`.
+
+    Notes
+    -----
+    - Each instance chooses its model via `points.model_index`.
+    """
 
     def __init__(self, points=None, models=None, model_index=None, attr_from=None, **attributes):
-        """ Create new instances.
-
-        Arguments
-        ---------
-            - points (array of vectors = None) : instances locations
-            - models (geometry or list of geometries = None) : the geometries to instantiate
-            - model_index (int = 0) : model index of instances
-            - **attributes (dict) : other geometry attributes
         """
+        Create a new instance set.
+
+        Initializes the per-instance point domain and captures model geometries.
+
+        Parameters
+        ----------
+        points : array-like of shape (N, 3) or None, optional
+            Instance locations appended as `points.position`.
+        models : Geometry or sequence of Geometry or None, optional
+            Model(s) to instance. If `None`, starts empty.
+        model_index : int or array-like of int or None, optional
+            Model index per instance (broadcast rules apply).
+        attr_from : Geometry or None, optional
+            Source geometry from which to join attribute schemas.
+        **attributes
+            Additional per-instance attributes to append (e.g., `rotation`, `scale`).
+
+        Notes
+        -----
+        - Models are loaded via [`Geometry.load_models`][npblender.geometry.Geometry.load_models].
+        - `low_resols` starts empty and can be populated with
+        [`add_low_resol`](npblender.instances.Instances.add_low_resol).
+        """
+
         self.points  = Point()
         self.join_attributes(attr_from)
 
@@ -50,6 +90,29 @@ class Instances(Geometry):
         self.points.append(position=points, model_index=model_index, **attributes)
 
     def check(self, title="Instances Check", halt=True):
+        """
+        Validate model indices against the models list.
+
+        Ensures that `max(points.model_index) < len(models)`.
+
+        Parameters
+        ----------
+        title : str, default="Instances Check"
+            Prefix for diagnostic messages.
+        halt : bool, default=True
+            If True, raise on failure; otherwise print and return `False`.
+
+        Returns
+        -------
+        bool
+            `True` if valid (or no instances), `False` when invalid and `halt=False`.
+
+        Raises
+        ------
+        AssertionError
+            If a model index is out of range and `halt=True`.
+        """
+
         n = np.max(self.points.model_index)
         if n >= len(self.models):
             print(title)
@@ -70,6 +133,18 @@ class Instances(Geometry):
     # =============================================================================================================================
 
     def to_dict(self):
+        """
+        Serialize the instances to a plain dictionary.
+
+        Returns
+        -------
+        dict
+            Keys:
+            - ``"geometry"`` = ``"Instances"``
+            - ``"points"``   : point-domain payload
+            - ``"models"``   : list of serialized models
+            - ``"low_resols"`` : list of serialized LOD levels
+        """
         return {
             'geometry':   'Instances',
             'points':     self.points.to_dict(),
@@ -79,6 +154,20 @@ class Instances(Geometry):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Deserialize an `Instances` object produced by `to_dict`.
+
+        Parameters
+        ----------
+        d : dict
+            Serialized payload with keys ``"points"``, ``"models"``, ``"low_resols"``.
+
+        Returns
+        -------
+        Instances
+            New instance with points, models and LODs reconstructed.
+        """
+
         insts = cls()
         insts.points     = Point.from_dict(d['points'])
         insts.models     = [Geometry.from_dict(model) for model in d['models']]
@@ -91,7 +180,28 @@ class Instances(Geometry):
     # ====================================================================================================
 
     def add_low_resol(self, dist, models):
+        """
+        Register a Level-of-Detail (LOD) set.
 
+        Associates a view distance threshold with a list of low-res models
+        (same length and order as `self.models`).
+
+        Parameters
+        ----------
+        dist : float
+            Distance threshold at which this LOD should be used.
+        models : Geometry or sequence of Geometry
+            One low-res model per source model.
+
+        Raises
+        ------
+        ValueError
+            If the number of LOD models does not match `len(self.models)`.
+
+        Returns
+        -------
+        None
+        """
         ls_models = self.load_models(models)
         if len(ls_models) != len(self.models):
             raise ValueError(
@@ -101,6 +211,30 @@ class Instances(Geometry):
         self.low_resols.append({"dist": dist, "models": ls_models})
 
     def compute_low_resols(self, start_scale=.1, scale=.8, detail=1.):
+        """
+        Auto-compute a LOD pyramid from current `models`.
+
+        Uses a camera model to estimate view distances for a target on-screen scale.
+        For meshes, generates simplified copies; for curves, converts to curve views.
+
+        Parameters
+        ----------
+        start_scale : float, default=0.1
+            Initial relative on-screen scale.
+        scale : float, default=0.8
+            Multiplicative factor between consecutive LOD levels (clipped to 0.01–0.99).
+        detail : float, default=1.0
+            Detail factor forwarded to simplification (mesh-dependent).
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        - Up to 10 levels are created, stopping when the max vertex count drops to ≤ 8.
+        - Each level is recorded via [`add_low_resol`](npblender.instances.Instances.add_low_resol).
+        """
 
         from .camera import Camera
         from .mesh import Mesh
@@ -155,6 +289,41 @@ class Instances(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def realize(self, camera_culling=False):
+        """
+        Realize instances into concrete geometries.
+
+        Duplicates each model for its selected instances, applies per-instance
+        transform (translation, optional rotation/scale), and accumulates results
+        into a [Mesh][npblender.mesh.Mesh] and/or a
+        [Curve][npblender.geometry.curve.Curve]. With `camera_culling=True`,
+        hidden instances are skipped and LODs may be used.
+
+        Parameters
+        ----------
+        camera_culling : bool or object, default=False
+            If truthy, perform visibility tests and LOD selection using a camera.
+
+        Returns
+        -------
+        dict
+            A dictionary with keys:
+            - ``"mesh"`` : a [Mesh][npblender.mesh.Mesh] or `None`
+            - ``"curve"``: a [Curve][npblender.geometry.curve.Curve] or `None`
+
+        Raises
+        ------
+        TypeError
+            If a model type is not supported (neither Mesh nor Curve).
+
+        Examples
+        --------
+        ``` python
+        insts = Instances(points=np.random.randn(100, 3), models=[Mesh.cube(), Curve.circle()])
+        geos = insts.realize(camera_culling=True)
+        if geos["mesh"] is not None:
+            geos["mesh"].to_object("InstancedMesh")
+        ```
+        """
 
         from . mesh import Mesh
         from . curve import Curve
@@ -270,6 +439,35 @@ class Instances(Geometry):
     # ----------------------------------------------------------------------------------------------------
     
     def to_object(self, name, profile=None, caps=True, use_radius=True, shade_smooth=True, camera_culling=False):
+        """
+        Create Blender object(s) from realized instances.
+
+        Realizes instances, converts curves to mesh when a profile is provided (or
+        when culling requires meshing), and creates one or two Blender objects.
+
+        Parameters
+        ----------
+        name : str
+            Base name for created objects.
+        profile : Curve or None, optional
+            Profile to sweep along curve outputs (see
+            [`Curve.to_mesh`][npblender.geometry.curve.Curve.to_mesh]).
+        caps : bool, default=True
+            Close ends when sweeping.
+        use_radius : bool, default=True
+            Use per-point radius when sweeping.
+        shade_smooth : bool, default=True
+            Smooth shading for the mesh object.
+        camera_culling : bool, default=False
+            If True, perform visibility tests and LOD selection.
+
+        Returns
+        -------
+        dict
+            Possibly contains:
+            - ``"mesh"`` : the created mesh object (with optional “ - (M)” suffix)
+            - ``"curve"``: the created curve object (with “ - (C)” suffix if both exist)
+        """
 
         # Realize to mesh and curve
         geos = self.realize(camera_culling=camera_culling)
@@ -304,6 +502,29 @@ class Instances(Geometry):
     # ====================================================================================================
 
     def models_to_object(self, name="Models"):
+        """
+        Dump all models (and their LODs) into a single Blender mesh object.
+
+        Places each source model along +X with its LOD stack above it along +Z,
+        then creates a single object with flat shading.
+
+        Parameters
+        ----------
+        name : str, default="Models"
+            Object name.
+
+        Returns
+        -------
+        bpy.types.Object
+            The created object.
+
+        Examples
+        --------
+        ``` python
+        obj = insts.models_to_object("AllModelsPreview")
+        ```
+        """
+
         from .mesh import Mesh
         from .curve import Curve
 
@@ -352,6 +573,27 @@ class Instances(Geometry):
     # ====================================================================================================
 
     def join(self, *others):
+        """
+        Concatenate other instance sets into this one.
+
+        Appends models and per-instance points; newly appended `model_index` values
+        are offset by the previous model count.
+
+        Parameters
+        ----------
+        *others : Instances
+            Other `Instances` objects to append.
+
+        Returns
+        -------
+        Instances
+            `self`, for chaining.
+
+        Raises
+        ------
+        AttributeError
+            If any argument is not an `Instances`.
+        """
 
         for other in others:
 
@@ -371,6 +613,26 @@ class Instances(Geometry):
     # ====================================================================================================
 
     def multiply(self, count, in_place=True):
+        """
+        Duplicate the instance set `count` times.
+
+        Parameters
+        ----------
+        count : int
+            Number of copies to create.
+        in_place : bool, default=True
+            If True, expand this instance; otherwise return a new expanded copy.
+
+        Returns
+        -------
+        Instances or None
+            `self` (in place) or a new `Instances`; `None` if `count == 0`.
+
+        Raises
+        ------
+        TypeError, ValueError
+            If `count` cannot be converted to `int`.
+        """
 
         count = int(count)
 
@@ -401,6 +663,14 @@ class Instances(Geometry):
     # ====================================================================================================
 
     def clear_geometry(self):
+        """
+        Clear all instances (keeps attribute schemas).
+
+        Returns
+        -------
+        None
+        """
+
         self.points.clear()
 
 # ====================================================================================================

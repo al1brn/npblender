@@ -20,5 +20,10 @@
 - [Instances][npblender.instances.Instances]
 - [Meshes][npblender.instances.Meshes]
 
+### Maths
+- [Rotation][npblender.Rotation]
+- [Quaternion][npblender.Quaternion]
+- [Transformation][npblender.Transformation]
+
 
 
