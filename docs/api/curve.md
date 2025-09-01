@@ -1,7 +1,3 @@
-# Curve
-
-
-## Curve - Methods
 
 ::: npblender.curve.Curve
     options:
