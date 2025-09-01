@@ -680,7 +680,9 @@ class Meshes(Geometry):
     """
     Bucketed mesh instances.
 
-    `Meshes` looks like instances, the difference being the each instance is different.
+    `Meshes` looks like `instances`, the difference being the each instance is different:
+    - `Instances` : each point instance points on a model with `model_index`
+    - `Meshes` : each point refers to vertices within `Mesh.mesh` attributes
 
     To allow handling the individual pieces in with vectorization, the pieces are
     groupded in buckets of the same size (same number of vertices).
