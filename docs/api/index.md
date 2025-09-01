@@ -12,4 +12,9 @@
 - [Face][npblender.domain.Face]
 - [Spline][npblender.domain.Spline]
 
+### Geometries
+- [Geometry][npblender.geometry.Geometry]
+- [Mesh][npblender.mesh.Mesh]
+- [Curve][npblender.curve.Curve]
+
 
