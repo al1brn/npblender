@@ -1722,7 +1722,6 @@ def get_attribute_names(spec):
 
 def get_attribute(attributes, name):
 
-    #attributes = get_attributes(spec, halt=True)
     battr = attributes[name]
     n     = len(battr.data)
     TYPE = TYPES[BL_TYPES[battr.data_type]]

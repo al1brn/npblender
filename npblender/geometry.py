@@ -1,24 +1,41 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# MIT License
+#
+# Copyright (c) 2025 Alain Bernard
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
-Blender Python Geometry module
+Module Name: geometry
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2023-11-10
+Last updated: 2025-08-31
 
-Created on Fri Nov 10 11:13:13 2023
+Summary:
+    Root class for actual Geometries.
 
-@author: alain.bernard
-@email: alain@ligloo.net
-
------
-
-Root class for geometries
+Usage example:
+    >>> geo = Geometry.from_dict(d)
 """
 
 from contextlib import contextmanager
 import numpy as np
-
-import bpy
-
-from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 
 from . import blender
 
@@ -138,171 +155,6 @@ class Geometry:
         raise Exception(
             f"Sorry, computing attribue from '{domain_from}' to '{domain_to}' is not implemented yet.")
 
-
-
-    def compute_attribute_on_domain_OLD(self, attr_name, domain_name):
-
-        from numba import njit, prange
-
-        # ---------------------------------------------------------------------------
-        # Faces to points
-
-        @njit(cache=True)
-        def _faces_to_points(loop_start, loop_total, vertex_index, source, res):
-            V = res.shape[0]
-            F = loop_start.shape[0]
-
-            count = np.zeros(V, dtype=np.int32)
-            for f in range(F):
-                s, t, val = loop_start[f], loop_total[f], source[f]
-                for k in range(t):
-                    v = vertex_index[s + k]
-                    res[v] += val
-                    count[v] += 1
-
-            trailing = 1
-            for d in range(1, res.ndim):
-                trailing *= res.shape[d]
-
-            R2 = res.reshape((V, trailing))
-            for v in range(V):
-                c = count[v]
-                if c > 0:
-                    inv = 1.0 / c
-                    for j in range(trailing):
-                        R2[v, j] *= inv
-
-            return res
-
-        # ---------------------------------------------------------------------------
-        # Points to faces
-
-        @njit(cache=True)
-        def _points_to_faces(loop_start, loop_total, vertex_index, source, res):
-            F = loop_start.shape[0]
-
-            for f in range(F):
-                s = loop_start[f]
-                t = loop_total[f]
-                for k in range(t):
-                    v = vertex_index[s + k]
-                    res[f] += source[v]
-                inv = 1.0 / t
-                res[f] *= inv
-
-            return res
-        
-        # ---------------------------------------------------------------------------
-        # Get the source domain for attribute
-        # ---------------------------------------------------------------------------
-
-        source_domain_name = None
-        for name in self.domain_names:
-            source_domain = getattr(self, name)
-            if attr_name in source_domain._infos:
-                source_domain_name = name
-                break
-
-        if source_domain_name is None:
-            raise AttributeError(f"No domain has an attribute named '{attr_name}'")
-
-        # ---------------------------------------------------------------------------
-        # Prepare
-        # ---------------------------------------------------------------------------
-
-        domain_name = domain_name.lower()
-
-        source = source_domain[attr_name]
-        
-        # Source = Target domain
-        if domain_name == source_domain_name:
-            return source
-        
-        # Resulting array
-        item_shape = source_domain._infos[attr_name]['shape']
-        target_domain = getattr(self, domain_name)
-        res = np.zeros((len(target_domain),) + item_shape, dtype=source.dtype)
-        count = None
-
-        # ---------------------------------------------------------------------------
-        # Different cases
-        # ---------------------------------------------------------------------------
-
-        # Faces to points
-        if source_domain_name == 'faces' and domain_name == 'points':
-            if True:
-                res = _faces_to_points(
-                    np.ascontiguousarray(self.faces.loop_start, dtype=np.int32),
-                    np.ascontiguousarray(self.faces.loop_total, dtype=np.int32),
-                    np.ascontiguousarray(self.corners.vertex_index, dtype=np.int32),
-                    np.ascontiguousarray(source, dtype=source.dtype),
-                    np.ascontiguousarray(res, dtype=res.dtype),
-                )
-
-            else:
-                count = np.zeros(len(target_domain), dtype=int)
-                for loop_start, loop_total, val in zip(self.faces.loop_start, self.faces.loop_total, source):
-                    corners = self.corners.vertex_index[loop_start:loop_start+loop_total]
-                    res[corners] += val
-                    count[corners] += 1
-
-        # Points to faces
-        elif source_domain_name == 'points' and domain_name == 'faces':
-            if True:
-                res = _points_to_faces(
-                    np.ascontiguousarray(self.faces.loop_start, dtype=np.int32),
-                    np.ascontiguousarray(self.faces.loop_total, dtype=np.int32),
-                    np.ascontiguousarray(self.corners.vertex_index, dtype=np.int32),
-                    np.ascontiguousarray(source, dtype=source.dtype),
-                    np.ascontiguousarray(res, dtype=res.dtype),
-                )
-            else:
-                for i_face, (loop_start, loop_total) in enumerate(zip(self.faces.loop_start, self.faces.loop_total)):
-                    corners = self.corners[loop_start:loop_start+loop_total]
-                    res[i_face] = np.average(source[corners], axis=0)
-
-        # Edges to points
-        elif source_domain_name == 'edges' and domain_name == 'points':
-            count = np.zeros(len(target_domain), dtype=int)
-            for v0, v1, value in zip(self.edges.vertex0, self.edges.vertex1, source):
-                res[v0] += value
-                res[v1] += value
-                count[v0] += 1
-                count[v1] += 1
-
-        # Points to edges
-        elif source_domain_name == 'points' and domain_name == 'edges':
-            for i_edge, (v0, v1) in enumerate(zip(self.edges.vertex0, self.edges.vertex1)):
-                res[i_edge] = (source[v0] + source[v1])/2
-
-        # Splines to points
-        elif source_domain_name == 'splines' and domain_name == 'points':
-            for loop_start, loop_total, val in zip(self.faces.loop_start, self.faces.loop_total, source):
-                res[loop_start:loop_start+loop_total] = val
-
-        # Points to splines
-        elif source_domain_name == 'points' and domain_name == 'splines':
-            for i_spline, (loop_start, loop_total) in enumerate(zip(self.faces.loop_start, self.faces.loop_total)):
-                res[i_spline] = np.average(source[loop_start:loop_start+loop_total], axis=0)
-
-        # Not implemented
-        else:
-            raise Exception(f"Sorry: compute_attribute from '{source_domain_name}' to '{domain_name}' domains is not implemented yet.")
-
-        # ---------------------------------------------------------------------------
-        # Finalization
-        # ---------------------------------------------------------------------------
-
-        if count is not None:
-            if len(item_shape) == 1:
-                count = count[:, None]
-            elif len(item_shape) == 2:
-                count = count[:, None, None]
-
-            res = res/count
-
-        return res
-
     # ====================================================================================================
     # Check geometry consistency
     # ====================================================================================================
@@ -326,6 +178,8 @@ class Geometry:
         -------
             - Mesh or Curve
         """
+
+        import bpy
 
         from .mesh import Mesh
         from .curve import Curve
@@ -500,7 +354,11 @@ class Geometry:
     def get_points_selection(self):
         return slice(None)
     
-    def _check_transformation_shape(self, t_shape, npoints, label="Transformation"):
+    def _check_transformation_shape_DEP(self, t_shape, npoints, label="Transformation"):
+        """ Deprecated
+
+        Replaced by point._get_shape_for_operation
+        """
         if t_shape == ():
             return (npoints, 3)
 
@@ -520,11 +378,42 @@ class Geometry:
     # ----------------------------------------------------------------------------------------------------
     
     def transformation(self, rotation=None, scale=None, translation=None, pivot=None):
+        """
+
+        The transformation arguments can treat the points as a list of packets
+        of the same size. For instance, 24 vertices can be seend as 3 packets of
+        8 vertices using a translation of (8, 3) vectors.
+
+        Examples
+        --------
+        ``` python
+        # A mesh made of 12 cubes
+        cubes = Mesh.cube(size=1)*12
+
+        # 3 random transformations
+        translation = np.random.uniform(-1, 1, (4, 3))
+        pivot = np.random.uniform(-1, 1, (3, 3))
+        scale = np.random.uniform(.1, 2, (12, 3))
+        rot = Rotation.from_euler(np.random.uniform(0, 2*np.pi, (6, 3)))
+
+        cubes.transformation(
+            translation = translation,
+            scale = scale,
+            rotation = rot,
+            pivot=pivot,
+        )
+        ```
+        """
 
         # Curve splines can be a subset of the points 
         pts_sel = self.get_points_selection()
         pos = self.points.position[pts_sel]
         npoints = len(pos)
+
+        # ---------------------------------------------------------------------------
+        # The list of all attributes to transform
+        # ---------------------------------------------------------------------------
+
         all_vecs = [pos]
 
         has_handles = "handle_left" in self.points.actual_names
@@ -533,39 +422,83 @@ class Geometry:
             right = self.points.handle_right[pts_sel]
             all_vecs.extend([left, right])
 
-        # First pivot
+        # ---------------------------------------------------------------------------
+        # Initial pivot
+        # ---------------------------------------------------------------------------
+
         if pivot is not None:
             pivot = np.asarray(pivot)
-            pivot_shape = self._check_transformation_shape(pivot.shape[:-1], npoints, label="Pivot")
-            for v in all_vecs:
-                v.reshape(pivot_shape)[:] -= pivot
+            if True:
+                pv_shape0, pv_shape1 = self.points._get_shape_for_operation(pivot.shape[:-1], title="Pivot")
+                pv = np.reshape(pivot, pv_shape1 + (3,))
+                for v in all_vecs:
+                    v.reshape(pv_shape0)[:] -= pv
+            else:
+                pivot_shape = self._check_transformation_shape(pivot.shape[:-1], npoints, label="Pivot")
+                for v in all_vecs:
+                    v.reshape(pivot_shape)[:] -= pivot
+
+        # ---------------------------------------------------------------------------
+        # Scale and rotation
+        # ---------------------------------------------------------------------------
 
         # Scale
         if scale is not None:
             scale = np.asarray(scale)
-            scale_shape = self._check_transformation_shape(scale.shape[:-1], npoints, label="Scale")
-            for v in all_vecs:
-                v.reshape(scale_shape)[:] *= scale
+            if True:
+                shape, op_shape = self.points._get_shape_for_operation(scale.shape[:-1], title="Scale")
+                sc = np.reshape(scale, op_shape + (3,))
+                for v in all_vecs:
+                    v.reshape(shape)[:] *= sc
+            else:
+                scale_shape = self._check_transformation_shape(scale.shape[:-1], npoints, label="Scale")
+                for v in all_vecs:
+                    v.reshape(scale_shape)[:] *= scale
                 
         # Rotation
         if rotation is not None:
-            rot_shape = self._check_transformation_shape(rotation.shape, npoints, label="Rotation")
-            for v in all_vecs:
-                v.reshape(rot_shape)[:] = rotation @ v.reshape(rot_shape)
+            if True:
+                shape, op_shape = self.points._get_shape_for_operation(rotation.shape, title="Rotation")
+                rot = rotation.reshape(op_shape)
+                for v in all_vecs:
+                    v.reshape(shape)[:] = rot @ v.reshape(shape)
+            else:
+                rot_shape = self._check_transformation_shape(rotation.shape, npoints, label="Rotation")
+                for v in all_vecs:
+                    v.reshape(rot_shape)[:] = rotation @ v.reshape(rot_shape)
 
+        # ---------------------------------------------------------------------------
         # Pivot back
-        if pivot is not None:
-            for v in all_vecs:
-                v.reshape(pivot_shape)[:] += pivot
+        # ---------------------------------------------------------------------------
 
+        if pivot is not None:
+            if True:
+                for v in all_vecs:
+                    v.reshape(pv_shape0)[:] += pv
+            else:
+                for v in all_vecs:
+                    v.reshape(pivot_shape)[:] += pivot
+
+        # ---------------------------------------------------------------------------
         # Translation
+        # ---------------------------------------------------------------------------
+
         if translation is not None:
             translation = np.asarray(translation)
-            tr_shape = self._check_transformation_shape(translation.shape[:-1], npoints, label="Pivot")
-            for v in all_vecs:
-                v.reshape(tr_shape)[:] += translation
+            if True:
+                shape, op_shape = self.points._get_shape_for_operation(translation.shape[:-1], title="Scale")
+                tr = np.reshape(translation, op_shape + (3,))
+                for v in all_vecs:
+                    v.reshape(shape)[:] += tr
+            else:
+                tr_shape = self._check_transformation_shape(translation.shape[:-1], npoints, label="Pivot")
+                for v in all_vecs:
+                    v.reshape(tr_shape)[:] += translation
 
-        # Back
+        # ---------------------------------------------------------------------------
+        # Set the points with the result
+        # ---------------------------------------------------------------------------
+
         self.points[pts_sel].position = pos
         if has_handles:
             self.points[pts_sel].handle_left = all_vecs[1]

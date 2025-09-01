@@ -16,7 +16,9 @@ from .simulation import Simulation
 
 from . import constants
 from . import blender
-from . import maths
+#from . import maths
+
+#from .maths import Rotation, Quaternion, Transformation
 
 VERSION         = (3, 0, 0)
 BLENDER_VERSION = (4, 5, 0)
@@ -38,7 +40,7 @@ __all__ = [
     "Simulation",
     "constants",
     "blender",
-    "maths",
+#    "maths",
 ]
 
 

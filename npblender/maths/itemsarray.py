@@ -154,9 +154,13 @@ class ItemsArray:
         ValueError
             If the total number of items does not match.
         """
+        # both tuple and ints are accepted
+        if len(new_shape) == 1 and isinstance(new_shape[0], tuple):
+            new_shape = new_shape[0]
+
         if np.prod(new_shape) != self.size:
             raise ValueError(f"{type(self).__name__}> Total size mismatch in reshape")
-
+        
         new_mat = self._mat.reshape(*new_shape, *self._item_shape)
         return type(self)(new_mat, copy=False)
 
@@ -183,6 +187,9 @@ class ItemsArray:
         ItemsArray
             The current instance (resized in place).
         """
+        # both tuple and ints are accepted
+        if len(new_shape) == 1 and isinstance(new_shape[0], tuple):
+            new_shape = new_shape[0]
 
         total_new = int(np.prod(new_shape))
         total_old = self.size

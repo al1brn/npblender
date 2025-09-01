@@ -45,7 +45,70 @@ class Quaternion(Rotation):
 
     def __str__(self):
         return f"<Quaternion {self.shape}>"
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Internal representation is (x, y, z, w), Blender is (w, x, y, z)
+    # ----------------------------------------------------------------------------------------------------
 
+    @staticmethod
+    def wxyz_to_xyzw(array, normalize=True):
+        """
+        Convert quaternions from (w, x, y, z) to (x, y, z, w) order.
+
+        Parameters
+        ----------
+        array : array_like, shape (..., 4)
+            Input array of quaternions in (w, x, y, z) order.
+        normalize : bool, default=True
+            If True, normalize the quaternion(s) to unit length.
+
+        Returns
+        -------
+        ndarray, shape (..., 4)
+            Array of quaternions in (x, y, z, w) order.
+
+        > ***Caution:*** This does not construct a `Quaternion` object,
+        it only reorders the array.
+        """
+        array = np.asarray(array)
+        if array.shape[-1] != 4:
+            raise ValueError("Input must have shape (..., 4)")
+        xyzw = np.empty_like(array)
+        xyzw[..., 0] = array[..., 1]
+        xyzw[..., 1] = array[..., 2]
+        xyzw[..., 2] = array[..., 3]
+        xyzw[..., 3] = array[..., 0]
+        if normalize:
+            norm = np.linalg.norm(xyzw, axis=-1, keepdims=True)
+            xyzw = xyzw / np.where(norm == 0, 1.0, norm)
+        return xyzw
+
+    @staticmethod
+    def xyzw_to_wxyz(array):
+        """
+        Convert quaternions from (x, y, z, w) to (w, x, y, z) order.
+
+        Parameters
+        ----------
+        array : array_like, shape (..., 4)
+            Input array of quaternions in (x, y, z, w) order.
+
+        Returns
+        -------
+        ndarray, shape (..., 4)
+            Array of quaternions in (w, x, y, z) order.
+
+        > ***Note:*** This does not normalize the quaternion(s).
+        """
+        array = np.asarray(array)
+        if array.shape[-1] != 4:
+            raise ValueError("Input must have shape (..., 4)")
+        wxyz = np.empty_like(array)
+        wxyz[..., 0] = array[..., 3]
+        wxyz[..., 1] = array[..., 0]
+        wxyz[..., 2] = array[..., 1]
+        wxyz[..., 3] = array[..., 2]
+        return wxyz
 
     # ----------------------------------------------------------------------------------------------------
     # Constructors
