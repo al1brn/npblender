@@ -358,9 +358,36 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.bounding_box" class="md-nav__link">
+    <span class="md-ellipsis">
+      bounding_box
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.bounding_box_dims" class="md-nav__link">
+    <span class="md-ellipsis">
+      bounding_box_dims
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.curve.Curve.length" class="md-nav__link">
     <span class="md-ellipsis">
       length
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.max_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      max_size
     </span>
   </a>
   
@@ -397,6 +424,15 @@
   <a href="#npblender.curve.Curve.add_splines" class="md-nav__link">
     <span class="md-ellipsis">
       add_splines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.apply_scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      apply_scale
     </span>
   </a>
   
@@ -469,6 +505,15 @@
   <a href="#npblender.curve.Curve.clear" class="md-nav__link">
     <span class="md-ellipsis">
       clear
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.compute_attribute_on_domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      compute_attribute_on_domain
     </span>
   </a>
   
@@ -556,6 +601,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.get_cubic_envelop" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_cubic_envelop
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.curve.Curve.get_material_index" class="md-nav__link">
     <span class="md-ellipsis">
       get_material_index
@@ -637,6 +691,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.object" class="md-nav__link">
+    <span class="md-ellipsis">
+      object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.curve.Curve.quadratic_bezier" class="md-nav__link">
     <span class="md-ellipsis">
       quadratic_bezier
@@ -649,6 +712,15 @@
   <a href="#npblender.curve.Curve.quadrilateral" class="md-nav__link">
     <span class="md-ellipsis">
       quadrilateral
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.rotate" class="md-nav__link">
+    <span class="md-ellipsis">
+      rotate
     </span>
   </a>
   
@@ -754,9 +826,27 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.transform" class="md-nav__link">
+    <span class="md-ellipsis">
+      transform
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.curve.Curve.transformation" class="md-nav__link">
     <span class="md-ellipsis">
       transformation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.translate" class="md-nav__link">
+    <span class="md-ellipsis">
+      translate
     </span>
   </a>
   
@@ -997,6 +1087,100 @@ when <code>curve_type</code> is not a single value (e.g., a list). :contentRefer
 
 
 
+<h2 id="npblender.curve.Curve.bounding_box" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">bounding_box</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.bounding_box" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">bounding_box</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Axis-aligned bounding box of the point positions.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>tuple of numpy.ndarray</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>(min_xyz, max_xyz)</code>. If empty, returns two zero vectors.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="npblender.curve.Curve.bounding_box_dims" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">bounding_box_dims</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.bounding_box_dims" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">bounding_box_dims</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Extents of the axis-aligned bounding box.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>numpy.ndarray of shape (3,)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>max_xyz - min_xyz</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
 <h2 id="npblender.curve.Curve.length" class="doc doc-heading">
             <span class="doc doc-object-name doc-attribute-name">length</span>
 
@@ -1030,6 +1214,53 @@ when <code>curve_type</code> is not a single value (e.g., a list). :contentRefer
             <td>
               <div class="doc-md-description">
                 
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="npblender.curve.Curve.max_size" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">max_size</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.max_size" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">max_size</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Maximum dimension of the bounding box.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>max(bounding_box_dims)</code>.</p>
               </div>
             </td>
           </tr>
@@ -1237,14 +1468,66 @@ If they aren't provided, they are computed.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Add a materials list to the existing one.</p>
-<p>If a material already exist, it is not added another time.</p>
+        <p>Append material name(s) to the geometry.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code>- materials (list of strs) : the list of materials to append.
-</code></pre></div>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>materials</code>
+            </td>
+            <td>
+                  <code>str or sequence of str</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>One name or a sequence of names to append.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>This method does not deduplicate names; duplicates may be appended.</p>
 </details>
 
     </div>
@@ -1568,6 +1851,97 @@ is ignored.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>curve_type</code> is not a single scalar value.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.apply_scale" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">apply_scale</span>
+
+
+<a href="#npblender.curve.Curve.apply_scale" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">apply_scale</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Scale points (convenience wrapper).</p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>scale</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-point or broadcastable scales.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pivot</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional pivot(s) for scaling.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>.</p>
               </div>
             </td>
           </tr>
@@ -2364,6 +2738,161 @@ and <code>halt=True</code>, raises; otherwise prints a message.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.curve.Curve.compute_attribute_on_domain" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">compute_attribute_on_domain</span>
+
+
+<a href="#npblender.curve.Curve.compute_attribute_on_domain" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">compute_attribute_on_domain</span><span class="p">(</span><span class="n">domain_from</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="n">domain_to</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Transfer an attribute from one domain to another.</p>
+<p>Performs a domain mapping (e.g., points → faces) using the appropriate
+domain operator, and returns the computed array on the target domain.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>domain_from</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source domain name (e.g., <code>"points"</code>, <code>"faces"</code>, <code>"edges"</code>, <code>"corners"</code>, <code>"splines"</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>attr</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> or <span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source attribute to transfer. If a string, it is looked up on the
+source domain; if an array, it must match the source domain length.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>domain_to</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target domain name.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Attribute values on the target domain. If <code>domain_from == domain_to</code>,
+returns <code>attr</code> unchanged.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="AttributeError">AttributeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If either <code>domain_from</code> or <code>domain_to</code> is not a valid domain of this geometry.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="Exception">Exception</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the requested mapping is not implemented.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>Implemented mappings include:
+- points → faces: <a href="npblender.domain.Point.compute_attribute_on_faces"><code>Point.compute_attribute_on_faces</code></a>
+- points → edges: <a href="npblender.domain.Point.compute_attribute_on_edges"><code>Point.compute_attribute_on_edges</code></a>
+- points → corners: <a href="npblender.domain.Point.compute_attribute_on_corners"><code>Point.compute_attribute_on_corners</code></a>
+- points → splines: <a href="npblender.domain.Point.compute_attribute_on_splines"><code>Point.compute_attribute_on_splines</code></a>
+- faces → points: <a href="npblender.domain.Face.compute_attribute_on_points"><code>Face.compute_attribute_on_points</code></a>
+- edges → points: <a href="npblender.domain.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
+- corners → points: <a href="npblender.domain.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.curve.Curve.compute_bezier_handles" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">compute_bezier_handles</span>
 
@@ -3152,25 +3681,21 @@ see code for details).</p>
 <div class="doc doc-object doc-function">
 
 
-<h2 id="npblender.curve.Curve.get_material_index" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_material_index</span>
+<h2 id="npblender.curve.Curve.get_cubic_envelop" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_cubic_envelop</span>
 
 
-<a href="#npblender.curve.Curve.get_material_index" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_material_index</span><span class="p">(</span><span class="n">mat_name</span><span class="p">)</span>
+<a href="#npblender.curve.Curve.get_cubic_envelop" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_cubic_envelop</span><span class="p">()</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Return the index of a material name.</p>
-<p>If the material doesn't exist, it is created</p>
+        <p>Return a cube mesh that encloses the geometry’s bounding box.</p>
+<p>Uses the bounding box dimensions to build a cube via
+<a href="npblender.mesh.Mesh.cube"><code>Mesh.cube</code></a>, forwarding this geometry’s
+<code>materials</code> if present.</p>
 
-
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="k">-</span> mat_name (str) : material name
-</code></pre></div>
-</details>
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -3183,17 +3708,97 @@ see code for details).</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - int : index of the material name in the materials list</code>
+                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a></code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>A cube mesh sized to the bounding box.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.get_material_index" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_material_index</span>
+
+
+<a href="#npblender.curve.Curve.get_material_index" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_material_index</span><span class="p">(</span><span class="n">mat_name</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the index of a material name, creating it if needed.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>mat_name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Material name to look up or append.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Index of <code>mat_name</code> in <code>self.materials</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>If <code>mat_name</code> is not present, it is appended to <code>self.materials</code> and the
+new index is returned.</p>
+</details>
 
     </div>
 
@@ -3331,14 +3936,86 @@ boolean mask selecting those rows in <code>points</code>. Otherwise returns <cod
 
     <div class="doc doc-contents ">
 
-        <p>Capture the attributes from another geometry.</p>
-<p>Other can be a different geometry, in that case, only domains with the same name are captured.
-kwargs allows to filter the domains to capture:</p>
-<div class="highlight"><pre><span></span><code><span class="n">mesh</span><span class="o">.</span><span class="n">join_attributes</span><span class="p">(</span><span class="n">other_mesh</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">mesh</span><span class="o">.</span><span class="n">join_attributes</span><span class="p">(</span><span class="n">curve</span><span class="p">)</span>
+        <p>Merge attribute schemas from another geometry.</p>
+<p>For each domain listed in <code>self.domain_names</code> and also present in <code>other</code>,
+copies (joins) the attribute <em>definitions</em> (names, dtypes, metadata) from
+<code>other</code> into this geometry's domains. Use keyword flags to include/exclude
+domains by name (e.g., <code>faces=False</code>).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>other</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source geometry. If <code>None</code>, does nothing and returns <code>self</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**kwargs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-domain boolean switches to filter which domains to join.</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>, for chaining.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">mesh</span><span class="o">.</span><span class="n">join_attributes</span><span class="p">(</span><span class="n">other_mesh</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">curve</span><span class="o">.</span><span class="n">join_attributes</span><span class="p">(</span><span class="n">mesh</span><span class="p">)</span>  <span class="c1"># only common domains are merged</span>
 </code></pre></div>
-<p>Returns:
-    - self</p>
 
 
     </div>
@@ -3480,18 +4157,43 @@ kwargs allows to filter the domains to capture:</p>
 
     <div class="doc doc-contents ">
 
-        <p>Load a geometry or geometries from specifications.</p>
-<p>The specs can be:
-    - a Blender collection
-    - a Blender object
-    - a Geometry</p>
+        <p>Load multiple geometries from collections, objects, or instances.</p>
+<p>Accepts mixed inputs such as Blender collections, Blender objects, lists/
+tuples of either, or already-instantiated <code>Mesh</code>/<code>Curve</code>. Returns a flat
+list of geometries discovered or constructed.</p>
+<p>This method is mainly intended to be used by <a class="autorefs autorefs-internal" title="Instances" href="../instances/#npblender.instances.Instances"><code>Instances</code></a>
+to load its models.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">specs</span><span class="w"> </span><span class="p">(</span><span class="n">list</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">objects</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">collections</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">models</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>*specs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Collections, objects, lists/tuples, or <code>Mesh</code>/<code>Curve</code> instances.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -3504,11 +4206,34 @@ kwargs allows to filter the domains to capture:</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - list of geometries</code>
+                  <code><span title="list">list</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>List of geometries (<code>Mesh</code>/<code>Curve</code>).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If a spec cannot be resolved to a geometry.</p>
               </div>
             </td>
           </tr>
@@ -3537,14 +4262,41 @@ kwargs allows to filter the domains to capture:</p>
 
     <div class="doc doc-contents ">
 
-        <p>Load a Blender object and returns either a Mesh or a Curve.</p>
+        <p>Load a Blender object and return a <code>Mesh</code> or a <code>Curve</code>.</p>
+<p>Resolves <code>name</code> to a Blender object, inspects its data type, and returns a
+matching geometry by calling the subclass' <code>from_object</code>.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">(</span><span class="nb">str</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">bpy</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">Object</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">object</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> or <span title="bpy.types.Object">Object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Object name or object instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -3557,16 +4309,47 @@ kwargs allows to filter the domains to capture:</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - Mesh or Curve</code>
+                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a> or <a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a> or None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>A <a href="npblender.mesh.Mesh"><code>Mesh</code></a> or a <a href="npblender.geometry.curve.Curve"><code>Curve</code></a>,
+or <code>None</code> if the object is not found.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="Exception">Exception</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the object exists but is neither a <code>bpy.types.Mesh</code> nor <code>bpy.types.Curve</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">geo</span> <span class="o">=</span> <span class="n">Geometry</span><span class="o">.</span><span class="n">load_object</span><span class="p">(</span><span class="s2">&quot;MyObject&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">geo</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">geo</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</code></pre></div>
 
 
     </div>
@@ -3726,6 +4509,127 @@ so that <code>sum(splines.loop_total) == len(points)</code> holds true.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.object" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">object</span>
+
+
+<a href="#npblender.curve.Curve.object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">object</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Temporary access to a Blender Object built from this geometry.</p>
+<p>Creates a transient object (named <code>"BPBL Temp {index}"</code> unless <code>index</code> is a
+string), selects and activates it, yields it for editing, then cleans up.
+If <code>readonly=True</code>, the edited object is captured back into <code>self</code>.</p>
+<p>This method can be used to set and apply a modifier (see exemple below).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>index</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> or <span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Index or name used to label the temporary object.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>readonly</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>False</code>, re-capture the possibly edited object back into this geometry.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>kwargs</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keyword arguments passed to <code>self.to_object</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Yields:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bpy.types.Object">Object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The temporary Blender object built from <code>self</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">plane</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">Grid</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">plane</span><span class="o">.</span><span class="n">object</span><span class="p">(</span><span class="n">readonly</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">obj</span><span class="p">:</span>
+    <span class="n">mod</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">modifiers</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="s2">&quot;Solidify&quot;</span><span class="p">,</span> <span class="s1">&#39;SOLIDIFY&#39;</span><span class="p">)</span>
+    <span class="n">mod</span><span class="o">.</span><span class="n">thickness</span> <span class="o">=</span> <span class="mf">.1</span>
+    <span class="n">bpy</span><span class="o">.</span><span class="n">ops</span><span class="o">.</span><span class="n">object</span><span class="o">.</span><span class="n">modifier_apply</span><span class="p">(</span><span class="n">modifier</span><span class="o">=</span><span class="n">mod</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+<span class="c1"># plane is now solidifed</span>
+</code></pre></div>
 
 
     </div>
@@ -3963,6 +4867,97 @@ points <code>start</code>, <code>middle</code>, and <code>end</code>. Currently 
 <p><span class="doc-section-title">Examples:</span></p>
     <div class="highlight"><pre><span></span><code><span class="n">c</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">quadrilateral</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 </code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.rotate" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">rotate</span>
+
+
+<a href="#npblender.curve.Curve.rotate" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">rotate</span><span class="p">(</span><span class="n">rotation</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Rotate points (convenience wrapper).</p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>rotation</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span> or <span title="Rotation">Rotation</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rotation(s) to apply as <code>R @ v</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pivot</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional pivot(s) for rotation.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -5022,6 +6017,81 @@ to that resolution (cyclic splines have no duplicate endpoint).</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.curve.Curve.transform" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">transform</span>
+
+
+<a href="#npblender.curve.Curve.transform" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">transform</span><span class="p">(</span><span class="n">transformation</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Apply a rotation matrix or batch of matrices.</p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>transformation</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rotation matrix or batch of rotation matrices.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.curve.Curve.transformation" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">transformation</span>
 
@@ -5032,28 +6102,207 @@ to that resolution (cyclic splines have no duplicate endpoint).</p>
 
     <div class="doc doc-contents ">
 
-        <p>The transformation arguments can treat the points as a list of packets
-of the same size. For instance, 24 vertices can be seend as 3 packets of
-8 vertices using a translation of (8, 3) vectors.</p>
+        <p>Apply rotation/scale/translation (with optional per-packet broadcasting).</p>
+<p>Operates in-place on <code>points.position</code> and, when present, Bezier handles
+(<code>points.handle_left</code>, <code>points.handle_right</code>). Shapes can represent packets
+of points: broadcasting rules are handled by
+<a href="npblender.domain.Point._get_shape_for_operation"><code>Point._get_shape_for_operation</code></a>.</p>
 
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>rotation</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span> or <span title="Rotation">Rotation</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rotation matrix/matrices applied as <code>R @ v</code>. Shape may broadcast over
+points (see notes).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>scale</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-axis scaling. Shape may broadcast over points.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>translation</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-point translation. Shape may broadcast over points.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>pivot</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Pivot(s) subtracted before, and added after, the rotation/scale; same
+broadcasting rules as <code>scale</code>/<code>translation</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>, for chaining.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>If handles exist, they are transformed consistently with positions.</li>
+</ul>
+</details>
 
 <p><span class="doc-section-title">Examples:</span></p>
-    <div class="highlight"><pre><span></span><code><span class="c1"># A mesh made of 12 cubes</span>
-<span class="n">cubes</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">cube</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">12</span>
-
-<span class="c1"># 3 random transformations</span>
-<span class="n">translation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-<span class="n">pivot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-<span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">.1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-<span class="n">rot</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
-
-<span class="n">cubes</span><span class="o">.</span><span class="n">transformation</span><span class="p">(</span>
-    <span class="n">translation</span> <span class="o">=</span> <span class="n">translation</span><span class="p">,</span>
-    <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="p">,</span>
-    <span class="n">rotation</span> <span class="o">=</span> <span class="n">rot</span><span class="p">,</span>
-    <span class="n">pivot</span><span class="o">=</span><span class="n">pivot</span><span class="p">,</span>
-<span class="p">)</span>
+    <div class="highlight"><pre><span></span><code><span class="c1"># 12 cubes laid out randomly with per-instance transforms</span>
+<span class="n">cubes</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">cube</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">,</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">R</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+<span class="n">cubes</span><span class="o">.</span><span class="n">transformation</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="n">R</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="n">S</span><span class="p">,</span> <span class="n">translation</span><span class="o">=</span><span class="n">T</span><span class="p">)</span>
 </code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.translate" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">translate</span>
+
+
+<a href="#npblender.curve.Curve.translate" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">translate</span><span class="p">(</span><span class="n">translation</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Translate points (convenience wrapper).</p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>translation</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-point or broadcastable translation vectors.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
