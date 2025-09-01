@@ -60,10 +60,12 @@ plugins:
               - "!^_"            # sécurité : exclut tout ce qui commence par _
               - "!^__.*__$"      # exclut __dunder__
             show_root_heading: true        # <— H1 = nom de l’objet (sert de “header” avec la docstring de classe)
+            show_root_full_path: false     # <-- show only "Vertex" instead of "npblender.domain.Vertex"
             heading_level: 1               # <— niveau de titre pour la racine
             members_order: alphabetical    # <— ordre alphabétique des méthodes/membres
 
   - autorefs
+
 
 
 
