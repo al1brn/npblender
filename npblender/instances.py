@@ -664,13 +664,12 @@ class Instances(Geometry):
 
     def clear_geometry(self):
         """
-        Clear all instances (keeps attribute schemas).
+        Clear all instances (keeps attribute schemas and models).
 
         Returns
         -------
         None
         """
-
         self.points.clear()
 
 # ====================================================================================================
@@ -678,20 +677,57 @@ class Instances(Geometry):
 # ====================================================================================================
 
 class Meshes(Geometry):
+    """
+    Bucketed mesh instances.
+
+    `Meshes` looks like instances, the difference being the each instance is different.
+
+    To allow handling the individual pieces in with vectorization, the pieces are
+    groupded in buckets of the same size (same number of vertices).
+
+    It is possible to iterate on pieces sharing the same size:
+
+    ```python
+    for bucket, offset in meshes:
+        # bucket is an array (npieces, nverts) of vertex indices in `meshes.mesh.points`
+        # offset is the first point index in `meshes.points`
+        # meshes.points[offset:offset + bucket.shape[0]] represent all the bucket pieces
+        pass
+    ```
+
+    Attributes
+    ----------
+    mesh : [Mesh][npblender.mesh.Mesh]
+        The source mesh containing all vertices (possibly many concatenated copies).
+    points : [Point][npblender.domain.Point]
+        Per-piece attributes. At least `position` is present (piece centroid).
+    buckets : list[numpy.ndarray]
+        List of arrays with shape `(n_pieces, piece_vertex_count)` indexing rows
+        into `mesh.points` for each bucket size.
+
+    Notes
+    -----
+    Buckets are created by grouping vertices per piece size (same vertex count),
+    then stacking each contiguous group into a 2D array; `points.position`
+    holds the centroid of each row and the mesh is recentered so that row-local
+    vertices are around the origin. :contentReference[oaicite:1]{index=1}
+    """
 
     def __init__(self, mesh=None, mesh_id=None, attr_from=None, **attributes):
-        """ Instances based on mesh buckets.
+        """
+        Initialize bucketed mesh instances.
 
-        Instances is best for managing a high number of instances with a low number
-        of models.
-        Meshes manages one mesh per point
-
-        Arguments
-        ---------
-            - mesh (Mesh) : the mesh containing the geometry
-            - mesh_id (int = None) : mesh points attribute defining the instances
-            - attr_from (Geometry) : geometry where to capture attributes from
-            - **attributes (dict) : other geometry attributes
+        Parameters
+        ----------
+        mesh : [Mesh][npblender.mesh.Mesh] or None, optional
+            Mesh to be bucketized. If `None`, creates an empty container.
+        mesh_id : array-like or None, optional
+            Per-vertex group id used to split the mesh into pieces (passed to
+            `mesh.points.make_buckets`).
+        attr_from : [Geometry][npblender.geometry.Geometry] or None, optional
+            Geometry to copy attribute schemas from (matching domain names).
+        **attributes
+            Extra per-piece attributes appended to `points`.
         """
         self.points  = Point()
         self.join_attributes(attr_from)
@@ -754,6 +790,30 @@ class Meshes(Geometry):
     # ====================================================================================================
 
     def check(self, title="Meshes Check", halt=True):
+        """
+        Validate internal consistency between buckets and points.
+
+        Verifies that the total number of rows across all buckets equals
+        `len(points)`. When invalid, prints diagnostics and either raises
+        (if `halt=True`) or returns `False`.
+
+        Parameters
+        ----------
+        title : str, default="Meshes Check"
+            Message prefix for diagnostics.
+        halt : bool, default=True
+            If True, raise via assertion on failure.
+
+        Returns
+        -------
+        bool
+            True when consistent; False when inconsistent and `halt=False`.
+
+        Raises
+        ------
+        AssertionError
+            If inconsistent and `halt=True`. :contentReference[oaicite:6]{index=6}
+        """
         npoints = sum([len(b) for b in self.buckets])
         if npoints != len(self.points):
             print(title)
@@ -769,6 +829,15 @@ class Meshes(Geometry):
 
     @property
     def mesh_id(self):
+        """
+        Per-piece identifiers aligned with the flattened bucket rows.
+
+        Returns
+        -------
+        numpy.ndarray of dtype int
+            Vector of ids assigning each row (piece) to its bucket index. The
+            length matches the concatenation of bucket rows (see iteration order). :contentReference[oaicite:7]{index=7}
+        """
         mesh_id = np.empty(len(self.mesh.points), dtype=bint)
         for index, (bucket, offset) in enumerate(self):
             mesh_id[offset:offset + len(bucket)] = index
@@ -780,6 +849,26 @@ class Meshes(Geometry):
 
     @classmethod
     def from_meshes(cls, meshes):
+        """
+        Copy-construct a `Meshes` from another `Meshes`.
+
+        Duplicates the source mesh, copies the bucket lists, and clones the
+        per-piece point domain.
+
+        Parameters
+        ----------
+        meshes : Meshes
+            Source `Meshes` to copy from.
+
+        Returns
+        -------
+        Meshes
+
+        Raises
+        ------
+        AttributeError
+            If `meshes` is not a `Meshes` instance. :contentReference[oaicite:8]{index=8}
+        """
 
         from .mesh import Mesh
 
@@ -799,6 +888,22 @@ class Meshes(Geometry):
 
     @classmethod
     def from_mesh_islands(cls, mesh):
+        """
+        Build `Meshes` by splitting a mesh into face islands.
+
+        Computes face islands on `mesh`, transfers the island id to the point
+        domain, then uses it as `mesh_id` to create buckets.
+
+        Parameters
+        ----------
+        mesh : [Mesh][npblender.mesh.Mesh]
+            Source mesh.
+
+        Returns
+        -------
+        Meshes
+            New instance with one piece per island. :contentReference[oaicite:9]{index=9}
+        """
         face_islands = mesh.get_islands()
         islands = mesh.compute_attribute_on_domain("faces", face_islands, "points")
         return cls(mesh, mesh_id=islands)
@@ -808,6 +913,14 @@ class Meshes(Geometry):
     # ====================================================================================================
 
     def to_dict(self):
+        """
+        Serialize to a plain dictionary.
+
+        Returns
+        -------
+        dict
+            Keys: ``"geometry" = "Meshes"``, ``"points"``, ``"mesh"``, ``"buckets"``. :contentReference[oaicite:10]{index=10}
+        """
         return {
             'geometry':   'Meshes',
             'points':     self.points.to_dict(),
@@ -817,6 +930,19 @@ class Meshes(Geometry):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Deserialize a `Meshes` produced by `to_dict`.
+
+        Parameters
+        ----------
+        d : dict
+            Serialized payload.
+
+        Returns
+        -------
+        Meshes
+            Reconstructed instance with mesh, points and buckets restored. :contentReference[oaicite:11]{index=11}
+        """
         from .mesh import Mesh
 
         meshes = cls()
@@ -831,6 +957,19 @@ class Meshes(Geometry):
     # ====================================================================================================
 
     def realize(self):
+        """
+        Realize the bucketed pieces into a concrete mesh.
+
+        Copies the source mesh, joins per-piece point attributes (other than
+        `position`) additively into the mesh per-vertex fields for each row,
+        and applies per-piece transforms (rotation/scale/translation) to the
+        vertices addressed by each bucket.
+
+        Returns
+        -------
+        [Mesh][npblender.mesh.Mesh]
+            A mesh with all pieces transformed into world placement. :contentReference[oaicite:12]{index=12}
+        """
 
         from .mesh import Mesh
 
@@ -870,6 +1009,27 @@ class Meshes(Geometry):
     # ====================================================================================================
 
     def join(self, *others):
+        """
+        Concatenate other `Meshes` into this one.
+
+        Appends the other mesh data, then merges their buckets: rows with the
+        same piece vertex count are concatenated; new sizes create new entries.
+
+        Parameters
+        ----------
+        *others : Meshes
+            Other `Meshes` objects to append.
+
+        Returns
+        -------
+        Meshes
+            `self`, for chaining.
+
+        Raises
+        ------
+        AttributeError
+            If any input is not a `Meshes`. :contentReference[oaicite:13]{index=13}
+        """
         
         from .mesh import Mesh
 
@@ -895,6 +1055,25 @@ class Meshes(Geometry):
     # ====================================================================================================
 
     def multiply(self, count, in_place=True):
+        """
+        Duplicate all pieces `count` times.
+
+        Buckets are offset by the source mesh vertex count to index the newly
+        appended mesh copies; both the `points` domain and the `mesh` are
+        multiplied accordingly.
+
+        Parameters
+        ----------
+        count : int
+            Number of copies to create.
+        in_place : bool, default=True
+            If True, expand this instance; otherwise return a new expanded copy.
+
+        Returns
+        -------
+        Meshes or None
+            `self` (in place) or a new `Meshes`; `None` if `count == 0`. :contentReference[oaicite:14]{index=14}
+        """
 
         count = int(count)
 
@@ -935,7 +1114,15 @@ class Meshes(Geometry):
     # ====================================================================================================
 
     def clear_geometry(self):
+        """
+        Reset to an empty state.
 
+        Clears the mesh, empties `points`, and removes all buckets.
+
+        Returns
+        -------
+        None :contentReference[oaicite:17]{index=17}
+        """
         from .mesh import Mesh
 
         self.mesh = Mesh()  
@@ -947,8 +1134,32 @@ class Meshes(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def set_mesh_points_attribute(self, domain_name, name, value):
+        """
+        Broadcast a per-piece value to a per-vertex mesh attribute.
 
-        # Will raise en error if attribute doesn' exist
+        Looks up `mesh.points[name]`, broadcasts `value` to `(len(self), *attr_shape)`,
+        then writes the piece value to all vertices of each row in the buckets.
+
+        Parameters
+        ----------
+        domain_name : str
+            Unused placeholder (kept for API symmetry).
+        name : str
+            Name of the mesh **point** attribute to write.
+        value : array-like
+            Value(s) per piece, broadcastable to the attribute shape.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        KeyError
+            If the mesh point attribute `name` does not exist. :contentReference[oaicite:18]{index=18}
+        """
+
+        # Will raise en error if attribute doesn't exist
         attr = self.mesh.points[name]
 
         # _infos can be accessed securely
