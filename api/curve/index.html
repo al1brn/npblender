@@ -1,0 +1,1827 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="NumPy-based geometry for Blender">
+      
+      
+        <meta name="author" content="Alain Bernard">
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+    
+    
+      
+        <title>Curve - NPBlender</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#curve" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="NPBlender" class="md-header__button md-logo" aria-label="NPBlender" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            NPBlender
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Curve
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/al1brn/npblender" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="NPBlender" class="md-nav__button md-logo" aria-label="NPBlender" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    NPBlender
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/al1brn/npblender" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.0.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path fill="currentColor" d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Accueil
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Référence API
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Référence API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    npblender
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../mesh/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Mesh
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#curve-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      Curve - Methods
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="curve">Curve<a class="headerlink" href="#curve" title="Permanent link">&para;</a></h1>
+<h2 id="curve-methods">Curve - Methods<a class="headerlink" href="#curve-methods" title="Permanent link">&para;</a></h2>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h1 id="npblender.curve.Curve" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">Curve</span>
+
+
+<a href="#npblender.curve.Curve" class="headerlink" title="Permanent link">&para;</a></h1>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Curve</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">splines</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">curve_type</span><span class="o">=</span><span class="n">POLY</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attr_from</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code></p>
+
+
+        <p>Curve Geometry.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nx">points</span><span class="w"> </span><span class="p">(</span><span class="nx">array</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">vectors</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">vertices</span>
+<span class="o">-</span><span class="w"> </span><span class="nx">splines</span><span class="w"> </span><span class="p">(</span><span class="nx">array</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">ints</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">sizes</span>
+<span class="o">-</span><span class="w"> </span><span class="nx">curve_type</span><span class="w"> </span><span class="p">(</span><span class="nx">array</span><span class="w"> </span><span class="nx">onf</span><span class="w"> </span><span class="nx">ints</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">curve</span><span class="w"> </span><span class="nx">types</span>
+<span class="o">-</span><span class="w"> </span><span class="nx">materials</span><span class="w"> </span><span class="p">(</span><span class="nx">str</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">strs</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">materials</span><span class="w"> </span><span class="nx">used</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">geometry</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">attrs</span><span class="w"> </span><span class="p">(</span><span class="nx">dict</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">other</span><span class="w"> </span><span class="nx">geometry</span><span class="w"> </span><span class="nx">attributes</span>
+</code></pre></div>
+</details>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.add_bezier" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add_bezier</span>
+
+
+<a href="#npblender.curve.Curve.add_bezier" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add_bezier</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">splines</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">handle_left</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">handle_right</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add Bezier splines</p>
+<p>The arguments 'splines' gives the length(s) of the bezier spline(s). If None:
+- the number of points is taken (one spline is added)
+- points.shape[1] is taken if the shape of points is (m, , 3)</p>
+<p>handle_left and handle_right must have the same shape as points if provided.
+If they aren't provided, they are computed.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <ul>
+<li>points (array (n, 3) or (m, n, 3) of vectors) : the points of the curves</li>
+<li>splines (int or array of ints = None) : spline or splines length</li>
+<li>handle_left (same shape as points = None) : left handles</li>
+<li>handle_right (same shape as points = None) : right handles</li>
+<li>cyclic (bool = False) : whether the curve is cyclic or not</li>
+<li>attrs (dict) : spline and/or points attributes</li>
+</ul>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>- dict (&#39;points&#39;: added points indices, &#39;splines&#39;: added splines indices)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.add_materials" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add_materials</span>
+
+
+<a href="#npblender.curve.Curve.add_materials" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add_materials</span><span class="p">(</span><span class="n">materials</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add a materials list to the existing one.</p>
+<p>If a material already exist, it is not added another time.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code>- materials (list of strs) : the list of materials to append.
+</code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.add_poly" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add_poly</span>
+
+
+<a href="#npblender.curve.Curve.add_poly" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add_poly</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">splines</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">curve_type</span><span class="o">=</span><span class="n">POLY</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">w</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add Poly or Nurbs splines</p>
+<p>The arguments 'splines' gives the length(s) of the spline(s). If None:
+- the number of points is taken (one spline is added)
+- points.shape[1] is taken if the shape of points is (m, , 3)</p>
+<p>Non bezeier splines use 4D points. If the provided vectors are 4D, the argument w
+is ignored.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <ul>
+<li>points (array (n, 3 or 4) or (m, n, 3 or 4) of vectors) : the points of the curves</li>
+<li>splines (int or array of ints = None) : spline or splines length</li>
+<li>cyclic (bool = False) : whether the curve is cyclic or not</li>
+<li>w (float) : w value, ignored if points are 4D</li>
+<li>attrs (dict) : spline and/or points attributes</li>
+</ul>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>- dict (&#39;points&#39;: added points indices, &#39;splines&#39;: added splines indices)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.add_splines" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add_splines</span>
+
+
+<a href="#npblender.curve.Curve.add_splines" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add_splines</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">splines</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">curve_type</span><span class="o">=</span><span class="n">POLY</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add splines</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.blender_data" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">blender_data</span>
+
+
+<a href="#npblender.curve.Curve.blender_data" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">blender_data</span><span class="p">(</span><span class="n">readonly</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Acces to Blender Curve API.</p>
+<p>Transfer the geometry to a temporay Blender Curve.
+The example below use a blender Mesh to get the normals.</p>
+<div class="highlight"><pre><span></span><code><span class="n">curve</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">Spiral</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="n">curve</span><span class="o">.</span><span class="n">blender_data</span><span class="p">()</span> <span class="k">as</span> <span class="n">bcurve</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of points&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bcurve</span><span class="o">.</span><span class="n">splines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">points</span><span class="p">))</span>
+
+<span class="c1"># &gt; Number of points 65</span>
+</code></pre></div>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nv">readonly</span><span class="w"> </span><span class="ss">(</span><span class="nv">bool</span><span class="o">=</span><span class="nv">False</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">don</span><span class="err">&#39;t read back the geometry if not modified</span>
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - Blender Mesh</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.capture" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">capture</span>
+
+
+<a href="#npblender.curve.Curve.capture" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">capture</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Capture the data of another Curve.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code>- other (Curve) : the mesh to capture
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - self</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.clear" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">clear</span>
+
+
+<a href="#npblender.curve.Curve.clear" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">clear</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Clear the geometry</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.compute_bezier_handles" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">compute_bezier_handles</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.compute_bezier_handles" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">compute_bezier_handles</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">eps</span><span class="o">=</span><span class="mf">1e-06</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Compute cubic Bezier handles (left/right) from anchors using Catmull-Rom style tangents.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code>(N,3) or (B,N,3) float32/float64</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>OPEN storage (no duplicated first point).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cyclic</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, wrap neighbors; else use one-sided differences at ends.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>eps</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Small epsilon to guard against zero-length tangents.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1e-06</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>left, right : same shape as `points`</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>left[i]  = P[i] - T[i] * (len_in[i]  / 3)
+right[i] = P[i] + T[i] * (len_out[i] / 3)
+with len_in = ||P[i] - P[i-1]|| and len_out = ||P[i+1] - P[i]|| (wrapped if cyclic).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.delete_points" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">delete_points</span>
+
+
+<a href="#npblender.curve.Curve.delete_points" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">delete_points</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">splines</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Delete points.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="n">points</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">points</span><span class="w"> </span><span class="n">selection</span><span class="o">,</span><span class="w"> </span><span class="n">optional</span>
+<span class="w">    </span><span class="n">Points</span><span class="w"> </span><span class="n">indices</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">delete</span><span class="w"> </span><span class="n">directly</span><span class="o">.</span>
+<span class="n">splines</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">splines</span><span class="w"> </span><span class="n">selection</span><span class="o">,</span><span class="w"> </span><span class="n">optional</span>
+<span class="w">    </span><span class="n">Splines</span><span class="w"> </span><span class="n">owning</span><span class="w"> </span><span class="n">vertices</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">delete</span><span class="o">.</span>
+</code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.delete_splines" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">delete_splines</span>
+
+
+<a href="#npblender.curve.Curve.delete_splines" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">delete_splines</span><span class="p">(</span><span class="n">splines</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Delete splines.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="n">splines</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">splines</span><span class="w"> </span><span class="n">selection</span><span class="o">,</span><span class="w"> </span><span class="n">optional</span>
+<span class="w">    </span><span class="n">Splines</span><span class="w"> </span><span class="n">owning</span><span class="w"> </span><span class="n">vertices</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">delete</span><span class="o">.</span>
+</code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.for_each_bucket" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">for_each_bucket</span>
+
+
+<a href="#npblender.curve.Curve.for_each_bucket" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">for_each_bucket</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Iterate over homogeneous spline buckets and call <code>func</code> once per bucket.</p>
+<p>Bucketing key:
+(curve_type, N, cyclic, resolution)    # resolution only relevant for BEZIER</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>func</code>
+            </td>
+            <td>
+                  <code><span title="callable">callable</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Signature:
+    func(curve, curve_type, loop_total, is_cyclic, resolution=None) -&gt; any
+- <code>curve</code> is a Curve view on self .
+- <code>curve_type</code> is the spline type.
+- <code>loop_total</code> is the number of points in the spline.
+- <code>is_cyclic</code> is True if the spline is cyclic.
+- <code>resolution</code> is the resolution of the loop, or None if the spline is not Bezier.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Yields:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>(<span title="indices">indices</span>, <span title="result">result</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>indices : list[int]
+    Spline indices for this bucket, in stacking order.
+result : any
+    Whatever <code>func</code> returned for this bucket.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.from_curve" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_curve</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.from_curve" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_curve</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">points</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">splines</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a Curve from another curve.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code>- other (Mesh) : the mesh to copy
+- points (selector = None) : points selection
+- splines (selector = None) : splines selection
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - Curve</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.from_curve_data" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_curve_data</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.from_curve_data" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_curve_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Initialize the geometry from a Blender Curve</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="p">(</span><span class="n">Blender</span><span class="w"> </span><span class="n">Curve</span><span class="w"> </span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">curve</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
+</code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.from_object" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_object</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.from_object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_object</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">evaluated</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a Curve from an existing curve.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nv">obj</span><span class="w"> </span><span class="ss">(</span><span class="nv">str</span><span class="w"> </span><span class="nv">or</span><span class="w"> </span><span class="nv">Blender</span><span class="w"> </span><span class="nv">object</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">object</span><span class="w"> </span><span class="nv">to</span><span class="w"> </span><span class="nv">initialize</span><span class="w"> </span><span class="nv">from</span>
+<span class="o">-</span><span class="w"> </span><span class="nv">evaluated</span><span class="w"> </span><span class="ss">(</span><span class="nv">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">False</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">object</span><span class="w"> </span><span class="nv">modified</span><span class="w"> </span><span class="nv">by</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">modifiers</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">True</span>,<span class="w"> </span><span class="nv">raw</span><span class="w"> </span><span class="nv">vertices</span><span class="w"> </span><span class="nv">otherwise</span>
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - Curve</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.get_material_index" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_material_index</span>
+
+
+<a href="#npblender.curve.Curve.get_material_index" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_material_index</span><span class="p">(</span><span class="n">mat_name</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the index of a material name.</p>
+<p>If the material doesn't exist, it is created</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="k">-</span> mat_name (str) : material name
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - int : index of the material name in the materials list</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.get_points_selection" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_points_selection</span>
+
+
+<a href="#npblender.curve.Curve.get_points_selection" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_points_selection</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get selection on points associated to the splines.</p>
+<p>If the Curve is not a view on splines, if return [:], otherwise
+it returns a selection on the points.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - sel (slice) : indices of splines points</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.join" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">join</span>
+
+
+<a href="#npblender.curve.Curve.join" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">join</span><span class="p">(</span><span class="o">*</span><span class="n">others</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Join other Curves.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code>- others (Curve) : the curves to append
+</code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.join_attributes" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">join_attributes</span>
+
+
+<a href="#npblender.curve.Curve.join_attributes" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">join_attributes</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Capture the attributes from another geometry.</p>
+<p>Other can be a different geometry, in that case, only domains with the same name are captured.
+kwargs allows to filter the domains to capture:</p>
+<div class="highlight"><pre><span></span><code><span class="n">mesh</span><span class="o">.</span><span class="n">join_attributes</span><span class="p">(</span><span class="n">other_mesh</span><span class="p">,</span> <span class="n">faces</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">mesh</span><span class="o">.</span><span class="n">join_attributes</span><span class="p">(</span><span class="n">curve</span><span class="p">)</span>
+</code></pre></div>
+<p>Returns:
+    - self</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.load_models" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">load_models</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.load_models" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">load_models</span><span class="p">(</span><span class="o">*</span><span class="n">specs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Load a geometry or geometries from specifications.</p>
+<p>The specs can be:
+    - a Blender collection
+    - a Blender object
+    - a Geometry</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">specs</span><span class="w"> </span><span class="p">(</span><span class="n">list</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">objects</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">collections</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">models</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - list of geometries</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.load_object" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">load_object</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.load_object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">load_object</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Load a Blender object and returns either a Mesh or a Curve.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">(</span><span class="nb">str</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">bpy</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">Object</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">object</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - Mesh or Curve</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.multiply" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">multiply</span>
+
+
+<a href="#npblender.curve.Curve.multiply" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">multiply</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">in_place</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Duplicate the geometry.</p>
+<p>Multiplying is a way to efficiently duplicate the geometry a great number of times.
+Once duplicated, the points can be reshapped to address each instance individually.</p>
+<div class="highlight"><pre><span></span><code><span class="n">count</span> <span class="o">=</span> <span class="mi">16</span>
+
+<span class="n">cube</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">Cube</span><span class="p">()</span> <span class="o">*</span> <span class="n">count</span>
+
+<span class="c1"># Shape the points as 16 blocks of 8 vertices</span>
+<span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cube</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+<span class="c1"># Place the cubes in a circle</span>
+<span class="n">ags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">points</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">ags</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">points</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">ags</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+
+<span class="n">cube</span><span class="o">.</span><span class="n">to_object</span><span class="p">(</span><span class="s2">&quot;Cubes&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nv">count</span><span class="w"> </span><span class="ss">(</span><span class="nv">int</span><span class="o">=</span><span class="mi">10</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">number</span><span class="w"> </span><span class="nv">of</span><span class="w"> </span><span class="nv">instances</span>
+<span class="o">-</span><span class="w"> </span><span class="nv">attributes</span><span class="w"> </span><span class="ss">(</span><span class="nv">name</span><span class="o">=</span><span class="nv">value</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">named</span><span class="w"> </span><span class="nv">attributes</span>
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - Mesh</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.no_view" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">no_view</span>
+
+
+<a href="#npblender.curve.Curve.no_view" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">no_view</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Materialize a view-curve into a standalone curve (deep copy of splines and points),
+preserving all point-domain fields (handles, custom attrs, ...).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.select" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">select</span>
+
+
+<a href="#npblender.curve.Curve.select" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">select</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Explicit alias for subsetting splines; same semantics as curve[indices].</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.to_bezier" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_bezier</span>
+
+
+<a href="#npblender.curve.Curve.to_bezier" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_bezier</span><span class="p">(</span><span class="n">control_count</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert splines to Bezier splines (OPEN storage).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>control_count</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of anchor points to generate per spline. If None, keep current loop_total.
+For cyclic splines, anchors are sampled on [0,1) (no duplicate). For non-cyclic, on [0,1].</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-segment resolution to write into <code>splines.resolution</code> (&gt;=1).</p>
+              </div>
+            </td>
+            <td>
+                  <code>16</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.to_curve_data" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_curve_data</span>
+
+
+<a href="#npblender.curve.Curve.to_curve_data" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_curve_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Initialize the geometry from a Blender Curve</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="p">(</span><span class="n">Blender</span><span class="w"> </span><span class="n">Curve</span><span class="w"> </span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">curve</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
+</code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.to_mesh" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_mesh</span>
+
+
+<a href="#npblender.curve.Curve.to_mesh" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_mesh</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">caps</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_radius</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">camera_culling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <blockquote>
+<p>Transform curve to mesh</p>
+</blockquote>
+<p>If profile is None, the mesh contains only edges
+otherwise they are ignored</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <ul>
+<li>profile (Curve = None) : profile curve</li>
+<li>caps (bool = True) : use caps</li>
+<li>use_radius (bool = True) : use the radius as a scale for profile</li>
+</ul>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>-<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.to_object" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_object</span>
+
+
+<a href="#npblender.curve.Curve.to_object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_object</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">collection</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create or update a blender object.</p>
+<p>The method 'to_object' creates the whole geometry. It creates a new object if it doesn't already exist.
+If the object exists, it must be a curve, there is no object type conversion.</p>
+<p>Once the object is created, use the method 'update_object' to change the vertices.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <div class="codehilite"><pre><span></span><code>- obj (str or Blender object) : the object the create
+</code></pre></div>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>    - Blender curve object</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.to_poly" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_poly</span>
+
+
+<a href="#npblender.curve.Curve.to_poly" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_poly</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert the splines to Poly splines.</p>
+<p>If resolution is None:
+- <code>splines.resolution</code> is used to split Bezier segments
+- poly lines are left unchanged</p>
+<p>If resolution is not None, all splines are resampled using this value</p>
+
+
+<details class="arguments:" open>
+  <summary>Arguments:</summary>
+  <div class="codehilite"><pre><span></span><code><span class="nv">resolution</span><span class="w"> </span><span class="ss">(</span><span class="nv">int</span><span class="ss">)</span>:<span class="w">          </span><span class="nv">Poly</span><span class="w"> </span><span class="nv">resolution</span>,<span class="w"> </span><span class="nv">use</span><span class="w"> </span><span class="nv">spline</span><span class="w"> </span><span class="nv">resolution</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">Bezier</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">None</span>.
+</code></pre></div>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.transformation" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">transformation</span>
+
+
+<a href="#npblender.curve.Curve.transformation" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">transformation</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">translation</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pivot</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The transformation arguments can treat the points as a list of packets
+of the same size. For instance, 24 vertices can be seend as 3 packets of
+8 vertices using a translation of (8, 3) vectors.</p>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="c1"># A mesh made of 12 cubes</span>
+<span class="n">cubes</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">cube</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">12</span>
+
+<span class="c1"># 3 random transformations</span>
+<span class="n">translation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">pivot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mf">.1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+<span class="n">rot</span> <span class="o">=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+
+<span class="n">cubes</span><span class="o">.</span><span class="n">transformation</span><span class="p">(</span>
+    <span class="n">translation</span> <span class="o">=</span> <span class="n">translation</span><span class="p">,</span>
+    <span class="n">scale</span> <span class="o">=</span> <span class="n">scale</span><span class="p">,</span>
+    <span class="n">rotation</span> <span class="o">=</span> <span class="n">rot</span><span class="p">,</span>
+    <span class="n">pivot</span><span class="o">=</span><span class="n">pivot</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.instant", "navigation.tracking", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
+      
+    
+  </body>
+</html>
