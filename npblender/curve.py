@@ -63,16 +63,61 @@ class Curve(Geometry):
     domain_names = ["points", "splines"]
 
     def __init__(self, points=None, splines=None, curve_type=POLY, materials=None, attr_from=None, **attrs):
-        """ Curve Geometry.
-
-        Arguments
-        ---------
-            - points (array of vectors = None) : the vertices
-            - splines (array of ints = None) : sizes
-            - curve_type (array onf ints) : curve types
-            - materials (str or list of strs = None) : list of materials used in the geometry
-            - **attrs (dict) : other geometry attributes
         """
+        Construct a curve geometry.
+
+        Initializes empty domains by default, or builds a curve from provided
+        control points and spline sizes/types. If both `points` and `splines` are
+        already instances of [`ControlPoint`](npblender.domain.ControlPoint) and
+        [`Spline`](npblender.domain.Spline), the curve is created as a **view**
+        on these domains (no data copy). Otherwise, domains are allocated and
+        populated via [`add_splines`](npblender.geometry.curve.Curve.add_splines).
+
+        Parameters
+        ----------
+        points : array-like or [`ControlPoint`](npblender.domain.ControlPoint), optional
+            Control-point positions (and optional per-point attributes) used to
+            populate the curve. If a `ControlPoint` domain is provided together
+            with a `Spline` domain, the curve becomes a view on them.
+        splines : array-like or [`Spline`](npblender.domain.Spline), optional
+            Per-spline control-point counts (when building), or a ready-made
+            `Spline` domain (to create a view).
+        curve_type : int, default=POLY
+            Default spline type for construction. One of
+            [`POLY`](npblender.constants.POLY),
+            [`BEZIER`](npblender.constants.BEZIER),
+            [`NURBS`](npblender.constants.NURBS).
+            Ignored when `points`/`splines` are full domains.
+        materials : str or sequence of str, optional
+            Material names used by the curve. A single string is accepted and
+            promoted to a one-element list.
+        attr_from : object, optional
+            Source whose transferable attributes are joined into this geometry
+            (see [`join_attributes`](npblender.geometry.geometry.Geometry.join_attributes)).
+        **attrs
+            Additional geometry attributes to forward to
+            [`add_splines`](npblender.geometry.curve.Curve.add_splines) during construction.
+
+        Notes
+        -----
+        - When `points` and `splines` are provided as domains, the instance is a
+        **view**: `self.is_view` is `True` if the sum of `splines.loop_total`
+        differs from `len(points)`. Use
+        [`no_view`](npblender.geometry.curve.Curve.no_view) to materialize a
+        standalone copy. :contentReference[oaicite:0]{index=0}
+        - Otherwise, the constructor allocates empty
+        [`ControlPoint`](npblender.domain.ControlPoint) and
+        [`Spline`](npblender.domain.Spline) domains, joins attributes from
+        `attr_from` if any, then calls
+        [`add_splines`](npblender.geometry.curve.Curve.add_splines). :contentReference[oaicite:1]{index=1}
+
+        Raises
+        ------
+        ValueError
+            Propagated from [`add_splines`](npblender.geometry.curve.Curve.add_splines)
+            when `curve_type` is not a single value (e.g., a list). :contentReference[oaicite:2]{index=2}
+        """
+
         # ----- The materials
         if materials is None:
             self.materials = []
@@ -107,15 +152,18 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def get_points_selection(self):
-        """ Get selection on points associated to the splines.
+        """
+        Indices/slice selecting the points actually referenced by the current splines.
 
-        If the Curve is not a view on splines, if return [:], otherwise
-        it returns a selection on the points.
+        If the curve is a *view* (splines refer to a subset of points), returns a
+        boolean mask selecting those rows in `points`. Otherwise returns `slice(None)`.
 
         Returns
         -------
-            - sel (slice) : indices of splines points
+        slice or ndarray of bool
+            Selection usable to index `self.points`.
         """
+
         if not self.is_view:
             return slice(None)
         
@@ -131,8 +179,15 @@ class Curve(Geometry):
 
     def no_view(self):
         """
-        Materialize a view-curve into a standalone curve (deep copy of splines and points),
-        preserving all point-domain fields (handles, custom attrs, ...).
+        Materialize a view curve into an owned, self-consistent curve.
+
+        Deep-copies the `splines` and gathers the referenced rows of `points`
+        so that `sum(splines.loop_total) == len(points)` holds true.
+
+        Returns
+        -------
+        Curve
+            Self (for chaining).
         """
         if not self.is_view:
             return self
@@ -173,6 +228,29 @@ class Curve(Geometry):
         return self
 
     def check(self, title="Mesh Check", halt=True):
+        """
+        Validate internal spline bookkeeping.
+
+        Delegates to [`Spline.check`][npblender.domain.Spline.check]. When invalid
+        and `halt=True`, raises; otherwise prints a message.
+
+        Parameters
+        ----------
+        title : str, default="Mesh Check"
+            Label used in error messages.
+        halt : bool, default=True
+            Whether to raise on failure.
+
+        Returns
+        -------
+        bool
+            True if valid.
+
+        Raises
+        ------
+        Exception
+            If the check fails and `halt=True`.
+        """
         ok = self.splines.check(halt=False)
         if ok:
             return True
@@ -215,6 +293,14 @@ class Curve(Geometry):
     # ====================================================================================================
 
     def to_dict(self):
+        """
+        Serialize the curve to a plain Python dict.
+
+        Returns
+        -------
+        dict
+            Keys: ``geometry``, ``materials``, ``points``, ``splines``.
+        """
         self.no_view()
         return {
             'geometry':     'Curve',
@@ -225,6 +311,18 @@ class Curve(Geometry):
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Deserialize a curve from a dict produced by `to_dict`.
+
+        Parameters
+        ----------
+        d : dict
+            Serialized curve payload.
+
+        Returns
+        -------
+        Curve
+        """
         curve = cls()
         curve.materials  = d['materials']
         curve.points     = ControlPoint.from_dict(d['points'])
@@ -236,7 +334,12 @@ class Curve(Geometry):
     # ====================================================================================================
 
     def clear(self):
-        """ Clear the geometry
+        """
+        Remove all points and splines (attributes kept, values cleared).
+
+        Returns
+        -------
+        None
         """
         self.no_view()
 
@@ -253,19 +356,23 @@ class Curve(Geometry):
 
     @classmethod
     def from_curve(cls, other, points=None, splines=None):
-        """ Create a Curve from another curve.
+        """
+        Copy a curve (optionally subsetting points and/or splines).
 
-        Arguments
-        ---------
-            - other (Mesh) : the mesh to copy
-            - points (selector = None) : points selection
-            - splines (selector = None) : splines selection
+        Parameters
+        ----------
+        other : Curve
+            Source curve.
+        points : selection or None, optional
+            Points to **exclude** when copying (interpreted as mask if array of bool;
+            see code for details).
+        splines : selection or None, optional
+            Splines to **exclude** when copying.
 
         Returns
         -------
-            - Curve
+        Curve
         """
-
         curve = cls(materials=other.materials)
         curve.points  = ControlPoint(other.points,  mode='COPY')
         curve.splines = Spline(other.splines, mode='COPY')
@@ -291,17 +398,19 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def capture(self, other):
-        """ Capture the data of another Curve.
+        """
+        Capture another curve’s buffers (no copy).
 
-        Arguments
-        ---------
-            - other (Curve) : the mesh to capture
+        Parameters
+        ----------
+        other : Curve
+            Source whose internal buffers are adopted by this instance.
 
         Returns
         -------
-            - self
+        Curve
+            Self.
         """
-
         self.materials = other.materials
 
         self.is_view = other.is_view
@@ -318,11 +427,17 @@ class Curve(Geometry):
 
     @classmethod
     def from_curve_data(cls, data):
-        """ Initialize the geometry from a Blender Curve
+        """
+        Build a curve from a Blender `Curve` datablock.
 
-        Arguments
-        ---------
-            - data (Blender Curve instance) : the curve to load
+        Parameters
+        ----------
+        data : bpy.types.Curve
+            Blender curve data.
+
+        Returns
+        -------
+        Curve
         """
 
         def read_point_attr(coll, attr, dtype, shape):
@@ -394,11 +509,13 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def to_curve_data(self, data):
-        """ Initialize the geometry from a Blender Curve
+        """
+        Write this curve into an existing Blender `Curve` datablock.
 
-        Arguments
-        ---------
-            - data (Blender Curve instance) : the curve to load
+        Parameters
+        ----------
+        data : bpy.types.Curve
+            Target Blender curve data (cleared and repopulated).
         """
         self.no_view()
 
@@ -476,16 +593,19 @@ class Curve(Geometry):
 
     @classmethod
     def from_object(cls, obj, evaluated=False):
-        """ Create a Curve from an existing curve.
+        """
+        Build a curve from a Blender object holding curve data.
 
-        Arguments
-        ---------
-            - obj (str or Blender object) : the object to initialize from
-            - evaluated (bool = False) : object modified by the modifiers if True, raw vertices otherwise
+        Parameters
+        ----------
+        obj : str or bpy.types.Object
+            Object or object name.
+        evaluated : bool, default=False
+            If True, read the evaluated (modifier-applied) data via depsgraph.
 
         Returns
         -------
-            - Curve
+        Curve
         """
 
         if evaluated:
@@ -501,20 +621,24 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def to_object(self, obj, collection=None):
-        """ Create or update a blender object.
+        """
+        Create or update a Blender curve object from this geometry.
 
-        The method 'to_object' creates the whole geometry. It creates a new object if it doesn't already exist.
-        If the object exists, it must be a curve, there is no object type conversion.
-
-        Once the object is created, use the method 'update_object' to change the vertices.
-
-        Arguments
-        ---------
-            - obj (str or Blender object) : the object the create
+        Parameters
+        ----------
+        obj : str or bpy.types.Object
+            Target object or name (created if it doesn't exist).
+        collection : bpy.types.Collection or None, optional
+            Collection to link a newly created object into.
 
         Returns
         -------
-            - Blender curve object
+        bpy.types.Object
+            The Blender curve object.
+
+        Notes
+        -----
+        The object type must be *Curve*. Type conversion is not performed.
         """
         curve = blender.create_curve_object(obj, collection=collection)
         self.to_curve_data(curve.data)
@@ -527,28 +651,31 @@ class Curve(Geometry):
     
     @contextmanager
     def blender_data(self, readonly=False):
-        """ Acces to Blender Curve API.
+        """
+        Temporary access to a transient Blender `Curve` datablock.
 
-        Transfer the geometry to a temporay Blender Curve.
-        The example below use a blender Mesh to get the normals.
+        Yields a throwaway curve data populated from this instance; upon exit,
+        reads back into `self` unless `readonly=True`.
 
+        Parameters
+        ----------
+        readonly : bool, default=False
+            If True, do not read back any change made to the temporary data.
+
+        Yields
+        ------
+        bpy.types.Curve
+            The temporary curve data.
+
+        Examples
+        --------
         ``` python
         curve = Curve.Spiral()
-
         with curve.blender_data() as bcurve:
             print("Number of points", len(bcurve.splines[0].points))
-
-        # > Number of points 65
         ```
-
-        Arguments
-        ---------
-            - readonly (bool=False) : don't read back the geometry if not modified
-
-        Returns
-        -------
-            - Blender Mesh
         """
+
         data = bpy.data.curves.get(DATA_TEMP_NAME)
         if data is None:
             data = bpy.data.curves.new(DATA_TEMP_NAME, type='CURVE')
@@ -704,89 +831,47 @@ class Curve(Geometry):
         if single:
             return L[0], R[0]
         return L, R
-
-
-    def _compute_bezier_handles_OLD(cls, points, cyclic=False):
-
-        single = len(points.shape) == 2
-        if single:
-            points = points[None]
-
-        # ----- Add the first point at the end if cyclic
-
-        count = points.shape[1]
-        if cyclic:
-            count += 1
-            points = np.append(points, [points[:,0]], axis=1)
-
-        # ----- Compute the control points
-
-        der = np.empty_like(points)
-        der[:, 1:-1] = points[:, 2:]  - points[:, :-2]
-        der[:,  0]   = (points[:,  1] - points[:, 0])/2
-        der[:, -1]   = (points[:, -1] - points[:, -2])/2
-
-        nrm = np.linalg.norm(der, axis=-1)
-        nrm[abs(nrm) < 0.001] = 1.
-        der /= nrm[:, :, None]
-
-        dists = np.linalg.norm(points[:, 1:] - points[:, :-1], axis=-1)[:, :, None]
-
-        # Left handles
-        lefts = points.copy()
-        lefts[:, 1:] -= der[:, 1:]*dists/3
-        lefts[:, 0]  -= der[:, 0]*dists[:, 0]/3
-
-        # Right handles
-        rights = points.copy()
-        rights[:, :-1] += der[:, :-1]*dists/3
-        rights[:, -1]  += der[:, -1]*dists[:, -1]/3
-
-        # ----- Returns the result
-
-        if cyclic:
-            if single:
-                return np.array(lefts[0, :-1]), np.array(rights[0, :-1])
-            else:
-                return np.array(lefts[:, :-1]), np.array(rights[:, :-1])
-        else:
-            if single:
-                return lefts[0], rights[0]
-            else:
-                return lefts, rights
     
     # ----------------------------------------------------------------------------------------------------
     # Add Bezier
     # ----------------------------------------------------------------------------------------------------
 
-    def add_bezier(self,
-                   points, 
-                   splines = None, 
-                   handle_left = None, 
-                   handle_right = None, 
-                   cyclic = False,
-                   **attrs):
-        """ Add Bezier splines
+    def add_bezier(self, points, splines=None, handle_left=None, handle_right=None, cyclic=False, **attrs):
+        """
+        Append Bezier spline(s).
 
-        The arguments 'splines' gives the length(s) of the bezier spline(s). If None:
+        The arguments `splines` gives the length(s) of the bezier spline(s). If None:
         - the number of points is taken (one spline is added)
         - points.shape[1] is taken if the shape of points is (m, , 3)
 
         handle_left and handle_right must have the same shape as points if provided.
         If they aren't provided, they are computed.
-        
-        Arguments
-        ---------
-        - points (array (n, 3) or (m, n, 3) of vectors) : the points of the curves
-        - splines (int or array of ints = None) : spline or splines length
-        - handle_left (same shape as points = None) : left handles
-        - handle_right (same shape as points = None) : right handles
-        - cyclic (bool = False) : whether the curve is cyclic or not
-        - attrs (dict) : spline and/or points attributes
+
+
+        Parameters
+        ----------
+        points : ndarray, shape (N, 3) or (B, N, 3)
+            Anchor positions (single spline or a batch).
+        splines : int or 1D array of int or None, optional
+            Per-spline point counts. If `None`, inferred from `points`.
+        handle_left : ndarray or None, optional
+            Left handles (same shape as `points`). Computed if omitted.
+        handle_right : ndarray or None, optional
+            Right handles (same shape as `points`). Computed if omitted.
+        cyclic : bool or 1D array of bool, default=False
+            Whether each spline is closed (broadcastable to number of splines).
+        **attrs
+            Additional attributes dispatched to points/splines.
 
         Returns
         -------
-        - dict ('points': added points indices, 'splines': added splines indices)
+        dict
+            Indices of appended points and splines.
+
+        Raises
+        ------
+        ValueError
+            If `points` last dimension is not 3, or if handle shapes don’t match.
         """
         self.no_view()
 
@@ -883,14 +968,9 @@ class Curve(Geometry):
     # Add Bezier
     # ----------------------------------------------------------------------------------------------------
 
-    def add_poly(self,
-                   points, 
-                   splines = None,
-                   curve_type = POLY,
-                   cyclic = False,
-                   w = 1.,
-                   **attrs):
-        """ Add Poly or Nurbs splines
+    def add_poly(self, points, splines=None, curve_type=POLY, cyclic=False, w=1., **attrs):
+        """
+        Append Poly or NURBS spline(s).
 
         The arguments 'splines' gives the length(s) of the spline(s). If None:
         - the number of points is taken (one spline is added)
@@ -899,18 +979,32 @@ class Curve(Geometry):
         Non bezeier splines use 4D points. If the provided vectors are 4D, the argument w
         is ignored.
 
-        Arguments
-        ---------
-        - points (array (n, 3 or 4) or (m, n, 3 or 4) of vectors) : the points of the curves
-        - splines (int or array of ints = None) : spline or splines length
-        - cyclic (bool = False) : whether the curve is cyclic or not
-        - w (float) : w value, ignored if points are 4D
-        - attrs (dict) : spline and/or points attributes
+        Parameters
+        ----------
+        points : ndarray
+            Either `(N, 3|4)` or `(B, N, 3|4)`. If 4D, the 4th component is used as w.
+        splines : int or 1D array of int or None, optional
+            Per-spline point counts. If `None`, inferred from `points`.
+        curve_type : int, default=POLY
+            [`POLY`][npblender.constants.POLY] or [`NURBS`][npblender.constants.NURBS].
+        cyclic : bool or 1D array of bool, default=False
+            Whether each spline is closed.
+        w : float, default=1.0
+            Default weight if `points` are 3D.
+        **attrs
+            Additional attributes dispatched to points/splines.
 
         Returns
         -------
-        - dict ('points': added points indices, 'splines': added splines indices)
+        dict
+            Indices of appended points and splines.
+
+        Raises
+        ------
+        ValueError
+            If `points` are neither 3D nor 4D vectors.
         """
+
         self.no_view()
 
         if points is None:
@@ -982,7 +1076,32 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def add_splines(self, points=None, splines=None, curve_type=POLY, **attrs):
-        """ Add splines
+        """
+        Append new splines (Bezier, Poly, or NURBS) with their control points.
+
+        Parameters
+        ----------
+        points : ndarray or None, optional
+            Control-point coordinates. Shape depends on `splines` (see
+            [`add_bezier`][npblender.curve.Curve.add_bezier] and
+            [`add_poly`][npblender.curve.Curve.add_poly]).
+        splines : int or 1D array of int or None, optional
+            Per-spline sizes. If `None`, inferred from `points` shape.
+        curve_type : int, default=POLY
+            One of [`BEZIER`][npblender.constants.BEZIER], [`POLY`][npblender.constants.POLY],
+            [`NURBS`][npblender.constants.NURBS].
+        **attrs
+            Mixed per-point and per-spline attributes to broadcast and assign.
+
+        Returns
+        -------
+        dict
+            Keys ``'points'`` and ``'splines'`` with the indices of appended rows.
+
+        Raises
+        ------
+        ValueError
+            If `curve_type` is not a single scalar value.
         """
         self.no_view()
 
@@ -1003,15 +1122,22 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def delete_points(self, points=None, splines=None):
-        """Delete points.
-
-        Arguments
-        ---------
-            points : points selection, optional
-                Points indices to delete directly.
-            splines : splines selection, optional
-                Splines owning vertices to delete.
         """
+        Delete points (and prune splines when emptied).
+
+        Parameters
+        ----------
+        points : selection or None, optional
+            Points to delete.
+        splines : selection or None, optional
+            Splines whose **all** points should be deleted.
+
+        Returns
+        -------
+        Curve
+            Self (for chaining).
+        """
+
         self.no_view()
 
         del_points = np.zeros(len(self.points), dtype=bool)
@@ -1046,13 +1172,20 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def delete_splines(self, splines=None):
-        """Delete splines.
-
-        Arguments
-        ---------
-            splines : splines selection, optional
-                Splines owning vertices to delete.
         """
+        Delete splines (and their points).
+
+        Parameters
+        ----------
+        splines : selection or None, optional
+            Splines to delete.
+
+        Returns
+        -------
+        Curve
+            Self (for chaining).
+        """
+
         self.no_view()
 
         return self.delete_points(splines=splines)
@@ -1066,12 +1199,20 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def join(self, *others):
-        """ Join other Curves.
-
-        Arguments
-        ---------
-            - others (Curve) : the curves to append
         """
+        Append other curves to this one (points, splines, and material mapping).
+
+        Parameters
+        ----------
+        *others : Curve
+            Curves to concatenate.
+
+        Returns
+        -------
+        Curve
+            Self (for chaining).
+        """
+
         self.no_view()
 
         for other in others:
@@ -1099,36 +1240,29 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def multiply(self, count, in_place=True):
-        """ Duplicate the geometry.
+        """
+        Duplicate the whole curve `count` times (instancing-like expansion).
 
         Multiplying is a way to efficiently duplicate the geometry a great number of times.
-        Once duplicated, the points can be reshapped to address each instance individually.
 
-        ``` python
-        count = 16
-
-        cube = Mesh.Cube() * count
-
-        # Shape the points as 16 blocks of 8 vertices
-        points = np.reshape(cube.points.position, (16, 8, 3))
-
-        # Place the cubes in a circle
-        ags = np.linspace(0, 2*np.pi, count, endpoint=False)
-        points[..., 0] += 6 * np.cos(ags)[:, None]
-        points[..., 1] += 6 * np.sin(ags)[:, None]
-
-        cube.to_object("Cubes")
-        ```
-
-        Arguments
-        ---------
-            - count (int=10) : number of instances
-            - attributes (name=value) : value for named attributes
+        Parameters
+        ----------
+        count : int
+            Number of copies to create.
+        in_place : bool, default=True
+            If True, expand this instance; otherwise return a new expanded curve.
 
         Returns
         -------
-            - Mesh
+        Curve or None
+            Self (in place) or a new curve; `None` if `count == 0`.
+
+        Raises
+        ------
+        Exception
+            If `count` is not an integer.
         """
+
         self.no_view()
 
         # ----------------------------------------------------------------------------------------------------
@@ -1179,15 +1313,67 @@ class Curve(Geometry):
 
     @property
     def length(self):
+        """
+        Lengths of splines.
+
+        Returns
+        -------
+        array of floats
+        """
         return splinemaths.length_curve(self)
 
     def evaluate(self, t):
+        """
+        Evaluate positions along each spline at parameter(s) `t`.
+
+        Parameters
+        ----------
+        t : float or ndarray
+            Parametric coordinate(s) in `[0, 1]` per spline.
+
+        Returns
+        -------
+        ndarray, shape (..., 3)
+            Evaluated positions.
+        """
         return splinemaths.evaluate_curve(self, t)
 
     def tangent(self, t, normalize=True):
+        """
+        Evaluate tangents along each spline at parameter(s) `t`.
+
+        Parameters
+        ----------
+        t : float or ndarray
+            Parametric coordinate(s) in `[0, 1]` per spline.
+        normalize : bool, default=True
+            If True, return unit tangents.
+
+        Returns
+        -------
+        ndarray, shape (..., 3)
+            Tangent vectors.
+        """
         return splinemaths.tangent_curve(self, t, normalize=normalize)
 
     def sample_attributes(self, t, names=None, cubic=False):
+        """
+        Sample point-domain attributes along the curve(s) at `t`.
+
+        Parameters
+        ----------
+        t : float or ndarray
+            Parametric coordinate(s) in `[0, 1]` per spline.
+        names : sequence of str or None, optional
+            Attribute names to sample; if `None`, samples transferable point fields.
+        cubic : bool, default=False
+            Use cubic interpolation (typically for Bezier).
+
+        Returns
+        -------
+        dict[str, ndarray]
+            Sampled arrays keyed by attribute name.
+        """
         return splinemaths.sample_attributes_curve(self, t, names=names, cubic=cubic)
     
     # ====================================================================================================
@@ -1204,7 +1390,19 @@ class Curve(Geometry):
         return Curve(points=self.points, splines=splines.no_scalar())
     
     def select(self, indices):
-        """Explicit alias for subsetting splines; same semantics as curve[indices]."""
+        """
+        Convenience alias for subsetting splines: `curve[indices]`.
+
+        Parameters
+        ----------
+        indices : selection
+            Boolean mask, slice, or integer array indexing splines.
+
+        Returns
+        -------
+        Curve
+            A view on the selected splines (potentially a *view* curve).
+        """
         return self[indices]   
     
     # ====================================================================================================
@@ -1213,30 +1411,23 @@ class Curve(Geometry):
 
     def for_each_bucket(self, func):
         """
-        Iterate over homogeneous spline buckets and call `func` once per bucket.
+        Iterate homogeneous spline buckets and apply `func`.
 
-        Bucketing key:
-        (curve_type, N, cyclic, resolution)    # resolution only relevant for BEZIER
+        Spline buckets share the same `(curve_type, N, cyclic, resolution)` signature.
+        `func` is called with `(curve, curve_type, N, cyclic, resolution)` and must
+        return a value; the generator yields `(bucket_indices, value)` pairs.
 
         Parameters
         ----------
         func : callable
-            Signature:
-                func(curve, curve_type, loop_total, is_cyclic, resolution=None) -> any
-            - `curve` is a Curve view on self .
-            - `curve_type` is the spline type.
-            - `loop_total` is the number of points in the spline.
-            - `is_cyclic` is True if the spline is cyclic.
-            - `resolution` is the resolution of the loop, or None if the spline is not Bezier.
+            Callback applied once per bucket.
 
         Yields
         ------
-        (indices, result)
-            indices : list[int]
-                Spline indices for this bucket, in stacking order.
-            result : any
-                Whatever `func` returned for this bucket.
+        tuple
+            `(bucket_indices, value)` for each bucket.
         """
+
         spl = self.splines
         if len(spl) == 0:
             return
@@ -1265,17 +1456,20 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def to_poly(self, resolution=None):
-        """ Convert the splines to Poly splines.
+        """
+        Convert all splines to Poly.
 
-        If resolution is None:
-        - `splines.resolution` is used to split Bezier segments
-        - poly lines are left unchanged
+        Parameters
+        ----------
+        resolution : int or None, optional
+            If `None`, Bezier splines are split using their per-spline resolution and
+            poly splines are left unchanged. If an integer, resample *all* splines
+            to that resolution (cyclic splines have no duplicate endpoint).
 
-        If resolution is not None, all splines are resampled using this value
-        
-        Arguments:
-        ---------
-            resolution (int):          Poly resolution, use spline resolution for Bezier if None.
+        Returns
+        -------
+        Curve
+            A new curve with `curve_type = POLY`.
         """
 
         if resolution is not None:
@@ -1334,16 +1528,23 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def to_bezier(self, control_count=None, resolution=16):
-        """Convert splines to Bezier splines (OPEN storage).
+        """
+        Convert all splines to Bezier.
 
         Parameters
         ----------
-        control_count : int or None
-            Number of anchor points to generate per spline. If None, keep current loop_total.
-            For cyclic splines, anchors are sampled on [0,1) (no duplicate). For non-cyclic, on [0,1].
-        resolution : int
-            Per-segment resolution to write into `splines.resolution` (>=1).
+        control_count : int or None, optional
+            Number of anchors per spline. If `None`, keep the current `loop_total`.
+            For cyclic splines, anchors are sampled on `[0, 1)` (no duplicate).
+        resolution : int, default=16
+            Per-segment resolution written to `splines.resolution` (>= 1).
+
+        Returns
+        -------
+        Curve
+            A new Bezier curve.
         """
+
         resolution = max(1, int(resolution))
 
         attr_names = self.points.transdom_names
@@ -1425,20 +1626,24 @@ class Curve(Geometry):
     # ----------------------------------------------------------------------------------------------------
 
     def to_mesh(self, profile=None, caps=True, use_radius=True, camera_culling=False):
-        """ > Transform curve to mesh
+        """
+        Convert the curve to a mesh (optionally sweeping a profile).
 
-        If profile is None, the mesh contains only edges
-        otherwise they are ignored
-
-        Arguments
-        ---------
-        - profile (Curve = None) : profile curve
-        - caps (bool = True) : use caps
-        - use_radius (bool = True) : use the radius as a scale for profile
+        Parameters
+        ----------
+        profile : Curve or None, optional
+            Profile curve to sweep along each spline. If `None`, outputs edges only.
+        caps : bool, default=True
+            Close ends when the profile is cyclic and the path is open.
+        use_radius : bool, default=True
+            Use per-point `radius` to scale the profile (when applicable).
+        camera_culling : bool or Camera, default=False
+            If truthy, drop splines that would be sub-pixel using a camera model.
 
         Returns
         -------
-        - Mesh
+        [Mesh][npblender.mesh.Mesh]
+            The generated mesh.
         """
 
         from . camera import Camera
@@ -1653,6 +1858,14 @@ class Curve(Geometry):
 
     @classmethod
     def bezier_circle(cls):
+        """
+        Unit circle approximated by 4 cubic Bezier arcs (cyclic).
+
+        Returns
+        -------
+        Curve
+            Bezier circle with pre-set handles.
+        """
         return cls(
             points = [[-1.,  0.,  0.], [ 0.,  1.,  0.], [ 1.,  0.,  0.], [ 0., -1.,  0.]],
             curve_type = BEZIER, 
@@ -1663,6 +1876,20 @@ class Curve(Geometry):
 
     @classmethod
     def circle(cls, resolution=32, radius=1.):
+        """
+        Regular polygonal approximation of a circle (Poly, cyclic).
+
+        Parameters
+        ----------
+        resolution : int, default=32
+            Number of points.
+        radius : float, default=1.0
+            Circle radius.
+
+        Returns
+        -------
+        Curve
+        """
         ags = np.linspace(0, 2*np.pi, resolution, endpoint=False)
         return cls(
             points = np.stack((radius*np.cos(ags), radius*np.sin(ags), np.zeros(resolution, float)), axis=-1),
@@ -1671,7 +1898,51 @@ class Curve(Geometry):
         )
 
     @classmethod
-    def arc(cls, resolution=16, radius=1., start_angle=0., sweep_angle=7*np.pi/4, connect_center=False, invert_arc=False):
+    def arc(
+        cls,
+        resolution: int = 16,
+        radius: float = 1.0,
+        start_angle: float = 0.0,
+        sweep_angle: float = 7 * np.pi / 4,
+        connect_center: bool = False,
+        invert_arc: bool = False,
+    ):
+        """
+        Build a polyline arc in the *XY* plane.
+
+        The arc is sampled uniformly with `resolution` points between
+        `start_angle` and `start_angle + sweep_angle`. If `invert_arc` is True,
+        the parameterization is reversed (clockwise), producing the same locus
+        but with swapped start/end angles. When `connect_center` is True, the
+        center `(0, 0, 0)` is appended, and the spline is marked as cyclic to
+        form a pie slice.
+
+        Parameters
+        ----------
+        resolution : int, default=16
+            Number of samples along the arc (min 2).
+        radius : float, default=1.0
+            Arc radius.
+        start_angle : float, default=0.0
+            Start angle in radians.
+        sweep_angle : float, default=7π/4
+            Signed sweep angle in radians.
+        connect_center : bool, default=False
+            If True, append the origin and mark the spline cyclic (pie slice).
+        invert_arc : bool, default=False
+            If True, reverse the arc direction (clockwise).
+
+        Returns
+        -------
+        Curve
+            A curve with one **POLY** spline sampled in the XY plane.
+
+        See Also
+        --------
+        [Curve.circle](npblender.domain.Curve.circle),
+        [Curve.bezier_circle](npblender.domain.Curve.bezier_circle)
+        """
+
         ag0, ag1 = (start_angle + sweep_angle - 2*np.pi, start_angle) if invert_arc else (start_angle, start_angle + sweep_angle)
         ags = np.linspace(ag0, ag1, resolution)
         points = np.stack((radius*np.cos(ags), radius*np.sin(ags), np.zeros(resolution, float)), axis=-1)
@@ -1685,7 +1956,50 @@ class Curve(Geometry):
             )
 
     @classmethod
-    def bezier_segment(cls, resolution=16, start=(-1, 0, 0), start_handle=(-.5, .5, 0), end_handle=(0, 0, 0), end=(1, 0, 0)):
+    def bezier_segment(
+        cls,
+        resolution: int = 16,
+        start: tuple = (-1, 0, 0),
+        start_handle: tuple = (-0.5, 0.5, 0),
+        end_handle: tuple = (0, 0, 0),
+        end: tuple = (1, 0, 0),
+    ):
+        """
+        Create a single two-point **Bezier** segment.
+
+        Produces a Bezier spline with two control points located at `start`
+        and `end`. The left/right handles are set from `start_handle` and
+        `end_handle` (mirrored appropriately). The `resolution` argument is
+        accepted for API symmetry but not used at construction; sampling and
+        evaluation rely on the per-spline `resolution` attribute.
+
+        Parameters
+        ----------
+        resolution : int, default=16
+            Kept for API symmetry; not used during construction.
+        start : (3,) float, default=(-1, 0, 0)
+            Start control point.
+        start_handle : (3,) float, default=(-0.5, 0.5, 0)
+            Handle associated to the start point (as *right* handle).
+        end_handle : (3,) float, default=(0, 0, 0)
+            Handle associated to the end point (as *left* handle).
+        end : (3,) float, default=(1, 0, 0)
+            End control point.
+
+        Returns
+        -------
+        Curve
+            A curve with one **BEZIER** spline (open).
+
+        Notes
+        -----
+        Handles are applied as:
+        - `handle_right[0] = start_handle`
+        - `handle_left[1]  = end_handle`
+        The opposite handles are mirrored so that each handle is expressed
+        in absolute coordinates.
+        """
+
         points = np.array([start, end])
         return cls(
             points = points,
@@ -1695,7 +2009,40 @@ class Curve(Geometry):
         )
 
     @classmethod
-    def line(cls, start=(0, 0, 0), end=(0, 0, 1), resolution=2):
+    def line(
+        cls,
+        start: tuple = (0, 0, 0),
+        end: tuple = (0, 0, 1),
+        resolution: int = 2,
+    ):
+        """
+        Build a straight polyline between two points.
+
+        Generates `resolution` evenly spaced points from `start` to `end`
+        (inclusive) and returns an open **POLY** spline.
+
+        Parameters
+        ----------
+        start : (3,) float, default=(0, 0, 0)
+            Line start point.
+        end : (3,) float, default=(0, 0, 1)
+            Line end point.
+        resolution : int, default=2
+            Number of samples along the line (min 2).
+
+        Returns
+        -------
+        Curve
+            A curve with one **POLY** spline containing `resolution` points.
+
+        Examples
+        --------
+        ``` python
+        c = Curve.line(start=(0, 0, 0), end=(1, 0, 0), resolution=5)
+        print(len(c.points))
+        ```
+        """
+
         resolution = max(2, resolution)
         start = np.asarray(start)
         end = np.asarray(end)
@@ -1710,7 +2057,49 @@ class Curve(Geometry):
         )
 
     @classmethod
-    def spiral(cls, resolution=32, rotations=2., start_radius=1., end_radius=2., height=2., reverse=False):
+    def spiral(
+        cls,
+        resolution: int = 32,
+        rotations: float = 2.0,
+        start_radius: float = 1.0,
+        end_radius: float = 2.0,
+        height: float = 2.0,
+        reverse: bool = False,
+    ):
+        """
+        Create a 3D polyline spiral in the XY plane with linear Z elevation.
+
+        Samples a spiral with `1 + int(rotations * resolution)` points. The radius
+        linearly interpolates from `start_radius` to `end_radius`. The angle evolves
+        by `2π * rotations` (clockwise unless `reverse=True`). The Z coordinate is
+        linearly distributed from `0` to `height`.
+
+        Parameters
+        ----------
+        resolution : int, default=32
+            Number of samples per full rotation.
+        rotations : float, default=2.0
+            Number of turns (can be fractional).
+        start_radius : float, default=1.0
+            Radius at the beginning of the spiral.
+        end_radius : float, default=2.0
+            Radius at the end of the spiral.
+        height : float, default=2.0
+            Final Z value (start is Z = 0).
+        reverse : bool, default=False
+            If True, swap the trigonometric direction of the spiral.
+
+        Returns
+        -------
+        Curve
+            A curve with a single **POLY** spline.
+
+        Examples
+        --------
+        ``` python
+        c = Curve.spiral(resolution=64, rotations=3.5, start_radius=0.5, end_radius=3.0, height=5.0)
+        ```
+        """
         count = 1 + int(rotations*resolution)
         # Reverse is strangely trigonometric!
         ags = np.linspace(0, 2*np.pi*rotations, count) * (1 if reverse else -1)
@@ -1721,11 +2110,73 @@ class Curve(Geometry):
         )
 
     @classmethod
-    def quadratic_bezier(cls, resolution=16, start=(-1, 0, 0), middle=(0, 2, 0), end=(1, 0, 0)):
+    def quadratic_bezier(
+        cls,
+        resolution: int = 16,
+        start: tuple = (-1, 0, 0),
+        middle: tuple = (0, 2, 0),
+        end: tuple = (1, 0, 0),
+    ):
+        """
+        Quadratic Bézier segment (not implemented).
+
+        Intended to create a single quadratic Bézier curve defined by the control
+        points `start`, `middle`, and `end`. Currently **not implemented**.
+
+        Parameters
+        ----------
+        resolution : int, default=16
+            Suggested sampling resolution (unused in the current implementation).
+        start : (3,) float, default=(-1, 0, 0)
+            Start control point.
+        middle : (3,) float, default=(0, 2, 0)
+            Middle (control) point.
+        end : (3,) float, default=(1, 0, 0)
+            End control point.
+
+        Raises
+        ------
+        Exception
+            Always raised with the message "Not implemented yet".
+
+        Examples
+        --------
+        ``` python
+        try:
+            c = Curve.quadratic_bezier()
+        except Exception as e:
+            print(e)  # "Not implemented yet"
+        ```
+        """
         raise Exception(f"Not implemented yet")
 
     @classmethod
-    def quadrilateral(cls, width=2., height=2.):
+    def quadrilateral(cls, width: float = 2.0, height: float = 2.0):
+        """
+        Axis-aligned rectangle in the XY plane (closed polyline).
+
+        Builds a cyclic **POLY** spline with four vertices:
+        `(-w/2, -h/2) → (w/2, -h/2) → (w/2, h/2) → (-w/2, h/2)`.
+
+        Parameters
+        ----------
+        width : float, default=2.0
+            Rectangle width along X.
+        height : float, default=2.0
+            Rectangle height along Y.
+
+        Returns
+        -------
+        Curve
+            A curve with one cyclic **POLY** spline.
+
+        Examples
+        --------
+        ``` python
+        c = Curve.quadrilateral(width=1.0, height=0.5)
+        ```
+        """
+
         return cls(
             points = [(-width/2, -height/2, 0), (width/2, -height/2, 0), (width/2, height/2, 0), (-width/2, height/2, 0)],
             curve_type = POLY,
@@ -1733,7 +2184,41 @@ class Curve(Geometry):
         )
 
     @classmethod
-    def star(cls, points=8, inner_radius=1, outer_radius=2, twist=0.):
+    def star(
+        cls,
+        points: int = 8,
+        inner_radius: float = 1.0,
+        outer_radius: float = 2.0,
+        twist: float = 0.0,
+    ):
+        """
+        Create a star polygon (alternating outer/inner vertices) in the *XY* plane.
+
+        Builds a cyclic **POLY** spline with `2 * points` vertices alternating
+        between `outer_radius` and `inner_radius`. The inner vertices are rotated
+        by `π / points + twist` to control the star lobes' alignment.
+
+        Parameters
+        ----------
+        points : int, default=8
+            Number of star tips (minimum 3).
+        inner_radius : float, default=1.0
+            Radius of inner vertices.
+        outer_radius : float, default=2.0
+            Radius of outer vertices (tips).
+        twist : float, default=0.0
+            Additional rotation (radians) applied to inner vertices.
+
+        Returns
+        -------
+        Curve
+            A curve with one cyclic **POLY** spline forming a star.
+
+        See Also
+        --------
+        [Curve.circle](npblender.domain.Curve.circle),
+        [Curve.arc](npblender.domain.Curve.arc)
+        """
 
         points = max(3, points)
         ag = np.linspace(0, 2*np.pi, points, endpoint=False)
@@ -1760,7 +2245,50 @@ class Curve(Geometry):
         )
     
     @classmethod
-    def xyfunction(cls, func, x0=0., x1=1., resolution=100, materials=None):
+    def xyfunction(
+        cls,
+        func,
+        x0: float = 0.0,
+        x1: float = 1.0,
+        resolution: int = 100,
+        materials=None,
+    ):
+        """
+        Sample a 2D function y = f(x) as a polyline in the XY plane.
+
+        Evaluates `y = func(x)` for `x` uniformly spaced in `[x0, x1]` and creates a
+        **POLY** spline with points `(x, y, 0)`.
+
+        Parameters
+        ----------
+        func : callable
+            A function mapping an array of X values to Y values (vectorized).
+        x0 : float, default=0.0
+            Start of the X interval.
+        x1 : float, default=1.0
+            End of the X interval.
+        resolution : int, default=100
+            Number of samples in `[x0, x1]`.
+        materials : str or sequence of str or None, optional
+            Optional material(s) to attach to the curve.
+
+        Returns
+        -------
+        Curve
+            A curve with one **POLY** spline sampled from `func`.
+
+        Examples
+        --------
+        ``` python
+        import numpy as np
+
+        def f(x):
+            return np.sin(2 * np.pi * x)
+
+        c = Curve.xyfunction(f, x0=0.0, x1=1.0, resolution=200)
+        ```
+        """
+
         x = np.linspace(x0, x1, resolution, dtype=bfloat)
         y = func(x)
         return cls(points=np.stack((x, y, np.zeros_like(x)), axis=-1), materials=materials)

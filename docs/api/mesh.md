@@ -110,3 +110,6 @@ This provides a full overview of the `Mesh` class in npblender:
 ::: npblender.mesh.Mesh
     options:
       inherited_members: true
+      show_root_heading: false      # évite de générer un 2ᵉ H1
+      heading_level: 2              # la racine serait H2 (si affichée) → méthodes en H3
+      inherited_members: true       # inclut les méthodes héritées (si souhaité)
