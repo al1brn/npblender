@@ -4,7 +4,7 @@
 
 ### Domains
 - [Domain](npblender.domain.Domain)
-- [Vertex](npblender.domain.Vertex)
+- [Vertex][npblender.domain.Vertex]
 - [ControlPoint](npblender.domain.ControlPoint)
 - [Point](npblender.domain.Point)
 - [Corner](npblender.domain.Corner)
