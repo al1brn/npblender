@@ -406,18 +406,174 @@
               Bases: <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code></p>
 
 
-        <p>Curve Geometry.</p>
+        <p>Construct a curve geometry.</p>
+<p>Initializes empty domains by default, or builds a curve from provided
+control points and spline sizes/types. If both <code>points</code> and <code>splines</code> are
+already instances of <a href="npblender.domain.ControlPoint"><code>ControlPoint</code></a> and
+<a href="npblender.domain.Spline"><code>Spline</code></a>, the curve is created as a <strong>view</strong>
+on these domains (no data copy). Otherwise, domains are allocated and
+populated via <a href="npblender.geometry.curve.Curve.add_splines"><code>add_splines</code></a>.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nx">points</span><span class="w"> </span><span class="p">(</span><span class="nx">array</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">vectors</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">vertices</span>
-<span class="o">-</span><span class="w"> </span><span class="nx">splines</span><span class="w"> </span><span class="p">(</span><span class="nx">array</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">ints</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">sizes</span>
-<span class="o">-</span><span class="w"> </span><span class="nx">curve_type</span><span class="w"> </span><span class="p">(</span><span class="nx">array</span><span class="w"> </span><span class="nx">onf</span><span class="w"> </span><span class="nx">ints</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">curve</span><span class="w"> </span><span class="nx">types</span>
-<span class="o">-</span><span class="w"> </span><span class="nx">materials</span><span class="w"> </span><span class="p">(</span><span class="nx">str</span><span class="w"> </span><span class="k">or</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">strs</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">None</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">list</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">materials</span><span class="w"> </span><span class="nx">used</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">the</span><span class="w"> </span><span class="nx">geometry</span>
-<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">attrs</span><span class="w"> </span><span class="p">(</span><span class="nx">dict</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="nx">other</span><span class="w"> </span><span class="nx">geometry</span><span class="w"> </span><span class="nx">attributes</span>
-</code></pre></div>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code>array-like or [`ControlPoint`](npblender.domain.ControlPoint)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Control-point positions (and optional per-point attributes) used to
+populate the curve. If a <code>ControlPoint</code> domain is provided together
+with a <code>Spline</code> domain, the curve becomes a view on them.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>splines</code>
+            </td>
+            <td>
+                  <code>array-like or [`Spline`](npblender.domain.Spline)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-spline control-point counts (when building), or a ready-made
+<code>Spline</code> domain (to create a view).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>curve_type</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Default spline type for construction. One of
+<a href="npblender.constants.POLY"><code>POLY</code></a>,
+<a href="npblender.constants.BEZIER"><code>BEZIER</code></a>,
+<a href="npblender.constants.NURBS"><code>NURBS</code></a>.
+Ignored when <code>points</code>/<code>splines</code> are full domains.</p>
+              </div>
+            </td>
+            <td>
+                  <code>POLY</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>materials</code>
+            </td>
+            <td>
+                  <code>str or sequence of str</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Material names used by the curve. A single string is accepted and
+promoted to a one-element list.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>attr_from</code>
+            </td>
+            <td>
+                  <code><span title="object">object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source whose transferable attributes are joined into this geometry
+(see <a href="npblender.geometry.geometry.Geometry.join_attributes"><code>join_attributes</code></a>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**attrs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Additional geometry attributes to forward to
+<a href="npblender.geometry.curve.Curve.add_splines"><code>add_splines</code></a> during construction.</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>When <code>points</code> and <code>splines</code> are provided as domains, the instance is a
+<strong>view</strong>: <code>self.is_view</code> is <code>True</code> if the sum of <code>splines.loop_total</code>
+differs from <code>len(points)</code>. Use
+<a href="npblender.geometry.curve.Curve.no_view"><code>no_view</code></a> to materialize a
+standalone copy. :contentReference[oaicite:0]{index=0}</li>
+<li>Otherwise, the constructor allocates empty
+<a href="npblender.domain.ControlPoint"><code>ControlPoint</code></a> and
+<a href="npblender.domain.Spline"><code>Spline</code></a> domains, joins attributes from
+<code>attr_from</code> if any, then calls
+<a href="npblender.geometry.curve.Curve.add_splines"><code>add_splines</code></a>. :contentReference[oaicite:1]{index=1}</li>
+</ul>
 </details>
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Propagated from <a href="npblender.geometry.curve.Curve.add_splines"><code>add_splines</code></a>
+when <code>curve_type</code> is not a single value (e.g., a list). :contentReference[oaicite:2]{index=2}</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
 
 
@@ -436,6 +592,53 @@
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="npblender.curve.Curve.length" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">length</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.length" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">length</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Lengths of splines.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>array of floats</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
 
 
 
@@ -452,25 +655,123 @@
 
     <div class="doc doc-contents ">
 
-        <p>Add Bezier splines</p>
-<p>The arguments 'splines' gives the length(s) of the bezier spline(s). If None:
+        <p>Append Bezier spline(s).</p>
+<p>The arguments <code>splines</code> gives the length(s) of the bezier spline(s). If None:
 - the number of points is taken (one spline is added)
 - points.shape[1] is taken if the shape of points is (m, , 3)</p>
 <p>handle_left and handle_right must have the same shape as points if provided.
 If they aren't provided, they are computed.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <ul>
-<li>points (array (n, 3) or (m, n, 3) of vectors) : the points of the curves</li>
-<li>splines (int or array of ints = None) : spline or splines length</li>
-<li>handle_left (same shape as points = None) : left handles</li>
-<li>handle_right (same shape as points = None) : right handles</li>
-<li>cyclic (bool = False) : whether the curve is cyclic or not</li>
-<li>attrs (dict) : spline and/or points attributes</li>
-</ul>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(<span title="N">N</span>, 3) or (<span title="B">B</span>, <span title="N">N</span>, 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Anchor positions (single spline or a batch).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>splines</code>
+            </td>
+            <td>
+                  <code>int or 1D array of int or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-spline point counts. If <code>None</code>, inferred from <code>points</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>handle_left</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Left handles (same shape as <code>points</code>). Computed if omitted.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>handle_right</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Right handles (same shape as <code>points</code>). Computed if omitted.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cyclic</code>
+            </td>
+            <td>
+                  <code>bool or 1D array of bool</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether each spline is closed (broadcastable to number of splines).</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**attrs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Additional attributes dispatched to points/splines.</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -483,11 +784,34 @@ If they aren't provided, they are computed.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>- dict (&#39;points&#39;: added points indices, &#39;splines&#39;: added splines indices)</code>
+                  <code><span title="dict">dict</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>Indices of appended points and splines.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>points</code> last dimension is not 3, or if handle shapes don’t match.</p>
               </div>
             </td>
           </tr>
@@ -539,7 +863,7 @@ If they aren't provided, they are computed.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Add Poly or Nurbs splines</p>
+        <p>Append Poly or NURBS spline(s).</p>
 <p>The arguments 'splines' gives the length(s) of the spline(s). If None:
 - the number of points is taken (one spline is added)
 - points.shape[1] is taken if the shape of points is (m, , 3)</p>
@@ -547,16 +871,115 @@ If they aren't provided, they are computed.</p>
 is ignored.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <ul>
-<li>points (array (n, 3 or 4) or (m, n, 3 or 4) of vectors) : the points of the curves</li>
-<li>splines (int or array of ints = None) : spline or splines length</li>
-<li>cyclic (bool = False) : whether the curve is cyclic or not</li>
-<li>w (float) : w value, ignored if points are 4D</li>
-<li>attrs (dict) : spline and/or points attributes</li>
-</ul>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Either <code>(N, 3|4)</code> or <code>(B, N, 3|4)</code>. If 4D, the 4th component is used as w.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>splines</code>
+            </td>
+            <td>
+                  <code>int or 1D array of int or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-spline point counts. If <code>None</code>, inferred from <code>points</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>curve_type</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>[<code>POLY</code>][npblender.constants.POLY] or [<code>NURBS</code>][npblender.constants.NURBS].</p>
+              </div>
+            </td>
+            <td>
+                  <code>POLY</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cyclic</code>
+            </td>
+            <td>
+                  <code>bool or 1D array of bool</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether each spline is closed.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>w</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Default weight if <code>points</code> are 3D.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**attrs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Additional attributes dispatched to points/splines.</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -569,11 +992,34 @@ is ignored.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>- dict (&#39;points&#39;: added points indices, &#39;splines&#39;: added splines indices)</code>
+                  <code><span title="dict">dict</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>Indices of appended points and splines.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>points</code> are neither 3D nor 4D vectors.</p>
               </div>
             </td>
           </tr>
@@ -598,8 +1044,508 @@ is ignored.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Add splines</p>
+        <p>Append new splines (Bezier, Poly, or NURBS) with their control points.</p>
 
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code><span title="ndarray">ndarray</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Control-point coordinates. Shape depends on <code>splines</code> (see
+<a class="autorefs autorefs-internal" title="add_bezier" href="#npblender.curve.Curve.add_bezier"><code>add_bezier</code></a> and
+<a class="autorefs autorefs-internal" title="add_poly" href="#npblender.curve.Curve.add_poly"><code>add_poly</code></a>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>splines</code>
+            </td>
+            <td>
+                  <code>int or 1D array of int or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-spline sizes. If <code>None</code>, inferred from <code>points</code> shape.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>curve_type</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>One of [<code>BEZIER</code>][npblender.constants.BEZIER], [<code>POLY</code>][npblender.constants.POLY],
+[<code>NURBS</code>][npblender.constants.NURBS].</p>
+              </div>
+            </td>
+            <td>
+                  <code>POLY</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**attrs</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Mixed per-point and per-spline attributes to broadcast and assign.</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keys <code>'points'</code> and <code>'splines'</code> with the indices of appended rows.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>curve_type</code> is not a single scalar value.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.arc" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">arc</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.arc" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">arc</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">start_angle</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">sweep_angle</span><span class="o">=</span><span class="mi">7</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="n">connect_center</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">invert_arc</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a polyline arc in the <em>XY</em> plane.</p>
+<p>The arc is sampled uniformly with <code>resolution</code> points between
+<code>start_angle</code> and <code>start_angle + sweep_angle</code>. If <code>invert_arc</code> is True,
+the parameterization is reversed (clockwise), producing the same locus
+but with swapped start/end angles. When <code>connect_center</code> is True, the
+center <code>(0, 0, 0)</code> is appended, and the spline is marked as cyclic to
+form a pie slice.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of samples along the arc (min 2).</p>
+              </div>
+            </td>
+            <td>
+                  <code>16</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>radius</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Arc radius.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_angle</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Start angle in radians.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>sweep_angle</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Signed sweep angle in radians.</p>
+              </div>
+            </td>
+            <td>
+                  <code>7π/4</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>connect_center</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, append the origin and mark the spline cyclic (pie slice).</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>invert_arc</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, reverse the arc direction (clockwise).</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A curve with one <strong>POLY</strong> spline sampled in the XY plane.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="see-also" open>
+  <summary>See Also</summary>
+  <p><a href="npblender.domain.Curve.circle">Curve.circle</a>,
+<a href="npblender.domain.Curve.bezier_circle">Curve.bezier_circle</a></p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.bezier_circle" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">bezier_circle</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.bezier_circle" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">bezier_circle</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Unit circle approximated by 4 cubic Bezier arcs (cyclic).</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Bezier circle with pre-set handles.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.bezier_segment" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">bezier_segment</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.bezier_segment" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">bezier_segment</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">start_handle</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">end_handle</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a single two-point <strong>Bezier</strong> segment.</p>
+<p>Produces a Bezier spline with two control points located at <code>start</code>
+and <code>end</code>. The left/right handles are set from <code>start_handle</code> and
+<code>end_handle</code> (mirrored appropriately). The <code>resolution</code> argument is
+accepted for API symmetry but not used at construction; sampling and
+evaluation rely on the per-spline <code>resolution</code> attribute.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kept for API symmetry; not used during construction.</p>
+              </div>
+            </td>
+            <td>
+                  <code>16</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Start control point.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(-1, 0, 0)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_handle</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Handle associated to the start point (as <em>right</em> handle).</p>
+              </div>
+            </td>
+            <td>
+                  <code>(-0.5, 0.5, 0)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end_handle</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Handle associated to the end point (as <em>left</em> handle).</p>
+              </div>
+            </td>
+            <td>
+                  <code>(0, 0, 0)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>End control point.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(1, 0, 0)</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A curve with one <strong>BEZIER</strong> spline (open).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>Handles are applied as:
+- <code>handle_right[0] = start_handle</code>
+- <code>handle_left[1]  = end_handle</code>
+The opposite handles are mirrored so that each handle is expressed
+in absolute coordinates.</p>
+</details>
 
     </div>
 
@@ -618,25 +1564,43 @@ is ignored.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Acces to Blender Curve API.</p>
-<p>Transfer the geometry to a temporay Blender Curve.
-The example below use a blender Mesh to get the normals.</p>
-<div class="highlight"><pre><span></span><code><span class="n">curve</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">Spiral</span><span class="p">()</span>
-
-<span class="k">with</span> <span class="n">curve</span><span class="o">.</span><span class="n">blender_data</span><span class="p">()</span> <span class="k">as</span> <span class="n">bcurve</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of points&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bcurve</span><span class="o">.</span><span class="n">splines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">points</span><span class="p">))</span>
-
-<span class="c1"># &gt; Number of points 65</span>
-</code></pre></div>
+        <p>Temporary access to a transient Blender <code>Curve</code> datablock.</p>
+<p>Yields a throwaway curve data populated from this instance; upon exit,
+reads back into <code>self</code> unless <code>readonly=True</code>.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nv">readonly</span><span class="w"> </span><span class="ss">(</span><span class="nv">bool</span><span class="o">=</span><span class="nv">False</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">don</span><span class="err">&#39;t read back the geometry if not modified</span>
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>readonly</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, do not read back any change made to the temporary data.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
-    <p><span class="doc-section-title">Returns:</span></p>
+
+    <p><span class="doc-section-title">Yields:</span></p>
     <table>
       <thead>
         <tr>
@@ -647,16 +1611,23 @@ The example below use a blender Mesh to get the normals.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - Blender Mesh</code>
+                  <code><span title="bpy.types.Curve">Curve</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The temporary curve data.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">curve</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">Spiral</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">curve</span><span class="o">.</span><span class="n">blender_data</span><span class="p">()</span> <span class="k">as</span> <span class="n">bcurve</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Number of points&quot;</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">bcurve</span><span class="o">.</span><span class="n">splines</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">points</span><span class="p">))</span>
+</code></pre></div>
 
 
     </div>
@@ -676,14 +1647,39 @@ The example below use a blender Mesh to get the normals.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Capture the data of another Curve.</p>
+        <p>Capture another curve’s buffers (no copy).</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code>- other (Curve) : the mesh to capture
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>other</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source whose internal buffers are adopted by this instance.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -696,7 +1692,216 @@ The example below use a blender Mesh to get the normals.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - self</code>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Self.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.check" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">check</span>
+
+
+<a href="#npblender.curve.Curve.check" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">check</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Mesh Check&#39;</span><span class="p">,</span> <span class="n">halt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate internal spline bookkeeping.</p>
+<p>Delegates to <a class="autorefs autorefs-internal" title="check" href="../spline/#npblender.domain.Spline.check"><code>Spline.check</code></a>. When invalid
+and <code>halt=True</code>, raises; otherwise prints a message.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>title</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Label used in error messages.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#34;Mesh Check&#34;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>halt</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to raise on failure.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if valid.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="Exception">Exception</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the check fails and <code>halt=True</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.circle" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">circle</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.circle" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">circle</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Regular polygonal approximation of a circle (Poly, cyclic).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of points.</p>
+              </div>
+            </td>
+            <td>
+                  <code>32</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>radius</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Circle radius.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -725,7 +1930,30 @@ The example below use a blender Mesh to get the normals.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Clear the geometry</p>
+        <p>Remove all points and splines (attributes kept, values cleared).</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -857,17 +2085,78 @@ with len_in = ||P[i] - P[i-1]|| and len_out = ||P[i+1] - P[i]|| (wrapped if cycl
 
     <div class="doc doc-contents ">
 
-        <p>Delete points.</p>
+        <p>Delete points (and prune splines when emptied).</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="n">points</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">points</span><span class="w"> </span><span class="n">selection</span><span class="o">,</span><span class="w"> </span><span class="n">optional</span>
-<span class="w">    </span><span class="n">Points</span><span class="w"> </span><span class="n">indices</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">delete</span><span class="w"> </span><span class="n">directly</span><span class="o">.</span>
-<span class="n">splines</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">splines</span><span class="w"> </span><span class="n">selection</span><span class="o">,</span><span class="w"> </span><span class="n">optional</span>
-<span class="w">    </span><span class="n">Splines</span><span class="w"> </span><span class="n">owning</span><span class="w"> </span><span class="n">vertices</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">delete</span><span class="o">.</span>
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code><span title="selection">selection</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Points to delete.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>splines</code>
+            </td>
+            <td>
+                  <code><span title="selection">selection</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Splines whose <strong>all</strong> points should be deleted.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Self (for chaining).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -886,15 +2175,136 @@ with len_in = ||P[i] - P[i-1]|| and len_out = ||P[i+1] - P[i]|| (wrapped if cycl
 
     <div class="doc doc-contents ">
 
-        <p>Delete splines.</p>
+        <p>Delete splines (and their points).</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="n">splines</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">splines</span><span class="w"> </span><span class="n">selection</span><span class="o">,</span><span class="w"> </span><span class="n">optional</span>
-<span class="w">    </span><span class="n">Splines</span><span class="w"> </span><span class="n">owning</span><span class="w"> </span><span class="n">vertices</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">delete</span><span class="o">.</span>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>splines</code>
+            </td>
+            <td>
+                  <code><span title="selection">selection</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Splines to delete.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Self (for chaining).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.evaluate" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">evaluate</span>
+
+
+<a href="#npblender.curve.Curve.evaluate" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">evaluate</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
 </code></pre></div>
-</details>
+
+    <div class="doc doc-contents ">
+
+        <p>Evaluate positions along each spline at parameter(s) <code>t</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Parametric coordinate(s) in <code>[0, 1]</code> per spline.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(..., 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Evaluated positions.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -913,9 +2323,10 @@ with len_in = ||P[i] - P[i-1]|| and len_out = ||P[i+1] - P[i]|| (wrapped if cycl
 
     <div class="doc doc-contents ">
 
-        <p>Iterate over homogeneous spline buckets and call <code>func</code> once per bucket.</p>
-<p>Bucketing key:
-(curve_type, N, cyclic, resolution)    # resolution only relevant for BEZIER</p>
+        <p>Iterate homogeneous spline buckets and apply <code>func</code>.</p>
+<p>Spline buckets share the same <code>(curve_type, N, cyclic, resolution)</code> signature.
+<code>func</code> is called with <code>(curve, curve_type, N, cyclic, resolution)</code> and must
+return a value; the generator yields <code>(bucket_indices, value)</code> pairs.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -938,13 +2349,7 @@ with len_in = ||P[i] - P[i-1]|| and len_out = ||P[i+1] - P[i]|| (wrapped if cycl
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Signature:
-    func(curve, curve_type, loop_total, is_cyclic, resolution=None) -&gt; any
-- <code>curve</code> is a Curve view on self .
-- <code>curve_type</code> is the spline type.
-- <code>loop_total</code> is the number of points in the spline.
-- <code>is_cyclic</code> is True if the spline is cyclic.
-- <code>resolution</code> is the resolution of the loop, or None if the spline is not Bezier.</p>
+                <p>Callback applied once per bucket.</p>
               </div>
             </td>
             <td>
@@ -966,14 +2371,11 @@ with len_in = ||P[i] - P[i-1]|| and len_out = ||P[i+1] - P[i]|| (wrapped if cycl
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>(<span title="indices">indices</span>, <span title="result">result</span>)</code>
+                  <code><span title="tuple">tuple</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>indices : list[int]
-    Spline indices for this bucket, in stacking order.
-result : any
-    Whatever <code>func</code> returned for this bucket.</p>
+                <p><code>(bucket_indices, value)</code> for each bucket.</p>
               </div>
             </td>
           </tr>
@@ -1002,16 +2404,72 @@ result : any
 
     <div class="doc doc-contents ">
 
-        <p>Create a Curve from another curve.</p>
+        <p>Copy a curve (optionally subsetting points and/or splines).</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code>- other (Mesh) : the mesh to copy
-- points (selector = None) : points selection
-- splines (selector = None) : splines selection
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>other</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source curve.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code><span title="selection">selection</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Points to <strong>exclude</strong> when copying (interpreted as mask if array of bool;
+see code for details).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>splines</code>
+            </td>
+            <td>
+                  <code><span title="selection">selection</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Splines to <strong>exclude</strong> when copying.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -1024,7 +2482,7 @@ result : any
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - Curve</code>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1057,14 +2515,140 @@ result : any
 
     <div class="doc doc-contents ">
 
-        <p>Initialize the geometry from a Blender Curve</p>
+        <p>Build a curve from a Blender <code>Curve</code> datablock.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="p">(</span><span class="n">Blender</span><span class="w"> </span><span class="n">Curve</span><span class="w"> </span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">curve</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>data</code>
+            </td>
+            <td>
+                  <code><span title="bpy.types.Curve">Curve</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Blender curve data.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.from_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_dict</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.from_dict" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
 </code></pre></div>
-</details>
+
+    <div class="doc doc-contents ">
+
+        <p>Deserialize a curve from a dict produced by <code>to_dict</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>d</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Serialized curve payload.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1087,15 +2671,55 @@ result : any
 
     <div class="doc doc-contents ">
 
-        <p>Create a Curve from an existing curve.</p>
+        <p>Build a curve from a Blender object holding curve data.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nv">obj</span><span class="w"> </span><span class="ss">(</span><span class="nv">str</span><span class="w"> </span><span class="nv">or</span><span class="w"> </span><span class="nv">Blender</span><span class="w"> </span><span class="nv">object</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">object</span><span class="w"> </span><span class="nv">to</span><span class="w"> </span><span class="nv">initialize</span><span class="w"> </span><span class="nv">from</span>
-<span class="o">-</span><span class="w"> </span><span class="nv">evaluated</span><span class="w"> </span><span class="ss">(</span><span class="nv">bool</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">False</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">object</span><span class="w"> </span><span class="nv">modified</span><span class="w"> </span><span class="nv">by</span><span class="w"> </span><span class="nv">the</span><span class="w"> </span><span class="nv">modifiers</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">True</span>,<span class="w"> </span><span class="nv">raw</span><span class="w"> </span><span class="nv">vertices</span><span class="w"> </span><span class="nv">otherwise</span>
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>obj</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> or <span title="bpy.types.Object">Object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Object or object name.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>evaluated</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, read the evaluated (modifier-applied) data via depsgraph.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -1108,7 +2732,7 @@ result : any
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - Curve</code>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1187,9 +2811,9 @@ result : any
 
     <div class="doc doc-contents ">
 
-        <p>Get selection on points associated to the splines.</p>
-<p>If the Curve is not a view on splines, if return [:], otherwise
-it returns a selection on the points.</p>
+        <p>Indices/slice selecting the points actually referenced by the current splines.</p>
+<p>If the curve is a <em>view</em> (splines refer to a subset of points), returns a
+boolean mask selecting those rows in <code>points</code>. Otherwise returns <code>slice(None)</code>.</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -1203,11 +2827,11 @@ it returns a selection on the points.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - sel (slice) : indices of splines points</code>
+                  <code>slice or ndarray of bool</code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>Selection usable to index <code>self.points</code>.</p>
               </div>
             </td>
           </tr>
@@ -1232,14 +2856,62 @@ it returns a selection on the points.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Join other Curves.</p>
+        <p>Append other curves to this one (points, splines, and material mapping).</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code>- others (Curve) : the curves to append
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>*others</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Curves to concatenate.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Self (for chaining).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1266,6 +2938,124 @@ kwargs allows to filter the domains to capture:</p>
 </code></pre></div>
 <p>Returns:
     - self</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.line" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">line</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.line" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">line</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a straight polyline between two points.</p>
+<p>Generates <code>resolution</code> evenly spaced points from <code>start</code> to <code>end</code>
+(inclusive) and returns an open <strong>POLY</strong> spline.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>start</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Line start point.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(0, 0, 0)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Line end point.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(0, 0, 1)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of samples along the line (min 2).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A curve with one <strong>POLY</strong> spline containing <code>resolution</code> points.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">c</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">line</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">points</span><span class="p">))</span>
+</code></pre></div>
 
 
     </div>
@@ -1395,31 +3185,56 @@ kwargs allows to filter the domains to capture:</p>
 
     <div class="doc doc-contents ">
 
-        <p>Duplicate the geometry.</p>
-<p>Multiplying is a way to efficiently duplicate the geometry a great number of times.
-Once duplicated, the points can be reshapped to address each instance individually.</p>
-<div class="highlight"><pre><span></span><code><span class="n">count</span> <span class="o">=</span> <span class="mi">16</span>
-
-<span class="n">cube</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">Cube</span><span class="p">()</span> <span class="o">*</span> <span class="n">count</span>
-
-<span class="c1"># Shape the points as 16 blocks of 8 vertices</span>
-<span class="n">points</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cube</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">position</span><span class="p">,</span> <span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-
-<span class="c1"># Place the cubes in a circle</span>
-<span class="n">ags</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">count</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-<span class="n">points</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">ags</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-<span class="n">points</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">6</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">ags</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
-
-<span class="n">cube</span><span class="o">.</span><span class="n">to_object</span><span class="p">(</span><span class="s2">&quot;Cubes&quot;</span><span class="p">)</span>
-</code></pre></div>
+        <p>Duplicate the whole curve <code>count</code> times (instancing-like expansion).</p>
+<p>Multiplying is a way to efficiently duplicate the geometry a great number of times.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="nv">count</span><span class="w"> </span><span class="ss">(</span><span class="nv">int</span><span class="o">=</span><span class="mi">10</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">number</span><span class="w"> </span><span class="nv">of</span><span class="w"> </span><span class="nv">instances</span>
-<span class="o">-</span><span class="w"> </span><span class="nv">attributes</span><span class="w"> </span><span class="ss">(</span><span class="nv">name</span><span class="o">=</span><span class="nv">value</span><span class="ss">)</span><span class="w"> </span>:<span class="w"> </span><span class="nv">value</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">named</span><span class="w"> </span><span class="nv">attributes</span>
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>count</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of copies to create.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>in_place</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, expand this instance; otherwise return a new expanded curve.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -1432,11 +3247,34 @@ Once duplicated, the points can be reshapped to address each instance individual
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - Mesh</code>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a> or None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>Self (in place) or a new curve; <code>None</code> if <code>count == 0</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="Exception">Exception</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>count</code> is not an integer.</p>
               </div>
             </td>
           </tr>
@@ -1461,8 +3299,375 @@ Once duplicated, the points can be reshapped to address each instance individual
 
     <div class="doc doc-contents ">
 
-        <p>Materialize a view-curve into a standalone curve (deep copy of splines and points),
-preserving all point-domain fields (handles, custom attrs, ...).</p>
+        <p>Materialize a view curve into an owned, self-consistent curve.</p>
+<p>Deep-copies the <code>splines</code> and gathers the referenced rows of <code>points</code>
+so that <code>sum(splines.loop_total) == len(points)</code> holds true.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Self (for chaining).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.quadratic_bezier" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">quadratic_bezier</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.quadratic_bezier" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">quadratic_bezier</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">middle</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">end</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Quadratic Bézier segment (not implemented).</p>
+<p>Intended to create a single quadratic Bézier curve defined by the control
+points <code>start</code>, <code>middle</code>, and <code>end</code>. Currently <strong>not implemented</strong>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Suggested sampling resolution (unused in the current implementation).</p>
+              </div>
+            </td>
+            <td>
+                  <code>16</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Start control point.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(-1, 0, 0)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>middle</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Middle (control) point.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(0, 2, 0)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end</code>
+            </td>
+            <td>
+                  <code>(3,) float</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>End control point.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(1, 0, 0)</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="Exception">Exception</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Always raised with the message "Not implemented yet".</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">quadratic_bezier</span><span class="p">()</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>  <span class="c1"># &quot;Not implemented yet&quot;</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.quadrilateral" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">quadrilateral</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.quadrilateral" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">quadrilateral</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Axis-aligned rectangle in the XY plane (closed polyline).</p>
+<p>Builds a cyclic <strong>POLY</strong> spline with four vertices:
+<code>(-w/2, -h/2) → (w/2, -h/2) → (w/2, h/2) → (-w/2, h/2)</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>width</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rectangle width along X.</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>height</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rectangle height along Y.</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A curve with one cyclic <strong>POLY</strong> spline.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">c</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">quadrilateral</span><span class="p">(</span><span class="n">width</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.sample_attributes" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">sample_attributes</span>
+
+
+<a href="#npblender.curve.Curve.sample_attributes" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">sample_attributes</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">cubic</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Sample point-domain attributes along the curve(s) at <code>t</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Parametric coordinate(s) in <code>[0, 1]</code> per spline.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>names</code>
+            </td>
+            <td>
+                  <code>sequence of str or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Attribute names to sample; if <code>None</code>, samples transferable point fields.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cubic</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Use cubic interpolation (typically for Bezier).</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span>[<span title="str">str</span>, <span title="ndarray">ndarray</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Sampled arrays keyed by attribute name.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -1482,7 +3687,453 @@ preserving all point-domain fields (handles, custom attrs, ...).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Explicit alias for subsetting splines; same semantics as curve[indices].</p>
+        <p>Convenience alias for subsetting splines: <code>curve[indices]</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>indices</code>
+            </td>
+            <td>
+                  <code><span title="selection">selection</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Boolean mask, slice, or integer array indexing splines.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A view on the selected splines (potentially a <em>view</em> curve).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.spiral" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">spiral</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.spiral" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">spiral</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span> <span class="n">rotations</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">start_radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">end_radius</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a 3D polyline spiral in the XY plane with linear Z elevation.</p>
+<p>Samples a spiral with <code>1 + int(rotations * resolution)</code> points. The radius
+linearly interpolates from <code>start_radius</code> to <code>end_radius</code>. The angle evolves
+by <code>2π * rotations</code> (clockwise unless <code>reverse=True</code>). The Z coordinate is
+linearly distributed from <code>0</code> to <code>height</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of samples per full rotation.</p>
+              </div>
+            </td>
+            <td>
+                  <code>32</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>rotations</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of turns (can be fractional).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_radius</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Radius at the beginning of the spiral.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end_radius</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Radius at the end of the spiral.</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>height</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Final Z value (start is Z = 0).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>reverse</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, swap the trigonometric direction of the spiral.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A curve with a single <strong>POLY</strong> spline.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">c</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">spiral</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">rotations</span><span class="o">=</span><span class="mf">3.5</span><span class="p">,</span> <span class="n">start_radius</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">end_radius</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.star" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">star</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.star" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">star</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">inner_radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">outer_radius</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span> <span class="n">twist</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a star polygon (alternating outer/inner vertices) in the <em>XY</em> plane.</p>
+<p>Builds a cyclic <strong>POLY</strong> spline with <code>2 * points</code> vertices alternating
+between <code>outer_radius</code> and <code>inner_radius</code>. The inner vertices are rotated
+by <code>π / points + twist</code> to control the star lobes' alignment.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of star tips (minimum 3).</p>
+              </div>
+            </td>
+            <td>
+                  <code>8</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>inner_radius</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Radius of inner vertices.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>outer_radius</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Radius of outer vertices (tips).</p>
+              </div>
+            </td>
+            <td>
+                  <code>2.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>twist</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Additional rotation (radians) applied to inner vertices.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A curve with one cyclic <strong>POLY</strong> spline forming a star.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="see-also" open>
+  <summary>See Also</summary>
+  <p><a href="npblender.domain.Curve.circle">Curve.circle</a>,
+<a href="npblender.domain.Curve.arc">Curve.arc</a></p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.tangent" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">tangent</span>
+
+
+<a href="#npblender.curve.Curve.tangent" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">tangent</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">normalize</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Evaluate tangents along each spline at parameter(s) <code>t</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Parametric coordinate(s) in <code>[0, 1]</code> per spline.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>normalize</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, return unit tangents.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>(<span title="ndarray">ndarray</span>, <span title="shape">shape</span>(..., 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Tangent vectors.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -1502,7 +4153,7 @@ preserving all point-domain fields (handles, custom attrs, ...).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Convert splines to Bezier splines (OPEN storage).</p>
+        <p>Convert all splines to Bezier.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1525,8 +4176,8 @@ preserving all point-domain fields (handles, custom attrs, ...).</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Number of anchor points to generate per spline. If None, keep current loop_total.
-For cyclic splines, anchors are sampled on [0,1) (no duplicate). For non-cyclic, on [0,1].</p>
+                <p>Number of anchors per spline. If <code>None</code>, keep the current <code>loop_total</code>.
+For cyclic splines, anchors are sampled on <code>[0, 1)</code> (no duplicate).</p>
               </div>
             </td>
             <td>
@@ -1542,11 +4193,34 @@ For cyclic splines, anchors are sampled on [0,1) (no duplicate). For non-cyclic,
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Per-segment resolution to write into <code>splines.resolution</code> (&gt;=1).</p>
+                <p>Per-segment resolution written to <code>splines.resolution</code> (&gt;= 1).</p>
               </div>
             </td>
             <td>
                   <code>16</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A new Bezier curve.</p>
+              </div>
             </td>
           </tr>
       </tbody>
@@ -1570,14 +4244,82 @@ For cyclic splines, anchors are sampled on [0,1) (no duplicate). For non-cyclic,
 
     <div class="doc doc-contents ">
 
-        <p>Initialize the geometry from a Blender Curve</p>
+        <p>Write this curve into an existing Blender <code>Curve</code> datablock.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="p">(</span><span class="n">Blender</span><span class="w"> </span><span class="n">Curve</span><span class="w"> </span><span class="n">instance</span><span class="p">)</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">curve</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="nb">load</span>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>data</code>
+            </td>
+            <td>
+                  <code><span title="bpy.types.Curve">Curve</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target Blender curve data (cleared and repopulated).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.to_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_dict</span>
+
+
+<a href="#npblender.curve.Curve.to_dict" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_dict</span><span class="p">()</span>
 </code></pre></div>
-</details>
+
+    <div class="doc doc-contents ">
+
+        <p>Serialize the curve to a plain Python dict.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keys: <code>geometry</code>, <code>materials</code>, <code>points</code>, <code>splines</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1596,21 +4338,87 @@ For cyclic splines, anchors are sampled on [0,1) (no duplicate). For non-cyclic,
 
     <div class="doc doc-contents ">
 
-        <blockquote>
-<p>Transform curve to mesh</p>
-</blockquote>
-<p>If profile is None, the mesh contains only edges
-otherwise they are ignored</p>
+        <p>Convert the curve to a mesh (optionally sweeping a profile).</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <ul>
-<li>profile (Curve = None) : profile curve</li>
-<li>caps (bool = True) : use caps</li>
-<li>use_radius (bool = True) : use the radius as a scale for profile</li>
-</ul>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>profile</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Profile curve to sweep along each spline. If <code>None</code>, outputs edges only.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>caps</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Close ends when the profile is cyclic and the path is open.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_radius</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Use per-point <code>radius</code> to scale the profile (when applicable).</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>camera_culling</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span> or <span title="npblender.camera.Camera">Camera</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If truthy, drop splines that would be sub-pixel using a camera model.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -1623,11 +4431,11 @@ otherwise they are ignored</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>-<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a></code>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The generated mesh.</p>
               </div>
             </td>
           </tr>
@@ -1652,17 +4460,55 @@ otherwise they are ignored</p>
 
     <div class="doc doc-contents ">
 
-        <p>Create or update a blender object.</p>
-<p>The method 'to_object' creates the whole geometry. It creates a new object if it doesn't already exist.
-If the object exists, it must be a curve, there is no object type conversion.</p>
-<p>Once the object is created, use the method 'update_object' to change the vertices.</p>
+        <p>Create or update a Blender curve object from this geometry.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code>- obj (str or Blender object) : the object the create
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>obj</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> or <span title="bpy.types.Object">Object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target object or name (created if it doesn't exist).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>collection</code>
+            </td>
+            <td>
+                  <code><span title="bpy.types.Collection">Collection</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Collection to link a newly created object into.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     <p><span class="doc-section-title">Returns:</span></p>
     <table>
@@ -1675,17 +4521,22 @@ If the object exists, it must be a curve, there is no object type conversion.</p
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>    - Blender curve object</code>
+                  <code><span title="bpy.types.Object">Object</span></code>
             </td>
             <td>
               <div class="doc-md-description">
-                
+                <p>The Blender curve object.</p>
               </div>
             </td>
           </tr>
       </tbody>
     </table>
 
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>The object type must be <em>Curve</em>. Type conversion is not performed.</p>
+</details>
 
     </div>
 
@@ -1704,18 +4555,64 @@ If the object exists, it must be a curve, there is no object type conversion.</p
 
     <div class="doc doc-contents ">
 
-        <p>Convert the splines to Poly splines.</p>
-<p>If resolution is None:
-- <code>splines.resolution</code> is used to split Bezier segments
-- poly lines are left unchanged</p>
-<p>If resolution is not None, all splines are resampled using this value</p>
+        <p>Convert all splines to Poly.</p>
 
 
-<details class="arguments:" open>
-  <summary>Arguments:</summary>
-  <div class="codehilite"><pre><span></span><code><span class="nv">resolution</span><span class="w"> </span><span class="ss">(</span><span class="nv">int</span><span class="ss">)</span>:<span class="w">          </span><span class="nv">Poly</span><span class="w"> </span><span class="nv">resolution</span>,<span class="w"> </span><span class="nv">use</span><span class="w"> </span><span class="nv">spline</span><span class="w"> </span><span class="nv">resolution</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="nv">Bezier</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nv">None</span>.
-</code></pre></div>
-</details>
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>None</code>, Bezier splines are split using their per-spline resolution and
+poly splines are left unchanged. If an integer, resample <em>all</em> splines
+to that resolution (cyclic splines have no duplicate endpoint).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A new curve with <code>curve_type = POLY</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1755,6 +4652,160 @@ of the same size. For instance, 24 vertices can be seend as 3 packets of
     <span class="n">rotation</span> <span class="o">=</span> <span class="n">rot</span><span class="p">,</span>
     <span class="n">pivot</span><span class="o">=</span><span class="n">pivot</span><span class="p">,</span>
 <span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.curve.Curve.xyfunction" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">xyfunction</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.curve.Curve.xyfunction" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">xyfunction</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">materials</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Sample a 2D function y = f(x) as a polyline in the XY plane.</p>
+<p>Evaluates <code>y = func(x)</code> for <code>x</code> uniformly spaced in <code>[x0, x1]</code> and creates a
+<strong>POLY</strong> spline with points <code>(x, y, 0)</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>func</code>
+            </td>
+            <td>
+                  <code><span title="callable">callable</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A function mapping an array of X values to Y values (vectorized).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>x0</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Start of the X interval.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>x1</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>End of the X interval.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of samples in <code>[x0, x1]</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>100</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>materials</code>
+            </td>
+            <td>
+                  <code>str or sequence of str or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional material(s) to attach to the curve.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="#npblender.curve.Curve">Curve</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A curve with one <strong>POLY</strong> spline sampled from <code>func</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">f</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+
+<span class="n">c</span> <span class="o">=</span> <span class="n">Curve</span><span class="o">.</span><span class="n">xyfunction</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">x1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
 </code></pre></div>
 
 
