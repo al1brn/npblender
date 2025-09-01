@@ -16,5 +16,9 @@
 - [Geometry][npblender.geometry.Geometry]
 - [Mesh][npblender.mesh.Mesh]
 - [Curve][npblender.curve.Curve]
+- [Cloud][npblender.cloud.Cloud]
+- [Instances][npblender.instances.Instances]
+- [Meshes][npblender.instances.Meshes]
+
 
 
