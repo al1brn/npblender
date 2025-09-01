@@ -385,6 +385,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.add_low_resol" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_low_resol
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Instances.add_materials" class="md-nav__link">
     <span class="md-ellipsis">
       add_materials
@@ -403,9 +412,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.check" class="md-nav__link">
+    <span class="md-ellipsis">
+      check
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.clear_geometry" class="md-nav__link">
+    <span class="md-ellipsis">
+      clear_geometry
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Instances.compute_attribute_on_domain" class="md-nav__link">
     <span class="md-ellipsis">
       compute_attribute_on_domain
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.compute_low_resols" class="md-nav__link">
+    <span class="md-ellipsis">
+      compute_low_resols
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.from_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_dict
     </span>
   </a>
   
@@ -439,6 +484,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.join" class="md-nav__link">
+    <span class="md-ellipsis">
+      join
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Instances.join_attributes" class="md-nav__link">
     <span class="md-ellipsis">
       join_attributes
@@ -466,6 +520,24 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.models_to_object" class="md-nav__link">
+    <span class="md-ellipsis">
+      models_to_object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.multiply" class="md-nav__link">
+    <span class="md-ellipsis">
+      multiply
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Instances.object" class="md-nav__link">
     <span class="md-ellipsis">
       object
@@ -475,9 +547,36 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.realize" class="md-nav__link">
+    <span class="md-ellipsis">
+      realize
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.instances.Instances.rotate" class="md-nav__link">
     <span class="md-ellipsis">
       rotate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.to_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_dict
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.instances.Instances.to_object" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_object
     </span>
   </a>
   
@@ -546,16 +645,179 @@
               Bases: <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code></p>
 
 
-        <p>Create new instances.</p>
+        <p>Instance container for duplicating geometries.</p>
+<p><code>Instances</code> manages a set of instance transforms (positions, optional scale
+and rotation) and a list of source models (meshes and/or curves). It can
+realize instances into concrete geometries or directly create Blender
+objects.</p>
 
 
-<details class="arguments" open>
-  <summary>Arguments</summary>
-  <div class="codehilite"><pre><span></span><code><span class="k">-</span> points (array of vectors = None) : instances locations
-<span class="k">-</span> models (geometry or list of geometries = None) : the geometries to instantiate
-<span class="k">-</span> model_index (int = 0) : model index of instances
-<span class="k">-</span> **attributes (dict) : other geometry attributes
-</code></pre></div>
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.instances.Instances.points">points</span></code></td>
+            <td>
+                  <code>[<a class="autorefs autorefs-internal" title="Point (npblender.domain.Point)" href="../point/#npblender.domain.Point">Point</a>][<a class="autorefs autorefs-internal" title="Point (npblender.domain.Point)" href="../point/#npblender.domain.Point">Point</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-instance attributes (e.g., <code>position</code>, optional <code>rotation</code>, <code>scale</code>,
+<code>model_index</code>, plus any user fields).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.instances.Instances.models">models</span></code></td>
+            <td>
+                  <code><span title="list">list</span>[[<a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a>][<a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of source models to instance (e.g., <a class="autorefs autorefs-internal" title="Mesh" href="../mesh/#npblender.mesh.Mesh">Mesh</a>,
+[Curve][npblender.geometry.curve.Curve]).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.instances.Instances.low_resols">low_resols</span></code></td>
+            <td>
+                  <code><span title="list">list</span>[<span title="dict">dict</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional Level-of-Detail (LOD) entries, each as
+<code>{"dist": float, "models": list[Geometry]}</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>Each instance chooses its model via <code>points.model_index</code>.</li>
+</ul>
+</details>
+        <p>Create a new instance set.</p>
+<p>Initializes the per-instance point domain and captures model geometries.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>points</code>
+            </td>
+            <td>
+                  <code>array-like of shape (N, 3) or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Instance locations appended as <code>points.position</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>models</code>
+            </td>
+            <td>
+                  <code>Geometry or sequence of Geometry or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Model(s) to instance. If <code>None</code>, starts empty.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>model_index</code>
+            </td>
+            <td>
+                  <code>int or array-like of int or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Model index per instance (broadcast rules apply).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>attr_from</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source geometry from which to join attribute schemas.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>**attributes</code>
+            </td>
+            <td>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Additional per-instance attributes to append (e.g., <code>rotation</code>, <code>scale</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>Models are loaded via <a class="autorefs autorefs-internal" title="load_models
+
+
+  
+      staticmethod
+  " href="../geometry/#npblender.geometry.Geometry.load_models"><code>Geometry.load_models</code></a>.</li>
+<li><code>low_resols</code> starts empty and can be populated with
+<a href="npblender.instances.Instances.add_low_resol"><code>add_low_resol</code></a>.</li>
+</ul>
 </details>
 
 
@@ -718,6 +980,121 @@
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.add_low_resol" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add_low_resol</span>
+
+
+<a href="#npblender.instances.Instances.add_low_resol" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add_low_resol</span><span class="p">(</span><span class="n">dist</span><span class="p">,</span> <span class="n">models</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Register a Level-of-Detail (LOD) set.</p>
+<p>Associates a view distance threshold with a list of low-res models
+(same length and order as <code>self.models</code>).</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>dist</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Distance threshold at which this LOD should be used.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>models</code>
+            </td>
+            <td>
+                  <code>Geometry or sequence of Geometry</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>One low-res model per source model.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="ValueError">ValueError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the number of LOD models does not match <code>len(self.models)</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -892,6 +1269,163 @@
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.instances.Instances.check" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">check</span>
+
+
+<a href="#npblender.instances.Instances.check" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">check</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Instances Check&#39;</span><span class="p">,</span> <span class="n">halt</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate model indices against the models list.</p>
+<p>Ensures that <code>max(points.model_index) &lt; len(models)</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>title</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Prefix for diagnostic messages.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#34;Instances Check&#34;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>halt</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, raise on failure; otherwise print and return <code>False</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> if valid (or no instances), <code>False</code> when invalid and <code>halt=False</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="AssertionError">AssertionError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If a model index is out of range and <code>halt=True</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.clear_geometry" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">clear_geometry</span>
+
+
+<a href="#npblender.instances.Instances.clear_geometry" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">clear_geometry</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Clear all instances (keeps attribute schemas).</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.instances.Instances.compute_attribute_on_domain" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">compute_attribute_on_domain</span>
 
@@ -1039,6 +1573,200 @@ returns <code>attr</code> unchanged.</p>
 - edges → points: <a href="npblender.domain.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
 - corners → points: <a href="npblender.domain.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
 </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.compute_low_resols" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">compute_low_resols</span>
+
+
+<a href="#npblender.instances.Instances.compute_low_resols" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">compute_low_resols</span><span class="p">(</span><span class="n">start_scale</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Auto-compute a LOD pyramid from current <code>models</code>.</p>
+<p>Uses a camera model to estimate view distances for a target on-screen scale.
+For meshes, generates simplified copies; for curves, converts to curve views.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_scale</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Initial relative on-screen scale.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>scale</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Multiplicative factor between consecutive LOD levels (clipped to 0.01–0.99).</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.8</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>detail</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Detail factor forwarded to simplification (mesh-dependent).</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>Up to 10 levels are created, stopping when the max vertex count drops to ≤ 8.</li>
+<li>Each level is recorded via <a href="npblender.instances.Instances.add_low_resol"><code>add_low_resol</code></a>.</li>
+</ul>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.from_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">from_dict</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#npblender.instances.Instances.from_dict" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">from_dict</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Deserialize an <code>Instances</code> object produced by <code>to_dict</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>d</code>
+            </td>
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Serialized payload with keys <code>"points"</code>, <code>"models"</code>, <code>"low_resols"</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Instances (npblender.instances.Instances)" href="#npblender.instances.Instances">Instances</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>New instance with points, models and LODs reconstructed.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 
@@ -1204,6 +1932,105 @@ curves) may override to select only referenced points.</p>
             <td>
               <div class="doc-md-description">
                 <p><code>slice(None)</code> by default.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.join" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">join</span>
+
+
+<a href="#npblender.instances.Instances.join" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">join</span><span class="p">(</span><span class="o">*</span><span class="n">others</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Concatenate other instance sets into this one.</p>
+<p>Appends models and per-instance points; newly appended <code>model_index</code> values
+are offset by the previous model count.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>*others</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Instances (npblender.instances.Instances)" href="#npblender.instances.Instances">Instances</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Other <code>Instances</code> objects to append.</p>
+              </div>
+            </td>
+            <td>
+                  <code>()</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Instances (npblender.instances.Instances)" href="#npblender.instances.Instances">Instances</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code>, for chaining.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="AttributeError">AttributeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If any argument is not an <code>Instances</code>.</p>
               </div>
             </td>
           </tr>
@@ -1533,6 +2360,200 @@ or <code>None</code> if the object is not found.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.instances.Instances.models_to_object" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">models_to_object</span>
+
+
+<a href="#npblender.instances.Instances.models_to_object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">models_to_object</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Models&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Dump all models (and their LODs) into a single Blender mesh object.</p>
+<p>Places each source model along +X with its LOD stack above it along +Z,
+then creates a single object with flat shading.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Object name.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#34;Models&#34;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bpy.types.Object">Object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The created object.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">obj</span> <span class="o">=</span> <span class="n">insts</span><span class="o">.</span><span class="n">models_to_object</span><span class="p">(</span><span class="s2">&quot;AllModelsPreview&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.multiply" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">multiply</span>
+
+
+<a href="#npblender.instances.Instances.multiply" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">multiply</span><span class="p">(</span><span class="n">count</span><span class="p">,</span> <span class="n">in_place</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Duplicate the instance set <code>count</code> times.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>count</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of copies to create.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>in_place</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, expand this instance; otherwise return a new expanded copy.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Instances (npblender.instances.Instances)" href="#npblender.instances.Instances">Instances</a> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>self</code> (in place) or a new <code>Instances</code>; <code>None</code> if <code>count == 0</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>(<span title="TypeError">TypeError</span>, <span title="ValueError">ValueError</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>count</code> cannot be converted to <code>int</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.instances.Instances.object" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">object</span>
 
@@ -1654,6 +2675,118 @@ If <code>readonly=True</code>, the edited object is captured back into <code>sel
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.instances.Instances.realize" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">realize</span>
+
+
+<a href="#npblender.instances.Instances.realize" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">realize</span><span class="p">(</span><span class="n">camera_culling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Realize instances into concrete geometries.</p>
+<p>Duplicates each model for its selected instances, applies per-instance
+transform (translation, optional rotation/scale), and accumulates results
+into a <a class="autorefs autorefs-internal" title="Mesh" href="../mesh/#npblender.mesh.Mesh">Mesh</a> and/or a
+[Curve][npblender.geometry.curve.Curve]. With <code>camera_culling=True</code>,
+hidden instances are skipped and LODs may be used.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>camera_culling</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span> or <span title="object">object</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If truthy, perform visibility tests and LOD selection using a camera.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A dictionary with keys:
+- <code>"mesh"</code> : a <a class="autorefs autorefs-internal" title="Mesh" href="../mesh/#npblender.mesh.Mesh">Mesh</a> or <code>None</code>
+- <code>"curve"</code>: a [Curve][npblender.geometry.curve.Curve] or <code>None</code></p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="TypeError">TypeError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If a model type is not supported (neither Mesh nor Curve).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">insts</span> <span class="o">=</span> <span class="n">Instances</span><span class="p">(</span><span class="n">points</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">Mesh</span><span class="o">.</span><span class="n">cube</span><span class="p">(),</span> <span class="n">Curve</span><span class="o">.</span><span class="n">circle</span><span class="p">()])</span>
+<span class="n">geos</span> <span class="o">=</span> <span class="n">insts</span><span class="o">.</span><span class="n">realize</span><span class="p">(</span><span class="n">camera_culling</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">geos</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">geos</span><span class="p">[</span><span class="s2">&quot;mesh&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">to_object</span><span class="p">(</span><span class="s2">&quot;InstancedMesh&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.instances.Instances.rotate" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">rotate</span>
 
@@ -1684,7 +2817,7 @@ If <code>readonly=True</code>, the edited object is captured back into <code>sel
                 <code>rotation</code>
             </td>
             <td>
-                  <code><span title="ndarray">ndarray</span> or <span title="Rotation">Rotation</span> - <span title="like">like</span></code>
+                  <code><span title="ndarray">ndarray</span> or <span title="npblender.maths.Rotation">Rotation</span> - <span title="like">like</span></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1731,6 +2864,212 @@ If <code>readonly=True</code>, the edited object is captured back into <code>sel
             <td>
               <div class="doc-md-description">
                 <p><code>self</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.to_dict" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_dict</span>
+
+
+<a href="#npblender.instances.Instances.to_dict" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_dict</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Serialize the instances to a plain dictionary.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keys:
+- <code>"geometry"</code> = <code>"Instances"</code>
+- <code>"points"</code>   : point-domain payload
+- <code>"models"</code>   : list of serialized models
+- <code>"low_resols"</code> : list of serialized LOD levels</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.instances.Instances.to_object" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_object</span>
+
+
+<a href="#npblender.instances.Instances.to_object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">to_object</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">profile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">caps</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">use_radius</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">shade_smooth</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">camera_culling</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create Blender object(s) from realized instances.</p>
+<p>Realizes instances, converts curves to mesh when a profile is provided (or
+when culling requires meshing), and creates one or two Blender objects.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Base name for created objects.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>profile</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="../curve/#npblender.curve.Curve">Curve</a> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Profile to sweep along curve outputs (see
+[<code>Curve.to_mesh</code>][npblender.geometry.curve.Curve.to_mesh]).</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>caps</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Close ends when sweeping.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>use_radius</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Use per-point radius when sweeping.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>shade_smooth</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Smooth shading for the mesh object.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>camera_culling</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, perform visibility tests and LOD selection.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="dict">dict</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Possibly contains:
+- <code>"mesh"</code> : the created mesh object (with optional “ - (M)” suffix)
+- <code>"curve"</code>: the created curve object (with “ - (C)” suffix if both exist)</p>
               </div>
             </td>
           </tr>
@@ -1853,7 +3192,7 @@ of points: broadcasting rules are handled by
                 <code>rotation</code>
             </td>
             <td>
-                  <code><span title="ndarray">ndarray</span> or <span title="Rotation">Rotation</span> - <span title="like">like</span></code>
+                  <code><span title="ndarray">ndarray</span> or <span title="npblender.maths.Rotation">Rotation</span> - <span title="like">like</span></code>
             </td>
             <td>
               <div class="doc-md-description">
