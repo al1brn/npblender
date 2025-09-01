@@ -646,7 +646,9 @@
 
 
         <p>Bucketed mesh instances.</p>
-<p><code>Meshes</code> looks like instances, the difference being the each instance is different.</p>
+<p><code>Meshes</code> looks like <code>instances</code>, the difference being the each instance is different:
+- <code>Instances</code> : each point instance points on a model with <code>model_index</code>
+- <code>Meshes</code> : each point refers to vertices within <code>Mesh.mesh</code> attributes</p>
 <p>To allow handling the individual pieces in with vectorization, the pieces are
 groupded in buckets of the same size (same number of vertices).</p>
 <p>It is possible to iterate on pieces sharing the same size:</p>
