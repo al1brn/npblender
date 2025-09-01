@@ -44,6 +44,28 @@ from . import blender
 # ----------------------------------------------------------------------------------------------------
 
 class Geometry:
+    """
+    Base class for concrete geometries.
+
+    `Geometry` defines common behaviors shared by actual geometries such as [Mesh][npblender.mesh.Mesh]
+    or [Curve][npblender.curve.Curve] : attribute propagation across domains, Blender I/O helpers, simple
+    transforms, and material bookkeeping. Concrete subclasses override
+    `domain_names` and implement domain-specific logic.
+
+    Attributes
+    ----------
+    domain_names : list[str]
+        Names of available domains in the concrete geometry. Overridden by
+        subclasses (e.g., `["points", "corners", "faces", "edges"]` for Mesh).
+
+    Notes
+    -----
+    - Subclasses are expected to provide the domains listed in `domain_names`
+      as attributes (e.g., `self.points`, `self.faces`, ...).
+    - Blender interoperability helpers (`load_object`, `load_models`, and
+      context managers) rely on the presence of `to_object` / `from_object`
+      implemented by subclasses.
+    """
 
     # Overriden by Mesh and Curve
     domain_names = ["points"]
@@ -54,6 +76,29 @@ class Geometry:
 
     @classmethod
     def from_dict(cls, d):
+        """
+        Construct a geometry from a serialized payload.
+
+        Dispatches to the appropriate subclass based on `d["geometry"]`
+        (supported: `"Mesh"`, `"Curve"`, `"Cloud"`, `"Instances"`, `"Meshes"`).
+
+        Parameters
+        ----------
+        d : dict
+            Serialized geometry dictionary as produced by `to_dict()` of the
+            corresponding subclass.
+
+        Returns
+        -------
+        Geometry
+            An instance of the appropriate subclass.
+
+        Raises
+        ------
+        ValueError
+            If `d["geometry"]` is unknown.
+        """
+
         from .mesh import Mesh
         from .curve import Curve
         from .cloud import Cloud
@@ -77,18 +122,32 @@ class Geometry:
     # ====================================================================================================
 
     def join_attributes(self, other, **kwargs):
-        """ Capture the attributes from another geometry.
+        """
+        Merge attribute schemas from another geometry.
 
-        Other can be a different geometry, in that case, only domains with the same name are captured.
-        kwargs allows to filter the domains to capture:
+        For each domain listed in `self.domain_names` and also present in `other`,
+        copies (joins) the attribute *definitions* (names, dtypes, metadata) from
+        `other` into this geometry's domains. Use keyword flags to include/exclude
+        domains by name (e.g., `faces=False`).
 
-        ```python
+        Parameters
+        ----------
+        other : Geometry or None
+            Source geometry. If `None`, does nothing and returns `self`.
+        **kwargs
+            Per-domain boolean switches to filter which domains to join.
+
+        Returns
+        -------
+        Geometry
+            `self`, for chaining.
+
+        Examples
+        --------
+        ``` python
         mesh.join_attributes(other_mesh, faces=False)
-        mesh.join_attributes(curve)
+        curve.join_attributes(mesh)  # only common domains are merged
         ```
-
-        Returns:
-            - self
         """
         if other is None:
             return self
@@ -104,6 +163,46 @@ class Geometry:
     # ====================================================================================================
 
     def compute_attribute_on_domain(self, domain_from, attr, domain_to):
+        """
+        Transfer an attribute from one domain to another.
+
+        Performs a domain mapping (e.g., points → faces) using the appropriate
+        domain operator, and returns the computed array on the target domain.
+
+        Parameters
+        ----------
+        domain_from : str
+            Source domain name (e.g., `"points"`, `"faces"`, `"edges"`, `"corners"`, `"splines"`).
+        attr : str or numpy.ndarray
+            Source attribute to transfer. If a string, it is looked up on the
+            source domain; if an array, it must match the source domain length.
+        domain_to : str
+            Target domain name.
+
+        Returns
+        -------
+        numpy.ndarray
+            Attribute values on the target domain. If `domain_from == domain_to`,
+            returns `attr` unchanged.
+
+        Raises
+        ------
+        AttributeError
+            If either `domain_from` or `domain_to` is not a valid domain of this geometry.
+        Exception
+            If the requested mapping is not implemented.
+
+        Notes
+        -----
+        Implemented mappings include:
+        - points → faces: [`Point.compute_attribute_on_faces`](npblender.domain.Point.compute_attribute_on_faces)
+        - points → edges: [`Point.compute_attribute_on_edges`](npblender.domain.Point.compute_attribute_on_edges)
+        - points → corners: [`Point.compute_attribute_on_corners`](npblender.domain.Point.compute_attribute_on_corners)
+        - points → splines: [`Point.compute_attribute_on_splines`](npblender.domain.Point.compute_attribute_on_splines)
+        - faces → points: [`Face.compute_attribute_on_points`](npblender.domain.Face.compute_attribute_on_points)
+        - edges → points: [`Edge.compute_attribute_on_points`](npblender.domain.Edge.compute_attribute_on_points)
+        - corners → points: [`Corner.compute_attribute_on_points`](npblender.domain.Corner.compute_attribute_on_points)
+        """
 
         if domain_from == domain_to:
             return attr
@@ -160,6 +259,24 @@ class Geometry:
     # ====================================================================================================
 
     def check(self, title="Geometry Check", halt=True):
+        """
+        Validate the geometry consistency.
+
+        Placeholder in the base class: returns `True`. Subclasses may override
+        to perform domain-level checks.
+
+        Parameters
+        ----------
+        title : str, default="Geometry Check"
+            Label for messages or errors.
+        halt : bool, default=True
+            Whether to raise on failure (in subclasses that implement checks).
+
+        Returns
+        -------
+        bool
+            Always `True` in the base class.
+        """
         return True
 
     # ====================================================================================================
@@ -168,15 +285,35 @@ class Geometry:
 
     @staticmethod
     def load_object(name):
-        """ Load a Blender object and returns either a Mesh or a Curve.
+        """
+        Load a Blender object and return a `Mesh` or a `Curve`.
 
-        Arguments
-        ---------
-            - name (str or bpy.types.Object) : the object to load
+        Resolves `name` to a Blender object, inspects its data type, and returns a
+        matching geometry by calling the subclass' `from_object`.
+
+        Parameters
+        ----------
+        name : str or bpy.types.Object
+            Object name or object instance.
 
         Returns
         -------
-            - Mesh or Curve
+        Mesh or Curve or None
+            A [`Mesh`](npblender.mesh.Mesh) or a [`Curve`](npblender.geometry.curve.Curve),
+            or `None` if the object is not found.
+
+        Raises
+        ------
+        Exception
+            If the object exists but is neither a `bpy.types.Mesh` nor `bpy.types.Curve`.
+
+        Examples
+        --------
+        ``` python
+        geo = Geometry.load_object("MyObject")
+        if geo is not None:
+            print(type(geo).__name__)
+        ```
         """
 
         import bpy
@@ -203,20 +340,30 @@ class Geometry:
 
     @staticmethod
     def load_models(*specs):
-        """ Load a geometry or geometries from specifications.
+        """
+        Load multiple geometries from collections, objects, or instances.
 
-        The specs can be:
-            - a Blender collection
-            - a Blender object
-            - a Geometry
+        Accepts mixed inputs such as Blender collections, Blender objects, lists/
+        tuples of either, or already-instantiated `Mesh`/`Curve`. Returns a flat
+        list of geometries discovered or constructed.
 
-        Arguments
-        ---------
-            - specs (list of objects / collections) : the models to load
+        This method is mainly intended to be used by [`Instances`][npblender.instances.Instances]
+        to load its models.
+
+        Parameters
+        ----------
+        *specs
+            Collections, objects, lists/tuples, or `Mesh`/`Curve` instances.
 
         Returns
         -------
-            - list of geometries
+        list
+            List of geometries (`Mesh`/`Curve`).
+
+        Raises
+        ------
+        ValueError
+            If a spec cannot be resolved to a geometry.
         """
 
         from .mesh import Mesh
@@ -262,6 +409,39 @@ class Geometry:
 
     @contextmanager
     def object(self, index=0, readonly=True):
+        """
+        Temporary access to a Blender Object built from this geometry.
+
+        Creates a transient object (named `"BPBL Temp {index}"` unless `index` is a
+        string), selects and activates it, yields it for editing, then cleans up.
+        If `readonly=True`, the edited object is captured back into `self`.
+
+        This method can be used to set and apply a modifier (see exemple below).
+
+        Parameters
+        ----------
+        index : int or str, default=0
+            Index or name used to label the temporary object.
+        readonly : bool, default=True
+            If `False`, re-capture the possibly edited object back into this geometry.
+
+        Yields
+        ------
+        bpy.types.Object
+            The temporary Blender object built from `self`.
+
+        Examples
+        --------
+        ``` python
+        plane = Mesh.Grid()
+        with plane.object(readonly=False) as obj:
+            mod = obj.modifiers.new("Solidify", 'SOLIDIFY')
+            mod.thickness = .1
+            bpy.ops.object.modifier_apply(modifier=mod.name)
+
+        # plane is now solidifed
+        ```
+        """
 
         import bpy
         from . import blender
@@ -310,17 +490,23 @@ class Geometry:
     # ----------------------------------------------------------------------------------------------------
 
     def get_material_index(self, mat_name):
-        """ Return the index of a material name.
+        """
+        Return the index of a material name, creating it if needed.
 
-        If the material doesn't exist, it is created
-
-        Arguments
-        ---------
-            - mat_name (str) : material name
+        Parameters
+        ----------
+        mat_name : str
+            Material name to look up or append.
 
         Returns
         -------
-            - int : index of the material name in the materials list
+        int
+            Index of `mat_name` in `self.materials`.
+
+        Notes
+        -----
+        If `mat_name` is not present, it is appended to `self.materials` and the
+        new index is returned.
         """
 
         if mat_name in self.materials:
@@ -334,13 +520,21 @@ class Geometry:
     # ----------------------------------------------------------------------------------------------------
 
     def add_materials(self, materials):
-        """ Add a materials list to the existing one.
+        """
+        Append material name(s) to the geometry.
 
-        If a material already exist, it is not added another time.
+        Parameters
+        ----------
+        materials : str or sequence of str
+            One name or a sequence of names to append.
 
-        Arguments
-        ---------
-            - materials (list of strs) : the list of materials to append.
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This method does not deduplicate names; duplicates may be appended.
         """
         if isinstance(materials, str):
             self.materials.append(materials)
@@ -352,26 +546,18 @@ class Geometry:
     # ====================================================================================================
 
     def get_points_selection(self):
-        return slice(None)
-    
-    def _check_transformation_shape_DEP(self, t_shape, npoints, label="Transformation"):
-        """ Deprecated
-
-        Replaced by point._get_shape_for_operation
         """
-        if t_shape == ():
-            return (npoints, 3)
+        Selection of points relevant to operations.
 
-        elif len(t_shape) == 1:
-            if t_shape[0] in [1, npoints]:
-                return (npoints, 3)
+        Returns `slice(None)` in the base class (all points). Subclasses (e.g.,
+        curves) may override to select only referenced points.
 
-        else:
-            n = int(np.prod(t_shape))
-            if npoints % n == 0:
-                return t_shape[:-1] + (-1, 3)
-
-        raise AttributeError(f"{label} shape {t_shape} is not valid to transform {npoints} points.")
+        Returns
+        -------
+        slice
+            `slice(None)` by default.
+        """
+        return slice(None)
     
     # ----------------------------------------------------------------------------------------------------
     # Apply one or more basic transformation
@@ -379,29 +565,44 @@ class Geometry:
     
     def transformation(self, rotation=None, scale=None, translation=None, pivot=None):
         """
+        Apply rotation/scale/translation (with optional per-packet broadcasting).
 
-        The transformation arguments can treat the points as a list of packets
-        of the same size. For instance, 24 vertices can be seend as 3 packets of
-        8 vertices using a translation of (8, 3) vectors.
+        Operates in-place on `points.position` and, when present, Bezier handles
+        (`points.handle_left`, `points.handle_right`). Shapes can represent packets
+        of points: broadcasting rules are handled by
+        [`Point._get_shape_for_operation`](npblender.domain.Point._get_shape_for_operation).
+
+        Parameters
+        ----------
+        rotation : ndarray or Rotation-like, optional
+            Rotation matrix/matrices applied as `R @ v`. Shape may broadcast over
+            points (see notes).
+        scale : ndarray, optional
+            Per-axis scaling. Shape may broadcast over points.
+        translation : ndarray, optional
+            Per-point translation. Shape may broadcast over points.
+        pivot : ndarray, optional
+            Pivot(s) subtracted before, and added after, the rotation/scale; same
+            broadcasting rules as `scale`/`translation`.
+
+        Returns
+        -------
+        Geometry
+            `self`, for chaining.
+
+        Notes
+        -----
+        - If handles exist, they are transformed consistently with positions.
 
         Examples
         --------
         ``` python
-        # A mesh made of 12 cubes
-        cubes = Mesh.cube(size=1)*12
-
-        # 3 random transformations
-        translation = np.random.uniform(-1, 1, (4, 3))
-        pivot = np.random.uniform(-1, 1, (3, 3))
-        scale = np.random.uniform(.1, 2, (12, 3))
-        rot = Rotation.from_euler(np.random.uniform(0, 2*np.pi, (6, 3)))
-
-        cubes.transformation(
-            translation = translation,
-            scale = scale,
-            rotation = rot,
-            pivot=pivot,
-        )
+        # 12 cubes laid out randomly with per-instance transforms
+        cubes = Mesh.cube(size=1).multiply(12)
+        T = np.random.uniform(-1, 1, (12, 3))
+        S = np.random.uniform(0.5, 2.0, (12, 3))
+        R = Rotation.from_euler(np.random.uniform(0, 2*np.pi, (12, 3)))
+        cubes.transformation(rotation=R, scale=S, translation=T)
         ```
         """
 
@@ -507,15 +708,80 @@ class Geometry:
         return self
 
     def translate(self, translation):
+        """
+        Translate points (convenience wrapper).
+
+        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+
+        Parameters
+        ----------
+        translation : ndarray
+            Per-point or broadcastable translation vectors.
+
+        Returns
+        -------
+        Geometry
+            `self`.
+        """
         return self.transformation(translation=translation)
 
     def apply_scale(self, scale, pivot=None):
+        """
+        Scale points (convenience wrapper).
+
+        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+
+        Parameters
+        ----------
+        scale : ndarray
+            Per-point or broadcastable scales.
+        pivot : ndarray, optional
+            Optional pivot(s) for scaling.
+
+        Returns
+        -------
+        Geometry
+            `self`.
+        """
         return self.transformation(scale=scale, pivot=pivot)
     
     def rotate(self, rotation, pivot=None):
+        """
+        Rotate points (convenience wrapper).
+
+        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+
+        Parameters
+        ----------
+        rotation : ndarray or Rotation-like
+            Rotation(s) to apply as `R @ v`.
+        pivot : ndarray, optional
+            Optional pivot(s) for rotation.
+
+        Returns
+        -------
+        Geometry
+            `self`.
+        """
         return self.transformation(rotation=rotation, pivot=pivot)
     
     def transform(self, transformation):
+    def transform(self, transformation):
+        """
+        Apply a rotation matrix or batch of matrices.
+
+        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+
+        Parameters
+        ----------
+        transformation : ndarray
+            Rotation matrix or batch of rotation matrices.
+
+        Returns
+        -------
+        Geometry
+            `self`.
+        """
         return self.transformation(rotation=transformation)
     
     # ====================================================================================================
@@ -524,6 +790,14 @@ class Geometry:
 
     @property
     def bounding_box(self):
+        """
+        Axis-aligned bounding box of the point positions.
+
+        Returns
+        -------
+        tuple of numpy.ndarray
+            `(min_xyz, max_xyz)`. If empty, returns two zero vectors.
+        """
         pos = self.points.position
         if len(pos):
             return np.min(pos, axis=0), np.max(pos, axis=0)
@@ -532,15 +806,45 @@ class Geometry:
         
     @property
     def bounding_box_dims(self):
+        """
+        Extents of the axis-aligned bounding box.
+
+        Returns
+        -------
+        numpy.ndarray of shape (3,)
+            `max_xyz - min_xyz`.
+        """
+
         v0, v1 = self.bounding_box
         return v1 - v0
         
     @property
     def max_size(self):
+        """
+        Maximum dimension of the bounding box.
+
+        Returns
+        -------
+        float
+            `max(bounding_box_dims)`.
+        """
         return max(self.bounding_box_dims)
     
     def get_cubic_envelop(self):
-        from . mesh import Mesh
+        """
+        Return a cube mesh that encloses the geometry’s bounding box.
+
+        Uses the bounding box dimensions to build a cube via
+        [`Mesh.cube`](npblender.mesh.Mesh.cube), forwarding this geometry’s
+        `materials` if present.
+
+        Returns
+        -------
+        Mesh
+            A cube mesh sized to the bounding box.
+        """
+        
+        from .mesh import Mesh
 
         size = self.bounding_box_dims
         return Mesh.cube(size=size, materials=getattr(self, "materials", None))
