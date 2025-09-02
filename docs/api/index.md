@@ -5,26 +5,19 @@
 ## Geometry
 - [Geometry][npblender.Geometry] : root class for actual geometries
 - [Mesh][npblender.Mesh]
-    - [Vertex][npblender.Vertex]
-    - [Corner][npblender.Corner]
-    - [Edge][npblender.Edge]
-    - [Face][npblender.Face]
-
-### Domains
-- [Domain][npblender.domain.Domain]
-- [Vertex][npblender.domain.Vertex]
-- [ControlPoint][npblender.domain.ControlPoint]
-- [Point][npblender.domain.Point]
-- [Corner][npblender.domain.Corner]
-- [Edge][npblender.domain.Edge]
-- [Face][npblender.domain.Face]
-- [Spline][npblender.domain.Spline]
-
-### Geometries
+    - `points`: [Vertex][npblender.Vertex]
+    - `corners`: [Corner][npblender.Corner]
+    - `edges`: [Edge][npblender.Edge]
+    - `faces`: [Face][npblender.Face]
 - [Curve][npblender.curve.Curve]
-- [Cloud][npblender.cloud.Cloud]
-- [Instances][npblender.instances.Instances]
-- [Meshes][npblender.instances.Meshes]
+    - `points`: [ControlPoint][npblender.ControlPoint]
+    - `splines`: [Spline][npblender.Spline]
+- [Cloud][npblender.Cloud]
+    - `points`: [Point][npblender.Point]
+- [Instances][npblender.Instances]
+    - `points`: [Point][npblender.Point]
+- [Meshes][npblender.Meshes]
+    - `points`: [Point][npblender.Point]
 
 ### Maths
 - [maths][npblender.maths]
@@ -34,7 +27,7 @@
 
 ### Animation
 - [Camera][npblender.Camera] : for camera culling
-- [engine][npblender.Engine] : animation engine
+- [engine][npblender.engine] : animation engine
 - [Animation][npblender.Animation] : basic yet powerful Animation class
 - [Simulation][npblender.Simulation] : advanced simulation
 
