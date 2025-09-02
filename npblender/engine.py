@@ -51,6 +51,103 @@ from . bakefile import BakeFile
 # ====================================================================================================
 
 class Engine:
+    """
+    Animation engine for **npblender**.
+
+    > ***Note:*** do not instantiate `Engine` class directly but rather use the single
+    > and only instance `engine` avaiable as global variable in the module.
+
+    `Engine` manages a list of [`Animations`][npblender.Animation]. At each frame change,
+    the `compute` and `view` methods of `Animations` are called.
+
+    If `subframes` is not zero, the `compute` is called as many times ad defined by
+    this property. This allows more precision in simulations.
+
+    Advanced animations can create classes based on [`Animation`][npblender.animation] or
+    [`Simulation`][npblender.Simulation].
+
+    Simple animations can rely on a single function which is passed as argument of [engine.go][npblender.Engine.go]
+    method as shown below:
+
+    ``` python
+    from npblender import Mesh, engine
+
+    # Move a cube of .01 per frame along x
+    cube = Mesh.cube()
+    def update():
+        cube.points.x += .01
+        cube.to_object("Cube")
+
+    engine.go(update)
+    ``` 
+
+    The `engine` instance of `Engine` class exposes useful animation properties and methods such as
+    `time` for current time, `delta_time` for simulations, `is_viewport` and `rendering` to adapt
+    parameters to the context.
+
+    Key features
+    ------------
+    - Global animation management (add, run, reset)
+    - Frame stepping with optional **subframes**
+    - **Baking** to disk via methods [`Animation.get_frame_data`][npblender.Animation.get_frame_data] and
+        [`Animation.set_frame_data`][npblender.Animation.set_frame_data.
+    - Integration with Blender render/viewport handlers and depsgraph
+    - Support for both **viewport** updates and **render-time** updates
+
+    Attributes
+    ----------
+    animations : list[npblender.engine.Animation]
+        Global list of registered animations driven by the engine.
+    bake_file : npblender.bakefile.BakeFile or None
+        Active bake file when baking is enabled in the scene, else `None`.
+    time_offset : float
+        Seconds added to the computed time (shifts the timeline origin).
+    time_scale : float
+        Global time scale multiplier (e.g., slow-motion).
+    subframes : int
+        Number of subframes per frame (the engine computes `subframes + 1` steps).
+    subframe : int
+        Current subframe index in `{0, …, subframes}` (`0` means the “main” frame).
+    SEED : int
+        Base RNG seed used to derive per-(frame, subframe) seeds.
+    VERBOSE : bool
+        If `True`, prints per-frame timings to the console.
+    STEP_TIMES : bool
+        If `True`, prints detailed I/O/compute times (load/compute/save/view).
+
+    Properties
+    ----------
+    scene : bpy.types.Scene
+        Active scene (or an overridden scene during handlers).
+    fps : int
+        Frames per second from `scene.render.fps`.
+    frame : int
+        Current frame number (overridable internally during handlers).
+    is_first_frame : bool
+        `True` when `frame == scene.frame_start`.
+    time : float
+        Current time in seconds, including `time_offset`, `time_scale`, and subframe.
+    duration : float
+        Timeline duration (seconds) given the current `time_scale`.
+    delta_time : float
+        Time step between substeps: `time_scale / fps / (subframes + 1)`.
+    rendering : bool
+        `True` when called from render handlers; `False` in viewport updates.
+    is_viewport : bool
+        Negation of `rendering`.
+    use_motion_blur : bool
+        Reflects `scene.render.use_motion_blur`.
+    is_baked : bool
+        `True` when a bake file is active (`bake_file is not None`).
+    frame_seeds : numpy.ndarray
+        Table of per-(frame, subframe) seeds derived from `SEED`.
+    seed : int
+        Seed for the current `(frame, subframe)`.
+    rng : numpy.random.Generator
+        RNG initialized from `seed`.
+    depsgraph : bpy.types.Depsgraph
+        Evaluated depsgraph for the current context/update.
+    """
 
     VERBOSE = True
     STEP_TIMES = False
