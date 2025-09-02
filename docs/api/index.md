@@ -27,10 +27,10 @@
 - [Transformation][npblender.Transformation]
 
 ### Animation
-- [Camera][npblender.camera.Camera] : for camera culling
-- [engine][npblender.engine.Engine] : animation engine
-- [Animation][npblender.engine.Animation] : root Animation class
-- [Simulation][npblender.simulation.Simulation] : advanced simulation
+- [Camera][npblender.Camera] : for camera culling
+- [engine][npblender.Engine] : animation engine
+- [Animation][npblender.Animation] : basic yet powerful Animation class
+- [Simulation][npblender.Simulation] : advanced simulation
 
 ### Misc
 - [utils][npblender.utils]
