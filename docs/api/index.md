@@ -25,13 +25,11 @@
 - [Transformation][npblender.Transformation]
 - [maths][npblender.maths] module
 - [maths.distribs][npblender.maths.distribs] module
+- [maths.utils][npblender.maths.utils] module
 
 ### Animation
 - [Camera][npblender.Camera] : for camera culling
 - [engine][npblender.engine] : animation engine
 - [Animation][npblender.Animation] : basic yet powerful Animation class
 - [Simulation][npblender.Simulation] : advanced simulation
-
-### Misc
-- [utils][npblender.utils]
 

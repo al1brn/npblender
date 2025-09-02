@@ -13,15 +13,14 @@ theme:
     - content.code.copy
 
 nav:
-  - Accueil: index.md
-  #- Installation: installation.md
-  #- Utilisation:
-  #    - Aperçu: usage/index.md
-  #    - Maths: usage/maths.md
-  #    - Blender: usage/blender.md
+  - Home: index.md
   - Référence API:
-      - npblender: api/index.md
+      - Home: api/index.md
       - Mesh: api/mesh.md
+      - Curve: api/curve.md
+      - Cloud: api/cloud.md
+      - Instances: api/instances.md
+      - Meshes: api/meshes.md
 
 markdown_extensions:
   - toc:
