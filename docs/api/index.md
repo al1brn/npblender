@@ -2,6 +2,14 @@
 
 ## Table of Contents
 
+## Geometry
+- [Geometry][npblender.Geometry] : root class for actual geometries
+- [Mesh][npblender.Mesh]
+    - [Vertex][npblender.Vertex]
+    - [Corner][npblender.Corner]
+    - [Edge][npblender.Edge]
+    - [Face][npblender.Face]
+
 ### Domains
 - [Domain][npblender.domain.Domain]
 - [Vertex][npblender.domain.Vertex]
@@ -13,8 +21,6 @@
 - [Spline][npblender.domain.Spline]
 
 ### Geometries
-- [Geometry][npblender.geometry.Geometry]
-- [Mesh][npblender.mesh.Mesh]
 - [Curve][npblender.curve.Curve]
 - [Cloud][npblender.cloud.Cloud]
 - [Instances][npblender.instances.Instances]
