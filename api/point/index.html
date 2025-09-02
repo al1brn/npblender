@@ -290,7 +290,7 @@
   
   
   <span class="md-ellipsis">
-    Home
+    Index
     
   </span>
   
@@ -558,6 +558,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.domain.Point.arc_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      arc_dist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.domain.Point.as_kwargs" class="md-nav__link">
     <span class="md-ellipsis">
       as_kwargs
@@ -567,9 +576,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.domain.Point.ball_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      ball_dist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.domain.Point.circle_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      circle_dist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.domain.Point.copy_field" class="md-nav__link">
     <span class="md-ellipsis">
       copy_field
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.domain.Point.cube_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      cube_dist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.domain.Point.cylinder_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      cylinder_dist
     </span>
   </a>
   
@@ -588,6 +633,15 @@
   <a href="#npblender.domain.Point.disk_speed" class="md-nav__link">
     <span class="md-ellipsis">
       disk_speed
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.domain.Point.dome_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      dome_dist
     </span>
   </a>
   
@@ -678,6 +732,15 @@
   <a href="#npblender.domain.Point.join_fields" class="md-nav__link">
     <span class="md-ellipsis">
       join_fields
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.domain.Point.line_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      line_dist
     </span>
   </a>
   
@@ -792,6 +855,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.domain.Point.pie_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      pie_dist
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.domain.Point.shake_speed" class="md-nav__link">
     <span class="md-ellipsis">
       shake_speed
@@ -804,6 +876,15 @@
   <a href="#npblender.domain.Point.speed_along" class="md-nav__link">
     <span class="md-ellipsis">
       speed_along
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.domain.Point.sphere_dist" class="md-nav__link">
+    <span class="md-ellipsis">
+      sphere_dist
     </span>
   </a>
   
@@ -1836,6 +1917,26 @@ dictionary. The values of the fields are copied to the new records.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.domain.Point.arc_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">arc_dist</span>
+
+
+<a href="#npblender.domain.Point.arc_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">arc_dist</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">arc_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">arc_angle</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">use_vonmises</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.domain.Point.as_kwargs" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">as_kwargs</span>
 
@@ -1933,6 +2034,46 @@ dictionary. The values of the fields are copied to the new records.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.domain.Point.ball_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">ball_dist</span>
+
+
+<a href="#npblender.domain.Point.ball_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">ball_dist</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">angle</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">use_vonmises</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.domain.Point.circle_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">circle_dist</span>
+
+
+<a href="#npblender.domain.Point.circle_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">circle_dist</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
 
 
     </div>
@@ -2050,6 +2191,46 @@ or supplement the original field's metadata.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.domain.Point.cube_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">cube_dist</span>
+
+
+<a href="#npblender.domain.Point.cube_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">cube_dist</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.domain.Point.cylinder_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">cylinder_dist</span>
+
+
+<a href="#npblender.domain.Point.cylinder_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">cylinder_dist</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">arc_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">arc_angle</span><span class="o">=</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="p">,</span> <span class="n">use_vonmises</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
 
 
     </div>
@@ -2254,6 +2435,26 @@ The internal buffer is preserved (no reallocation).</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.domain.Point.dome_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">dome_dist</span>
+
+
+<a href="#npblender.domain.Point.dome_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">dome_dist</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">angle</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">use_vonmises</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
 
 
     </div>
@@ -3042,6 +3243,26 @@ with the same dtype and shape, and initialized with its default value across all
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.domain.Point.line_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">line_dist</span>
+
+
+<a href="#npblender.domain.Point.line_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">line_dist</span><span class="p">(</span><span class="n">point0</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="n">point1</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
 
 
     </div>
@@ -4316,6 +4537,26 @@ across compatible domains.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.domain.Point.pie_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">pie_dist</span>
+
+
+<a href="#npblender.domain.Point.pie_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">pie_dist</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">outer_radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">normal</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">pie_center</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">pie_angle</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">use_vonmises</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.domain.Point.shake_speed" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">shake_speed</span>
 
@@ -4638,6 +4879,26 @@ initialize per-point velocities.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.domain.Point.sphere_dist" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">sphere_dist</span>
+
+
+<a href="#npblender.domain.Point.sphere_dist" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">sphere_dist</span><span class="p">(</span><span class="n">radius</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>see distributions in <a class="autorefs autorefs-internal" title="distribs" href="../distribs/#npblender.maths.distribs">maths.distribs</a></p>
 
 
     </div>
