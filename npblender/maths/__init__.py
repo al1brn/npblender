@@ -16,5 +16,6 @@ __all__ = [
     "get_axis", "get_perp", "get_angled",
     "maprange", "Easings",
     "Rotation", "Quaternion", "Transformation",
+    "noise",
 ]
 

@@ -1,56 +1,58 @@
+# MIT License
+#
+# Copyright (c) 2025 Alain Bernard
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 """
-This file is part of the geonodes distribution (https://github.com/al1brn/npblender).
-Copyright (c) 2025 Alain Bernard.
+Module Name: distribs
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2025-07-18
+Last updated: 2025-09-02
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3.
+Summary:
+    Distribution functions on curves, surfaces and volumes.
 
-This program is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <http://www.gnu.org/licenses/>.
-
------------------------------------------------------
-numpy for Blender
------------------------------------------------------
-
-
-Distributions
------------------------------------------------------
-
-Distribution functions on curves, surfaces and volumes.
-
-Distribution of locations and speeds
-
-
-
-Created on Sat Nov 18 08:28:39 2023
-Updated : 2025/07/18
 """
+
+__all__ = [
+    "regular_1d", "regular_2d", "regular_3d", "regular_circle",
+    "normal_dist", "shake_points", "shake_vectors",
+    "line_dist", "arc_dist", "circle_dist",
+    "rect_dist", "pie_dist", "disk_dist", "cylinder_dist", "sphere_dist", "dome_dist",
+    "surface_dist", "mesh_dist",
+    "cube_dist", "ball_dist",
+    "speed_dist",
+]
+
 
 import numpy as np
 
-print(__name__)
-
-if __name__ == '__main__':
-    from utils import get_axis, flat_top_gaussian, vonmises_angle_estimate
-    from transformation import Rotation, Quaternion
-
-else:
-    from . utils import get_axis, flat_top_gaussian, vonmises_angle_estimate
-    from . transformation import Rotation, Quaternion
+from .utils import get_axis, flat_top_gaussian, vonmises_angle_estimate
+from .transformation import Rotation, Quaternion
 
 PI  = np.pi
 HPI = np.pi/2
 TAU = 2*np.pi
 
 bfloat = np.float32
-
-from .rotation import Rotation
 
 # ====================================================================================================
 # Rotate and translate a distribution
@@ -409,7 +411,6 @@ def arc_dist(
         'angles': ags,
     }
 
-
 # ----------------------------------------------------------------------------------------------------
 # Points on a circle
 # ----------------------------------------------------------------------------------------------------
@@ -572,7 +573,6 @@ def rect_dist(a=1, b=1, center=(0, 0, 0), count=10, density=None, seed=None):
 
     normals = np.tile((0., 0., 1.), (count, 1))  # always Z-up (3D)
     return {'points': points, 'normals': normals}
-
 
 # ----------------------------------------------------------------------------------------------------
 # Points on a disk pie
@@ -1012,7 +1012,6 @@ def dome_dist(
         'normals': normals_rot,
         'lengths': rs
     }
-
 
 # ----------------------------------------------------------------------------------------------------
 # Point on a triangle
