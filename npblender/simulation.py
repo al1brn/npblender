@@ -619,7 +619,7 @@ class Simulation(Animation):
             new_omega = omega + torque*self.delta_time
             pts.omega = (omega + new_omega)*(self.delta_time/2)
 
-        if rotation:
+        if torque or rotation:
             domg = pts.omega*self.delta_time
             ag = np.linalg.norm(domg, axis=-1)
             mask = ag != 0
@@ -627,6 +627,10 @@ class Simulation(Animation):
             domg[~mask] = (1, 0, 0)
 
             quat = Quaternion.from_axis_angle(domg, ag)
+
+            print("DEBUG", type(quat), type(pts.rotation))
+
+
             new_rot = quat @ pts.rotation
             if "euler" in pts.euler:
                 pts.euler = new_rot.as_euler()

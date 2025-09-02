@@ -1,12 +1,31 @@
-# npblender/maths/easings.py
 # MIT License
-# Created on 2025-08-11
-# Last update: 2025-08-11
-# Author: Alain Bernard
+#
+# Copyright (c) 2025 Alain Bernard
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the \"Software\"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
 """
-Easing & Interpolation
-======================
+Module Name: easings
+Author: Alain Bernard
+Version: 0.1.0
+Created: 2025-08-11
+Last updated: 2025-09-02
 
 Vectorized easing functions and interpolation utilities with NumPy, plus a small
 framework to chain segments (including Bézier F-Curves) in a Blender-friendly way.
@@ -64,8 +83,7 @@ Dependencies
 - NumPy
 """
 
-
-
+__all__ = ["maprange"]
 
 import numpy as np
 
@@ -104,29 +122,48 @@ EASINGS = {
 NON_BLENDER = [SMOOTH, SMOOTHER]
 
 AUTO_EASING = {
-    'CONSTANT'  : 'EASE_IN',
-    'LINEAR'    : 'EASE_IN',
-    'BEZIER'    : 'EASE_IN',
-    'SINE'      : 'EASE_IN',
-    'QUAD'      : 'EASE_IN',
-    'CUBIC'     : 'EASE_IN',
-    'QUART'     : 'EASE_IN',
-    'QUINT'     : 'EASE_IN',
-    'EXPO'      : 'EASE_IN',
-    'CIRC'      : 'EASE_IN',
+    'CONSTANT'  : 'IN',
+    'LINEAR'    : 'IN',
+    'BEZIER'    : 'IN',
+    'SINE'      : 'IN',
+    'QUAD'      : 'IN',
+    'CUBIC'     : 'IN',
+    'QUART'     : 'IN',
+    'QUINT'     : 'IN',
+    'EXPO'      : 'IN',
+    'CIRC'      : 'IN',
     
-    'BACK'      : 'EASE_OUT',
-    'BOUNCE'    : 'EASE_OUT',
-    'ELASTIC'   : 'EASE_OUT',
+    'BACK'      : 'OUT',
+    'BOUNCE'    : 'OUT',
+    'ELASTIC'   : 'OUT',
 }
 
+SYNONYMS = {
+    'QUADRATIC' : QUAD,
+    'CUBIC' : CUBIC,
+    'QUARTIC' : QUART,
+    'QUINTIC' : QUINT,
+    'EXPONENTIAL' : EXPO,
+    'CIRCULAR' : CIRC,
+}
+
+# ====================================================================================================
+# Easing modes
+# ====================================================================================================
 
 def easing_code(mode):
     if isinstance(mode, str):
-        try:
-            return EASINGS[str(mode).upper()]
-        except:
-            raise ValueError(f"Invalid interpolation mode: '{mode}' not in {list(EASINGS.keys())}")
+        mode = mode.upper()
+
+        code = SYNONYMS.get(mode, None)
+        if code is not None:
+            return code
+        
+        code = EASINGS.get(mode, None)
+        if code is not None:
+            return code
+        
+        raise ValueError(f"Invalid easing mode: '{mode}' not in {list(EASINGS.keys())}")
     else:
         return mode
 
@@ -194,9 +231,38 @@ def ease_in_out(f, u, *args):
 # Dispatcher
 # ====================================================================================================
 
-def ease(mode='LINEAR', easing='IN', u=0., factor=1., back=1.70158, amplitude=1., period=.3):
+def ease(mode='LINEAR', easing='AUTO', u=0., factor=1., back=1.70158, amplitude=1., period=.3):
+
+    # ---------------------------------------------------------------------------
+    # Syntax: mode='QUART.IN'
+    # Two possible modes
+    # - mode followed by easing : QUARTIC.IN
+    # - mode and easing arguments are provided separately
+    # ---------------------------------------------------------------------------
+
+    if isinstance(mode, str):
+        mode_easing = mode.upper().split('.')
+        mode = mode_easing[0]
+        if len(mode_easing) == 2:
+            easing = mode_easing[1]
+
     mode = easing_code(mode)                         
     easing = str(easing).upper()
+
+    # ---------------------------------------------------------------------------
+    # Easing can be AUTO
+    # ---------------------------------------------------------------------------
+
+    if easing == 'AUTO':
+        if mode in AUTO_EASING:
+            easing = AUTO_EASING[mode]
+        else:
+            easing = 'IN'
+
+    # ---------------------------------------------------------------------------
+    # u is an array
+    # ---------------------------------------------------------------------------
+
     u = np.asarray(u)
 
     # ----- Ignore easing parameter
@@ -266,28 +332,107 @@ def ease(mode='LINEAR', easing='IN', u=0., factor=1., back=1.70158, amplitude=1.
 def maprange(t, 
            t0=0., t1=1., v0=0., v1=1.,
            factor=1., back=1.70158, amplitude=1., period=.3,
-           mode='LINEAR', easing='IN',
+           mode='LINEAR', easing='AUTO',
            normalized=False):
     """
-    If normalized=True, `t` is already u∈[0,1] and we only remap to [v0,v1].
-    Otherwise we compute u = (t - t0) / (t1 - t0) first.
+    Remap a value (or array) from a source range to a target range with easing.
+
+    If ``normalized=True``, `t` is interpreted directly as a normalized parameter
+    ``u ∈ [0, 1]`` and only the output mapping ``[0,1] → [v0, v1]`` is applied.
+    Otherwise, a normalized parameter is computed as
+    ``u = clip((t - t0) / (t1 - t0), 0, 1)`` before easing and remapping.
+
+    Supported easing *modes*
+    ------------------------
+    The `mode` selects the easing curve family (case-insensitive):
+
+    ``'LINEAR', 'CONSTANT', 'QUAD', 'CUBIC', 'QUART', 'QUINT', 'EXPO', 'SINE',
+    'CIRC', 'BACK', 'BOUNCE', 'ELASTIC', 'BEZIER', 'SMOOTH', 'SMOOTHER'``
+
+    Easing *direction*
+    -------------------
+    The `easing` variant controls the direction/shape inside the family:
+
+    ``'IN'``, ``'OUT'``, ``'IN_OUT'``, or ``'AUTO'``.
+
+    You may also pass the combined syntax ``"{MODE}.{EASING}"`` in the `mode`
+    argument (e.g., ``"CIRC.IN"``). In that case, the suffix sets the easing
+    direction and **takes precedence**; the separate `easing` parameter is ignored.
+
+    Parameters
+    ----------
+    t : float or array-like
+        Value(s) to remap. If `normalized=True`, `t` is already the normalized
+        parameter `u`. Otherwise it is first mapped from `[t0, t1]` to `[0, 1]`.
+    t0, t1 : float or array-like, default=0.0, 1.0
+        Source range. Can broadcast against `t`.
+    v0, v1 : float or array-like, default=0.0, 1.0
+        Target range. Can be scalars or arrays; broadcasting applies.
+    factor : float, default=1.0
+        Generic intensity/shape factor used by some easing families.
+    back : float, default=1.70158
+        Overshoot parameter for ``'BACK'`` easing.
+    amplitude : float, default=1.0
+        Amplitude parameter for ``'ELASTIC'`` easing.
+    period : float, default=0.3
+        Period parameter for ``'ELASTIC'`` easing.
+    mode : str, default='LINEAR'
+        Easing family name, optionally with ``.IN``, ``.OUT``, or ``.IN_OUT`` suffix.
+    easing : {'IN','OUT','IN_OUT','AUTO'}, default='AUTO'
+        Direction/variant. Ignored if `mode` already contains a suffix.
+    normalized : bool, default=False
+        If `True`, skip normalization of `t` (assume `t` is already `u ∈ [0,1]`).
+
+    Returns
+    -------
+    numpy.ndarray or float
+        Remapped value(s): ``v0 + (v1 - v0) * eased(u)``. The shape is the
+        broadcasted shape of the inputs.
+
+    Notes
+    -----
+    - Inputs are converted with ``np.asarray`` and broadcast per NumPy rules.
+    - If ``t0 == t1`` and ``normalized=False``, the normalization step is ill-defined
+      and will yield ``inf``/``nan``; ensure the source range has non-zero extent.
+    - The semantics of ``'AUTO'`` are delegated to the underlying easing
+      implementation (commonly selects a reasonable default for the family).
+
+    Examples
+    --------
+    Linear remap of a scalar from [0, 10] to [0, 1]:
+    ``` python
+    y = maprange(7.5, t0=0.0, t1=10.0, v0=0.0, v1=1.0, mode='LINEAR')
+    ```
+
+    Ease-in circular from [0, 1] to [0, 100], using combined syntax:
+    ``` python
+    y = maprange(0.25, v0=0.0, v1=100.0, mode='CIRC.IN', normalized=True)
+    ```
+
+    Vectorized easing-out cubic from [-1, +1] to [0, 1]:
+    ``` python
+    import numpy as np
+    t = np.linspace(-1.0, 1.0, 256)
+    y = maprange(t, t0=-1.0, t1=1.0, v0=0.0, v1=1.0, mode='CUBIC', easing='OUT')
+    ```
+
+    Elastic easing with custom amplitude/period:
+    ``` python
+    u = np.linspace(0.0, 1.0, 200)
+    y = maprange(u, v0=0.0, v1=1.0, mode='ELASTIC', easing='IN_OUT',
+                 normalized=True, amplitude=1.2, period=0.25)
+    ```
     """
+
     if normalized:
         u = np.asarray(t)
     else:
         t, t0, t1 = map(np.asarray, (t, t0, t1))
         u = np.clip((t - t0) / (t1 - t0), 0, 1)
 
-    # Accept syntax mode='SMOOTH.IN'
-    me = mode.upper().split(".")
-    if len(me) == 2:
-        mode = me[0]
-        easing = me[1]
-
     eased = ease(mode, easing, u, factor, back, amplitude, period)
     v0, v1 = map(np.asarray, (v0, v1))
     return v0 + (v1 - v0) * eased
-
 
 # ====================================================================================================
 # Derivatives for extrapolation

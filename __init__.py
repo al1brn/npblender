@@ -20,4 +20,9 @@ _maths = _il.import_module('.npblender.maths', __name__)
 maths = _maths
 _sys.modules[__name__ + '.maths'] = _maths
 
-__all__.append("maths")
+# blender
+_blender = _il.import_module('.npblender.blender', __name__)
+blender = _blender
+_sys.modules[__name__ + '.blender'] = _blender
+
+__all__.extend(["maths", "blender"])

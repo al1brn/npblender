@@ -19,16 +19,16 @@
 - [Meshes][npblender.Meshes]
     - `points`: [Point][npblender.Point]
 
+### Animation
+- [Camera][npblender.Camera] : for camera culling
+- [engine][npblender.Engine] : animation engine
+- [Animation][npblender.Animation] : basic yet powerful Animation class
+- [Simulation][npblender.Simulation] : advanced simulation
+
 ### Maths
 - [Rotation][npblender.Rotation]
 - [Quaternion][npblender.Quaternion]
 - [Transformation][npblender.Transformation]
 - [maths][npblender.maths] module
 - [maths.distribs][npblender.maths.distribs] module
-
-### Animation
-- [Camera][npblender.Camera] : for camera culling
-- [engine][npblender.Engine] : animation engine
-- [Animation][npblender.Animation] : basic yet powerful Animation class
-- [Simulation][npblender.Simulation] : advanced simulation
 

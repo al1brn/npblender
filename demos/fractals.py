@@ -1,8 +1,8 @@
 import numpy as np
 
-from npblender import (Mesh, Curve, Animation, Instances, Camera, FieldArray, Simulation, Point, get_angled)
-from npblender.core.blender import bfloat, bint, bbool
-from npblender.core.maths import distribs
+from npblender import (blender, Mesh, Curve, Animation, Instances, Camera, FieldArray, Simulation, Point)
+from npblender.blender import bfloat, bint, bbool
+from npblender.maths import distribs, get_angled
 
 
 def demo(name="Splitter", depth=3, max_depth=10):
