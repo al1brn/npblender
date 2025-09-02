@@ -13,22 +13,18 @@
       
       
       
-        <link rel="prev" href="..">
       
       
-        <link rel="next" href="mesh/">
-      
-      
-      <link rel="icon" href="../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
-        <title>npblender - NPBlender</title>
+        <title>Simulation - NPBlender</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
       
       
 
@@ -47,9 +43,9 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -68,7 +64,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#npblender-api" class="md-skip">
+        <a href="#npblender.Simulation" class="md-skip">
           Skip to content
         </a>
       
@@ -84,7 +80,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="NPBlender" class="md-header__button md-logo" aria-label="NPBlender" data-md-component="logo">
+    <a href="../.." title="NPBlender" class="md-header__button md-logo" aria-label="NPBlender" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -104,7 +100,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              npblender
+              Simulation
             
           </span>
         </div>
@@ -194,7 +190,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="NPBlender" class="md-nav__button md-logo" aria-label="NPBlender" data-md-component="logo">
+    <a href="../.." title="NPBlender" class="md-nav__button md-logo" aria-label="NPBlender" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -224,7 +220,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -243,8 +239,6 @@
       
   
   
-    
-  
   
   
     
@@ -257,11 +251,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -277,7 +271,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Référence API
@@ -288,32 +282,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    npblender
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
         
   
   
@@ -324,95 +296,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
-    <span class="md-ellipsis">
-      Table of Contents
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#geometry" class="md-nav__link">
-    <span class="md-ellipsis">
-      Geometry
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Geometry">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#domains" class="md-nav__link">
-    <span class="md-ellipsis">
-      Domains
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#geometries" class="md-nav__link">
-    <span class="md-ellipsis">
-      Geometries
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#maths" class="md-nav__link">
-    <span class="md-ellipsis">
-      Maths
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#animation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Animation
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#misc" class="md-nav__link">
-    <span class="md-ellipsis">
-      Misc
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -425,7 +308,7 @@
   
   
     <li class="md-nav__item">
-      <a href="mesh/" class="md-nav__link">
+      <a href="../mesh/" class="md-nav__link">
         
   
   
@@ -475,71 +358,47 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#table-of-contents" class="md-nav__link">
+  <a href="#npblender.Simulation.add_action" class="md-nav__link">
     <span class="md-ellipsis">
-      Table of Contents
+      add_action
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#geometry" class="md-nav__link">
+  <a href="#npblender.Simulation.add_event" class="md-nav__link">
     <span class="md-ellipsis">
-      Geometry
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Geometry">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#domains" class="md-nav__link">
-    <span class="md-ellipsis">
-      Domains
+      add_event
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#geometries" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Simulation.change_attribute" class="md-nav__link">
     <span class="md-ellipsis">
-      Geometries
+      change_attribute
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#maths" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Simulation.newton_law" class="md-nav__link">
     <span class="md-ellipsis">
-      Maths
+      newton_law
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#animation" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Simulation.reset" class="md-nav__link">
     <span class="md-ellipsis">
-      Animation
+      reset
     </span>
   </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#misc" class="md-nav__link">
-    <span class="md-ellipsis">
-      Misc
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -562,55 +421,223 @@
   
 
 
-<h1 id="npblender-api">npblender API<a class="headerlink" href="#npblender-api" title="Permanent link">&para;</a></h1>
-<h2 id="table-of-contents">Table of Contents<a class="headerlink" href="#table-of-contents" title="Permanent link">&para;</a></h2>
-<h2 id="geometry">Geometry<a class="headerlink" href="#geometry" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a class="autorefs autorefs-internal" title="Geometry" href="geometry/#npblender.geometry.Geometry">Geometry</a> : root class for actual geometries</li>
-<li><a class="autorefs autorefs-internal" title="Mesh" href="mesh/#npblender.mesh.Mesh">Mesh</a><ul>
-<li><a class="autorefs autorefs-internal" title="Vertex" href="vertex/#npblender.domain.Vertex">Vertex</a></li>
-<li><a class="autorefs autorefs-internal" title="Corner" href="corner/#npblender.domain.Corner">Corner</a></li>
-<li><a class="autorefs autorefs-internal" title="Edge" href="edge/#npblender.domain.Edge">Edge</a></li>
-<li><a class="autorefs autorefs-internal" title="Face" href="face/#npblender.domain.Face">Face</a></li>
+<div class="doc doc-object doc-class">
+
+
+
+<h1 id="npblender.Simulation" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">Simulation</span>
+
+
+<a href="#npblender.Simulation" class="headerlink" title="Permanent link">&para;</a></h1>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Simulation</span><span class="p">(</span><span class="n">compute</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="Animation (npblender.engine.Animation)" href="../animation/#npblender.Animation">Animation</a></code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Simulation.add_action" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add_action</span>
+
+
+<a href="#npblender.Simulation.add_action" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add_action</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">duration</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add an action to the simulation</p>
+<p>To add an event, you can use &lt;#add_event&gt;.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <ul>
+<li>func (function) : function of template f(simulation, <em>args, </em>*kwargs)</li>
+<li>top (float = 0) : start time for the actiuon</li>
+<li>duration (float = None) : duration of the action (0: call once, None: never stops)</li>
+<li>after (bool = False) : exec the action after the exec_loop</li>
 </ul>
-</li>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>- Action : the action added to the simulation</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Simulation.add_event" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">add_event</span>
+
+
+<a href="#npblender.Simulation.add_event" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add_event</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">flags</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add an event to the simulation</p>
+<p>The event is executed once. To add an action called at each step, use &lt;#add_action&gt;.</p>
+
+
+<details class="arguments" open>
+  <summary>Arguments</summary>
+  <ul>
+<li>func (function) : function of template f(simulation, <em>args, </em>*kwargs)</li>
+<li>top (float = 0) : start time for the actiuon</li>
+<li>after (bool = False) : exec the action after the exec_loop</li>
 </ul>
-<h3 id="domains">Domains<a class="headerlink" href="#domains" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a class="autorefs autorefs-internal" title="Domain" href="domain/#npblender.domain.Domain">Domain</a></li>
-<li><a class="autorefs autorefs-internal" title="Vertex" href="vertex/#npblender.domain.Vertex">Vertex</a></li>
-<li><a class="autorefs autorefs-internal" title="ControlPoint" href="controlpoint/#npblender.domain.ControlPoint">ControlPoint</a></li>
-<li><a class="autorefs autorefs-internal" title="Point" href="point/#npblender.domain.Point">Point</a></li>
-<li><a class="autorefs autorefs-internal" title="Corner" href="corner/#npblender.domain.Corner">Corner</a></li>
-<li><a class="autorefs autorefs-internal" title="Edge" href="edge/#npblender.domain.Edge">Edge</a></li>
-<li><a class="autorefs autorefs-internal" title="Face" href="face/#npblender.domain.Face">Face</a></li>
-<li><a class="autorefs autorefs-internal" title="Spline" href="spline/#npblender.domain.Spline">Spline</a></li>
-</ul>
-<h3 id="geometries">Geometries<a class="headerlink" href="#geometries" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a class="autorefs autorefs-internal" title="Curve" href="curve/#npblender.curve.Curve">Curve</a></li>
-<li><a class="autorefs autorefs-internal" title="Cloud" href="cloud/#npblender.cloud.Cloud">Cloud</a></li>
-<li><a class="autorefs autorefs-internal" title="Instances" href="instances/#npblender.instances.Instances">Instances</a></li>
-<li><a class="autorefs autorefs-internal" title="Meshes" href="meshes/#npblender.instances.Meshes">Meshes</a></li>
-</ul>
-<h3 id="maths">Maths<a class="headerlink" href="#maths" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a class="autorefs autorefs-internal" title="maths" href="maths/#npblender.maths">maths</a></li>
-<li><a class="autorefs autorefs-internal" title="Rotation" href="rotation/#npblender.Rotation">Rotation</a></li>
-<li><a class="autorefs autorefs-internal" title="Quaternion" href="quaternion/#npblender.Quaternion">Quaternion</a></li>
-<li><a class="autorefs autorefs-internal" title="Transformation" href="transformation/#npblender.Transformation">Transformation</a></li>
-</ul>
-<h3 id="animation">Animation<a class="headerlink" href="#animation" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a class="autorefs autorefs-internal" title="Camera" href="camera/#npblender.Camera">Camera</a> : for camera culling</li>
-<li>[engine][npblender.Engine] : animation engine</li>
-<li><a class="autorefs autorefs-internal" title="Animation" href="animation/#npblender.Animation">Animation</a> : basic yet powerful Animation class</li>
-<li><a class="autorefs autorefs-internal" title="Simulation" href="simulation/#npblender.Simulation">Simulation</a> : advanced simulation</li>
-</ul>
-<h3 id="misc">Misc<a class="headerlink" href="#misc" title="Permanent link">&para;</a></h3>
-<ul>
-<li>[utils][npblender.utils]</li>
-</ul>
+</details>
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>- Action : the event added to the simulation</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Simulation.change_attribute" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">change_attribute</span>
+
+
+<a href="#npblender.Simulation.change_attribute" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">change_attribute</span><span class="p">(</span><span class="n">attribute</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">incr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Modify a points attribute</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># gravity</span>
+<span class="bp">self</span><span class="o">.</span><span class="n">add_action</span><span class="p">(</span><span class="s2">&quot;change_attribute&quot;</span><span class="p">,</span> <span class="s2">&quot;accel&quot;</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">9.81</span><span class="p">))</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Simulation.newton_law" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">newton_law</span>
+
+
+<a href="#npblender.Simulation.newton_law" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">newton_law</span><span class="p">(</span><span class="n">G</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">power</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_distance</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Newton's law between points</p>
+<p>The force between two points is given by:</p>
+<p>F = G.m1.m2 / dist**p</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Simulation.reset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">reset</span>
+
+
+<a href="#npblender.Simulation.reset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reset</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Reset the simulation</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 
@@ -659,10 +686,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.instant", "navigation.tracking", "content.code.copy"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.instant", "navigation.tracking", "content.code.copy"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.92b07e13.min.js"></script>
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
     
   </body>
