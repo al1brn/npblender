@@ -20,10 +20,11 @@
     - `points`: [Point][npblender.Point]
 
 ### Maths
-- [maths][npblender.maths]
 - [Rotation][npblender.Rotation]
 - [Quaternion][npblender.Quaternion]
 - [Transformation][npblender.Transformation]
+- [maths][npblender.maths] module
+- [distribs][npblender.maths.distribs] module
 
 ### Animation
 - [Camera][npblender.Camera] : for camera culling
