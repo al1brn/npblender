@@ -28,7 +28,7 @@
 
 ### Animation
 - [Camera][npblender.Camera] : for camera culling
-- [engine][npblender.engine] : animation engine
+- [engine][npblender.Engine] : animation engine
 - [Animation][npblender.Animation] : basic yet powerful Animation class
 - [Simulation][npblender.Simulation] : advanced simulation
 
