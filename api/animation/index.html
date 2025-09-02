@@ -443,6 +443,113 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.delta_time" class="md-nav__link">
+    <span class="md-ellipsis">
+      delta_time
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.engine" class="md-nav__link">
+    <span class="md-ellipsis">
+      engine
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.time" class="md-nav__link">
+    <span class="md-ellipsis">
+      time
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.compute" class="md-nav__link">
+    <span class="md-ellipsis">
+      compute
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.get_frame_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_frame_data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.get_frame_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_frame_state
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.go" class="md-nav__link">
+    <span class="md-ellipsis">
+      go
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.reset" class="md-nav__link">
+    <span class="md-ellipsis">
+      reset
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.set_frame_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_frame_data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.set_frame_state" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_frame_state
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Animation.view" class="md-nav__link">
+    <span class="md-ellipsis">
+      view
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -475,6 +582,91 @@
     <div class="doc doc-contents first">
 
 
+        <p>Minimal base class for time-stepped animations.</p>
+<p><code>Animation</code> defines the three lifecycle hooks that the <a class="autorefs autorefs-internal" title="Engine" href="../engine/#npblender.engine.Engine"><code>Engine</code></a>
+calls on every frame/subframe: <code>reset()</code>, <code>compute()</code>, and <code>view()</code>. You can either
+subclass and override these methods, or pass callables to the constructor to set
+<code>_reset</code>, <code>_compute</code>, and <code>_view</code> dynamically. It also exposes lightweight accessors
+to the global engine (<code>engine</code>, <code>time</code>, <code>delta_time</code>) and optional baking hooks.</p>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li><code>reset()</code> is called <strong>once</strong> on the first frame of a run.</li>
+<li><code>compute()</code> is called at each substep; the engine enumerates subframes as
+<code>1, 2, …, n-1, 0</code>, where <code>0</code> is the main frame after substeps.</li>
+<li><code>view()</code> is called after compute/load to push results into Blender.</li>
+</ul>
+</details>
+        <p>Optionally provide function-based hooks instead of subclassing.</p>
+<p>If a callable is provided, it is bound to the corresponding private
+attribute (<code>_compute</code>, <code>_reset</code>, <code>_view</code>) that <code>compute()</code>, <code>reset()</code>,
+and <code>view()</code> will delegate to.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>compute</code>
+            </td>
+            <td>
+                  <code><span title="callable">callable</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Step function called at each subframe.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>reset</code>
+            </td>
+            <td>
+                  <code><span title="callable">callable</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Initialization function called at the first frame.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>view</code>
+            </td>
+            <td>
+                  <code><span title="callable">callable</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Function that writes results back to Blender.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
 
 
@@ -493,8 +685,494 @@
 
 
 
+<div class="doc doc-object doc-attribute">
 
 
+
+<h2 id="npblender.Animation.delta_time" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">delta_time</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.Animation.delta_time" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">delta_time</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Time step between substeps (proxy to <code>engine.delta_time</code>).</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>time_scale / fps / (subframes + 1)</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="npblender.Animation.engine" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">engine</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.Animation.engine" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">engine</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Global engine singleton.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Engine (npblender.engine.Engine)" href="../engine/#npblender.engine.Engine">Engine</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The module-level engine instance that drives the animation.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="npblender.Animation.time" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">time</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.Animation.time" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">time</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Current time in seconds (proxy to <code>engine.time</code>).</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The timeline time including subframes, offset, and scale.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+    </div>
+
+</div>
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.compute" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">compute</span>
+
+
+<a href="#npblender.Animation.compute" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">compute</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Per-substep compute hook.</p>
+<blockquote>
+<p><strong><em>To be overridden</em></strong></p>
+</blockquote>
+<p>Delegates to <code>_compute()</code> if defined. Called by the engine for each
+subframe and the main frame (<code>… , n-1, 0</code>).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.get_frame_data" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_frame_data</span>
+
+
+<a href="#npblender.Animation.get_frame_data" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_frame_data</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return animation data to be baked for the current frame.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="Any">Any</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-animation payload to store in the bake file, or <code>None</code> to skip.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.get_frame_state" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_frame_state</span>
+
+
+<a href="#npblender.Animation.get_frame_state" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_frame_state</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return state to be saved to resume simulation from the current frame..</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="Any">Any</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional state payload</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.go" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">go</span>
+
+
+<a href="#npblender.Animation.go" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">go</span><span class="p">(</span><span class="n">subframes</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Run this animation once through the engine.</p>
+<p>Convenience wrapper for <code>engine.animation(self, subframes=subframes)</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>subframes</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of subframes per frame.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <div class="highlight"><pre><span></span><code><span class="n">anim</span> <span class="o">=</span> <span class="n">Animation</span><span class="p">(</span><span class="n">compute</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="n">reset</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="o">...</span><span class="p">,</span> <span class="n">view</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="o">...</span><span class="p">)</span>
+<span class="n">anim</span><span class="o">.</span><span class="n">go</span><span class="p">(</span><span class="n">subframes</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+</code></pre></div>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.reset" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">reset</span>
+
+
+<a href="#npblender.Animation.reset" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reset</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>First-frame initialization hook.</p>
+<blockquote>
+<p><strong><em>To be overridden</em></strong></p>
+</blockquote>
+<p>Delegates to <code>_reset()</code> if defined. Called once by the engine at the
+first frame of the run.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.set_frame_data" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_frame_data</span>
+
+
+<a href="#npblender.Animation.set_frame_data" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">set_frame_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Load animation data from the bake file for the current frame.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>data</code>
+            </td>
+            <td>
+                  <code><span title="Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Payload previously produced by <code>get_frame_data()</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p><code>True</code> if the data was applied successfully, else <code>False</code>.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.set_frame_state" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_frame_state</span>
+
+
+<a href="#npblender.Animation.set_frame_state" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">set_frame_state</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Restore persistent state saved with the current frame.</p>
+<p>The simulation can be resume for next frames.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>data</code>
+            </td>
+            <td>
+                  <code><span title="Any">Any</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>State payload previously produced by <code>get_frame_state()</code>. :contentReference[oaicite:13]{index=13}</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Animation.view" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">view</span>
+
+
+<a href="#npblender.Animation.view" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">view</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Push results into Blender.</p>
+<blockquote>
+<p><strong><em>To be overridden</em></strong></p>
+</blockquote>
+<p>Delegates to <code>_view()</code> if defined. Called by the engine after compute or
+after loading a baked frame, to update Blender data/objects.</p>
+
+
+    </div>
+
+</div>
 
 
 
