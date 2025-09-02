@@ -162,6 +162,12 @@ class Engine:
     SEED = 8694853
 
     def __init__(self):
+        """
+        Initialize the animation engine.
+
+        Sets default scene/frame references, time scaling/offset, subframe
+        parameters, rendering flags, depsgraph cache, and RNG seed table cache.
+        """
         self._scene = None
         self._frame = None
 
@@ -181,6 +187,18 @@ class Engine:
     # ====================================================================================================
 
     def reset(self, subframes=0):
+        """
+        Reset the engine state for a new run.
+
+        Clears the animation list, sets the number of subframes, resets the
+        subframe index to 0, and invalidates the cached RNG seed table.
+
+        Parameters
+        ----------
+        subframes : int, default=0
+            Number of subframes per frame. The engine will compute
+            `subframes + 1` steps per frame.
+        """
 
         self.subframes = subframes
         self.subframe  = 0
@@ -194,6 +212,14 @@ class Engine:
 
     @property
     def scene(self):
+        """
+        Active Blender scene.
+
+        Returns
+        -------
+        bpy.types.Scene
+            The cached scene during handlers if set, otherwise `bpy.context.scene`.
+        """
         if self._scene is None:
             return bpy.context.scene
         else:
@@ -201,10 +227,26 @@ class Engine:
         
     @property
     def fps(self):
+        """
+        Frames-per-second of the active scene.
+
+        Returns
+        -------
+        int
+            `scene.render.fps`.
+        """
         return self.scene.render.fps
     
     @property
     def frame(self):
+        """
+        Current frame number.
+
+        Returns
+        -------
+        int
+            Cached frame override when set, otherwise `scene.frame_current`.
+        """
         if self._frame is None:
             return self.scene.frame_current
         else:
@@ -212,10 +254,33 @@ class Engine:
         
     @property
     def is_first_frame(self):
+        """
+        Whether the current frame is the timeline start.
+
+        Returns
+        -------
+        bool
+            `True` if `frame == scene.frame_start`, else `False`.
+        """
         return self.frame == self.scene.frame_start
     
     @property
     def time(self):
+        """
+        Current time in seconds.
+
+        Subframes are enumerated in the order `1, 2, ..., n-1, 0`. The `0`
+        subframe corresponds to the “main” frame computed after substeps.
+
+        > ***Note:*** Time can be controlled with `time_offset` and `time_scale`
+        > properties.
+
+        Returns
+        -------
+        float
+            `time_offset + time_scale * frame / fps`, with `frame` adjusted
+            for subframes when `subframe != 0`.
+        """
         # subframes are enumerated in the order : 1, 2, ..., n-1, 0
         if self.subframe == 0:
             frame = self.frame
@@ -226,26 +291,76 @@ class Engine:
     
     @property
     def duration(self):
+        """
+        Timeline duration in seconds.
+
+        Returns
+        -------
+        float
+            `time_scale * (1 + frame_end - frame_start) / fps`.
+        """
         return self.time_scale*(1 + self.scene.frame_end - self.scene.frame_start)/self.fps
 
     @property
     def delta_time(self):
+        """
+        Time step between steps or substeps.
+
+        Returns
+        -------
+        float
+            `time_scale / fps / (subframes + 1)`.
+        """
         return self.time_scale/self.fps/(self.subframes + 1)
     
     @property
     def rendering(self):
+        """
+        Render-time flag.
+
+        Returns
+        -------
+        bool
+            `True` when called from render handlers, else `False`.
+        """
         return self._rendering
 
     @property
     def is_viewport(self):
+        """
+        Viewport flag (negation of `rendering`).
+
+        Returns
+        -------
+        bool
+            `True` when updating in the viewport.
+        """
         return not self._rendering
 
     @property
     def use_motion_blur(self):
+        """
+        Whether motion blur is enabled in the renderer.
+
+        Returns
+        -------
+        bool
+            `scene.render.use_motion_blur`.
+        """
         return self.scene.render.use_motion_blur
     
     @property
     def is_baked(self):
+        """
+        Whether baking is active for the current scene.
+
+        Baking is active as soon as it has been defined in the UI.
+
+        Returns
+        -------
+        bool
+            `True` if a bake file is active (`bake_file is not None`).
+        """
         return self.bake_file is not None
     
     # ====================================================================================================
@@ -254,6 +369,15 @@ class Engine:
 
     @property
     def frame_seeds(self):
+        """
+        Per-(frame, subframe) RNG seeds table.
+
+        Returns
+        -------
+        numpy.ndarray of dtype uint32, shape (frame_end + 1, subframes + 1)
+            A table of deterministic seeds derived from `SEED`. Recomputed
+            when dimensions change or if the cache is invalidated.
+        """
         shape = (self.scene.frame_end + 1, self.subframes + 1)
         if self._frame_seeds is None or self._frame_seeds.shape != shape:
             rng = np.random.default_rng(self.SEED)
@@ -263,10 +387,26 @@ class Engine:
 
     @property
     def seed(self):
+        """
+        Seed for the current (frame, subframe).
+
+        Returns
+        -------
+        int
+            `frame_seeds[frame, subframe]`.
+        """
         return self.frame_seeds[self.frame, self.subframe]
 
     @property
     def rng(self):
+        """
+        Random number generator initialized from `seed`.
+
+        Returns
+        -------
+        numpy.random.Generator
+            Default PCG64 generator seeded with `seed`.
+        """
         return np.random.default_rng(self.seed)
     
     # ====================================================================================================
@@ -275,12 +415,34 @@ class Engine:
 
     @property
     def depsgraph(self):
+        """
+        Evaluated dependency graph.
+
+        Returns
+        -------
+        bpy.types.Depsgraph
+            Cached depsgraph during handlers when available,
+            otherwise `bpy.context.evaluated_depsgraph_get()`.
+        """
         if self._depsgraph is None:
             return bpy.context.evaluated_depsgraph_get()
         else:
             return self._depsgraph
 
     def get_evaluated(self, spec):
+        """
+        Get an evaluated object from the depsgraph.
+
+        Parameters
+        ----------
+        spec : str or bpy.types.Object
+            Object name or object instance.
+
+        Returns
+        -------
+        bpy.types.Object
+            The evaluated object (`obj.evaluated_get(depsgraph)`).
+        """
         obj = bpy.data.objects[spec] if isinstance(spec, str) else spec
         return obj.evaluated_get(self.depsgraph)
 
@@ -289,7 +451,13 @@ class Engine:
     # ====================================================================================================
 
     def init_bake(self):
+        """
+        Initialize or disable baking based on scene properties.
 
+        Creates a new [`BakeFile`][npblender.bakefile.BakeFile] when
+        `scene.npblender_use_bake` is enabled and a name is set; otherwise
+        clears `bake_file`.
+        """
         name = self.scene.npblender_bake_name
         if self.scene.npblender_use_bake and name != "":
             print(f"Engine> init bake '{name}'")
@@ -298,6 +466,15 @@ class Engine:
             self.bake_file = None
 
     def load_frame(self):
+        """
+        Try to load baked data/state for the current frame.
+
+        Returns
+        -------
+        bool
+            `True` if baked animation data (and optional state) were read and
+            applied to all animations; `False` if no bake file or no entry.
+        """
 
         # ----- No baking
 
@@ -328,6 +505,13 @@ class Engine:
         return True
 
     def save_frame(self):
+        """
+        Save current animations' data and state to the bake file.
+
+        Skips saving unless on the first frame or immediately after the last
+        saved state frame; otherwise writes `animations` and `states` for
+        the current `frame` into `bake_file`.
+        """
 
         # ----- No baking
 
@@ -374,8 +558,12 @@ class Engine:
     # ----------------------------------------------------------------------------------------------------
 
     def first_frame_reset(self):
-        """ Called when current frame is the first one
         """
+        Reset all animations at the first frame.
+
+        Calls `reset()` on each registered animation and logs the reset.
+        """
+        # Track
         print("Engine> Reset")
 
         for anim in self.animations:
@@ -386,7 +574,22 @@ class Engine:
     # ----------------------------------------------------------------------------------------------------
 
     def step(self):
-        """ One step
+        """
+        Advance one frame step (with subframes) and update the view.
+
+        Workflow:
+        1) If first frame, initialize baking.
+        2) If the frame is baked, load it; otherwise:
+        - On the first frame, call `first_frame_reset()` and use 0 subframes.
+        - For `i` in `1..subframes` then `0`, set `subframe` and call
+            `compute()` on each animation.
+        - Save the frame if baking is active.
+        3) Call `view()` on each animation.
+
+        Notes
+        -----
+        Subframe order is `1, 2, …, n-1, 0`, where `0` denotes the “main”
+        frame computed after all substeps.
         """
 
         from time import time
@@ -468,6 +671,16 @@ class Engine:
     # ----------------------------------------------------------------------------------------------------
 
     def add(self, animation):
+        """
+        Register an animation to be driven by the engine.
+
+        Parameters
+        ----------
+        animation : Animation
+            An object exposing `reset()`, `compute()`, `view()` and optional
+            baking hooks (`get_frame_data`, `set_frame_data`, `get_frame_state`,
+            `set_frame_state`).
+        """
         self.animations.append(animation)
 
     # ----------------------------------------------------------------------------------------------------
@@ -475,12 +688,18 @@ class Engine:
     # ----------------------------------------------------------------------------------------------------
 
     def animation(self, animation, subframes=0):
-        """ > Single animation
+        """
+        Register and run a single animation (convenience).
 
-        Arguments
-        ---------
-        - animation (Animation)
-        - subframes (int = 0) : number of subframes
+        Resets the engine with the desired `subframes`, registers `animation`,
+        then steps the current frame once.
+
+        Parameters
+        ----------
+        animation : Animation
+            The animation to run.
+        subframes : int, default=0
+            Number of subframes per frame.
         """
 
         # Init the engine
@@ -497,15 +716,24 @@ class Engine:
     # ----------------------------------------------------------------------------------------------------
 
     def go(self, compute, reset=None, view=None, subframes=0):
-        """ > Legacy behavior : animates with functions
-
-        Arguments
-        ---------
-        - compute (function) : computation function
-        - reset (function = None) : reset function
-        - view (function = None) : view function
-        - subframes (int = 0) : subframes
         """
+        Run a single animation (convenience).
+
+        The animation is defined by the `compute` function and
+        optionally by `reset` and `view` functions.
+
+        Parameters
+        ----------
+        compute : callable
+            Frame/subframe compute function.
+        reset : callable, optional
+            Optional first-frame reset function.
+        view : callable, optional
+            Optional view/update function.
+        subframes : int, default=0
+            Number of subframes per frame.
+        """
+
         self.animation(Animation(compute, reset=reset, view=view), subframes=subframes)
 
 
@@ -587,8 +815,41 @@ def before_render_image(scene, depsgraph):
 # ====================================================================================================
 
 class Animation:
+    """
+    Minimal base class for time-stepped animations.
+
+    `Animation` defines the three lifecycle hooks that the [`Engine`][npblender.engine.Engine]
+    calls on every frame/subframe: `reset()`, `compute()`, and `view()`. You can either
+    subclass and override these methods, or pass callables to the constructor to set
+    `_reset`, `_compute`, and `_view` dynamically. It also exposes lightweight accessors
+    to the global engine (`engine`, `time`, `delta_time`) and optional baking hooks.
+
+    Notes
+    -----
+    - `reset()` is called **once** on the first frame of a run.
+    - `compute()` is called at each substep; the engine enumerates subframes as
+    `1, 2, …, n-1, 0`, where `0` is the main frame after substeps.
+    - `view()` is called after compute/load to push results into Blender.
+    """
 
     def __init__(self, compute=None, reset=None, view=None):
+        """
+        Optionally provide function-based hooks instead of subclassing.
+
+        If a callable is provided, it is bound to the corresponding private
+        attribute (`_compute`, `_reset`, `_view`) that `compute()`, `reset()`,
+        and `view()` will delegate to.
+
+        Parameters
+        ----------
+        compute : callable or None, optional
+            Step function called at each subframe.
+        reset : callable or None, optional
+            Initialization function called at the first frame.
+        view : callable or None, optional
+            Function that writes results back to Blender.
+        """
+
         if compute is not None:
             self._compute = compute
         if reset is not None:
@@ -602,14 +863,38 @@ class Animation:
 
     @property
     def engine(self):
+        """
+        Global engine singleton.
+
+        Returns
+        -------
+        Engine
+            The module-level engine instance that drives the animation.
+        """
         return engine
     
     @property
     def time(self):
+        """
+        Current time in seconds (proxy to `engine.time`).
+
+        Returns
+        -------
+        float
+            The timeline time including subframes, offset, and scale.
+        """
         return engine.time
     
     @property
     def delta_time(self):
+        """
+        Time step between substeps (proxy to `engine.delta_time`).
+
+        Returns
+        -------
+        float
+            `time_scale / fps / (subframes + 1)`.
+        """
         return engine.delta_time
 
     # ----------------------------------------------------------------------------------------------------
@@ -620,14 +905,38 @@ class Animation:
     # ----------------------------------------------------------------------------------------------------
 
     def reset(self):
+        """
+        First-frame initialization hook.
+
+        > ***To be overridden***
+
+        Delegates to `_reset()` if defined. Called once by the engine at the
+        first frame of the run.
+        """
         if hasattr(self, '_reset'):
             self._reset()
 
     def compute(self):
+        """
+        Per-substep compute hook.
+
+        > ***To be overridden***
+
+        Delegates to `_compute()` if defined. Called by the engine for each
+        subframe and the main frame (`… , n-1, 0`). 
+        """
         if hasattr(self, '_compute'):
             self._compute()
 
     def view(self):
+        """
+        Push results into Blender.
+
+        > ***To be overridden***
+
+        Delegates to `_view()` if defined. Called by the engine after compute or
+        after loading a baked frame, to update Blender data/objects.
+        """
         if hasattr(self, '_view'):
             self._view()
 
@@ -638,17 +947,56 @@ class Animation:
     # ----- Animation data
 
     def get_frame_data(self):
+        """
+        Return animation data to be baked for the current frame.
+
+        Returns
+        -------
+        Any or None
+            Per-animation payload to store in the bake file, or `None` to skip.
+        """
         return None
 
     def set_frame_data(self, data):
+        """
+        Load animation data from the bake file for the current frame.
+
+        Parameters
+        ----------
+        data : Any
+            Payload previously produced by `get_frame_data()`.
+
+        Returns
+        -------
+        bool
+            `True` if the data was applied successfully, else `False`.
+        """
         return False
 
     # ----- State data
 
     def get_frame_state(self):
+        """
+        Return state to be saved to resume simulation from the current frame..
+
+        Returns
+        -------
+        Any or None
+            Optional state payload 
+        """
         return None
 
     def set_frame_state(self, data):
+        """
+        Restore persistent state saved with the current frame.
+
+        The simulation can be resume for next frames.
+
+        Parameters
+        ----------
+        data : Any
+            State payload previously produced by `get_frame_state()`. :contentReference[oaicite:13]{index=13}
+        """
         pass
 
     # ----------------------------------------------------------------------------------------------------
@@ -656,6 +1004,23 @@ class Animation:
     # ----------------------------------------------------------------------------------------------------
 
     def go(self, subframes=0):
+        """
+        Run this animation once through the engine.
+
+        Convenience wrapper for `engine.animation(self, subframes=subframes)`.
+
+        Parameters
+        ----------
+        subframes : int, default=0
+            Number of subframes per frame.
+
+        Examples
+        --------
+        ```python
+        anim = Animation(compute=lambda: ..., reset=lambda: ..., view=lambda: ...)
+        anim.go(subframes=4)
+        ```
+        """
         engine.animation(self, subframes=subframes)
 
 # ====================================================================================================
