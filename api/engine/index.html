@@ -263,7 +263,7 @@
   
   
   <span class="md-ellipsis">
-    Référence API
+    Reference API
     
   </span>
   
@@ -274,7 +274,7 @@
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
-            Référence API
+            Reference API
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -615,6 +615,192 @@ managing baked animations.</p>
     <div class="doc doc-contents ">
 
 
+        <p>Animation engine for <strong>npblender</strong>.</p>
+<blockquote>
+<p><strong><em>Note:</em></strong> do not instantiate <code>Engine</code> class directly but rather use the single
+and only instance <code>engine</code> avaiable as global variable in the module.</p>
+</blockquote>
+<p><code>Engine</code> manages a list of <a class="autorefs autorefs-internal" title="Animation" href="../animation/#npblender.Animation"><code>Animations</code></a>. At each frame change,
+the <code>compute</code> and <code>view</code> methods of <code>Animations</code> are called.</p>
+<p>If <code>subframes</code> is not zero, the <code>compute</code> is called as many times ad defined by
+this property. This allows more precision in simulations.</p>
+<p>Advanced animations can create classes based on [<code>Animation</code>][npblender.animation] or
+<a class="autorefs autorefs-internal" title="Simulation" href="../simulation/#npblender.Simulation"><code>Simulation</code></a>.</p>
+<p>Simple animations can rely on a single function which is passed as argument of [engine.go][npblender.Engine.go]
+method as shown below:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">npblender</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mesh</span><span class="p">,</span> <span class="n">engine</span>
+
+<span class="c1"># Move a cube of .01 per frame along x</span>
+<span class="n">cube</span> <span class="o">=</span> <span class="n">Mesh</span><span class="o">.</span><span class="n">cube</span><span class="p">()</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">():</span>
+    <span class="n">cube</span><span class="o">.</span><span class="n">points</span><span class="o">.</span><span class="n">x</span> <span class="o">+=</span> <span class="mf">.01</span>
+    <span class="n">cube</span><span class="o">.</span><span class="n">to_object</span><span class="p">(</span><span class="s2">&quot;Cube&quot;</span><span class="p">)</span>
+
+<span class="n">engine</span><span class="o">.</span><span class="n">go</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
+</code></pre></div>
+<p>The <code>engine</code> instance of <code>Engine</code> class exposes useful animation properties and methods such as
+<code>time</code> for current time, <code>delta_time</code> for simulations, <code>is_viewport</code> and <code>rendering</code> to adapt
+parameters to the context.</p>
+
+
+<details class="key-features" open>
+  <summary>Key features</summary>
+  <ul>
+<li>Global animation management (add, run, reset)</li>
+<li>Frame stepping with optional <strong>subframes</strong></li>
+<li><strong>Baking</strong> to disk via methods [<code>Animation.get_frame_data</code>][npblender.Animation.get_frame_data] and
+    [<code>Animation.set_frame_data</code>][npblender.Animation.set_frame_data.</li>
+<li>Integration with Blender render/viewport handlers and depsgraph</li>
+<li>Support for both <strong>viewport</strong> updates and <strong>render-time</strong> updates</li>
+</ul>
+</details>
+
+<p><span class="doc-section-title">Attributes:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.animations">animations</span></code></td>
+            <td>
+                  <code><span title="list">list</span>[<a class="autorefs autorefs-internal" title="Animation (npblender.engine.Animation)" href="../animation/#npblender.Animation">Animation</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Global list of registered animations driven by the engine.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.bake_file">bake_file</span></code></td>
+            <td>
+                  <code><span title="npblender.bakefile.BakeFile">BakeFile</span> or None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Active bake file when baking is enabled in the scene, else <code>None</code>.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.time_offset">time_offset</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Seconds added to the computed time (shifts the timeline origin).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.time_scale">time_scale</span></code></td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Global time scale multiplier (e.g., slow-motion).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.subframes">subframes</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of subframes per frame (the engine computes <code>subframes + 1</code> steps).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.subframe">subframe</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Current subframe index in <code>{0, …, subframes}</code> (<code>0</code> means the “main” frame).</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.SEED">SEED</span></code></td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Base RNG seed used to derive per-(frame, subframe) seeds.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.VERBOSE">VERBOSE</span></code></td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, prints per-frame timings to the console.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code><span title="npblender.engine.Engine.STEP_TIMES">STEP_TIMES</span></code></td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, prints detailed I/O/compute times (load/compute/save/view).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="properties" open>
+  <summary>Properties</summary>
+  <p>scene : bpy.types.Scene
+    Active scene (or an overridden scene during handlers).
+fps : int
+    Frames per second from <code>scene.render.fps</code>.
+frame : int
+    Current frame number (overridable internally during handlers).
+is_first_frame : bool
+    <code>True</code> when <code>frame == scene.frame_start</code>.
+time : float
+    Current time in seconds, including <code>time_offset</code>, <code>time_scale</code>, and subframe.
+duration : float
+    Timeline duration (seconds) given the current <code>time_scale</code>.
+delta_time : float
+    Time step between substeps: <code>time_scale / fps / (subframes + 1)</code>.
+rendering : bool
+    <code>True</code> when called from render handlers; <code>False</code> in viewport updates.
+is_viewport : bool
+    Negation of <code>rendering</code>.
+use_motion_blur : bool
+    Reflects <code>scene.render.use_motion_blur</code>.
+is_baked : bool
+    <code>True</code> when a bake file is active (<code>bake_file is not None</code>).
+frame_seeds : numpy.ndarray
+    Table of per-(frame, subframe) seeds derived from <code>SEED</code>.
+seed : int
+    Seed for the current <code>(frame, subframe)</code>.
+rng : numpy.random.Generator
+    RNG initialized from <code>seed</code>.
+depsgraph : bpy.types.Depsgraph
+    Evaluated depsgraph for the current context/update.</p>
+</details>
 
 
 
