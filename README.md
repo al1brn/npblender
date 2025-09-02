@@ -49,26 +49,40 @@ import numpy as np
 from npblender.mesh import Mesh
 
 # 1) Create a parametric grid
-mesh = Mesh.grid(x=2, y=2, nx=50, ny=50)
+plate = Mesh.grid(size_x=2, size_y=2, vertices_x=50, vertices_y=50)
 
 # 3) NumPy-driven deformation
 plate.points.position[:, 2] += 0.1 * np.sin(plate.points.position[:, 0] * 4.0)
 
 # 2) Apply a thickness and send it to Blender as an object
-plate = mesh.solidify(thickness=0.2)
+plate=plate.solidify(thickness=.1)
 obj = plate.to_object("NPB_Plate", shade_smooth=True)
+
 ```
 
 Another example with curves:
 
 ```python
-from npblender.geometry.curve import Curve
+import numpy as np
+from npblender import Curve
 
-# Make a Bezier circle, convert to mesh with a profile sweep
-circle = Curve.bezier_circle()
-profile = Curve.line(start=(0, 0, -0.05), end=(0, 0, 0.05), resolution=8)
-tube = circle.to_mesh(profile=profile, caps=True, use_radius=False)
-tube.to_object("NPB_Tube", shade_smooth=True)
+# Twisted pole
+
+# Start by a curve line of 50 points
+n = 100
+pole = Curve.line(start=(0, 0, 0), end=(0, 0, 1), resolution=n)
+
+# Twist and scale each point
+pole.points.tilt = np.linspace(0, 3*np.pi, n)
+pole.points.radius = np.linspace(1, 0, n)
+
+# To mesh with a 6 segments circle
+profile = Curve.circle(radius=.2, resolution=5)
+
+mesh = pole.to_mesh(profile=profile, caps=True, use_radius=True)
+pos = mesh.points.position
+print(pos[:3])
+mesh.to_object("NPB Twisted Pole", shade_smooth=False)
 ```
 
 ---

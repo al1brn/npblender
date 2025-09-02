@@ -1194,7 +1194,7 @@ class Rotation(ItemsArray):
 
 
     @staticmethod
-    def look_at(v_src, v_dst, up=None, upward=(0, 0, 1), normalized=False):
+    def look_at_OLD(v_src, v_dst, up=None, upward=(0, 0, 1), normalized=False):
         """
         Build a Rotation that aligns the local frame (v_src, up) to (v_dst, upward),
         preserving right-handedness.
@@ -1264,6 +1264,105 @@ class Rotation(ItemsArray):
             R = R[0]
 
         return Rotation(R, copy=False)
+    
+    @staticmethod
+    def look_at(v_src, v_dst, up=None, upward=(0, 0, 1), normalized=False):
+        """
+        Build a Rotation that aligns the local frame (v_src, up) to (v_dst, upward),
+        preserving right-handedness.
+
+        If `up` is None, only the forward direction is used (i.e. v_src → v_dst),
+        and roll is undefined. The returned rotation minimizes the angular difference.
+
+        Parameters
+        ----------
+        v_src : array_like, shape (..., 3)
+            Source forward vector(s).
+        v_dst : array_like, shape (..., 3)
+            Target forward vector(s).
+        up : array_like, shape (..., 3), optional
+            Up vector(s) in the source frame. If None, only direction is used.
+        upward : array_like, shape (..., 3), default (0, 0, 1)
+            Up vector(s) in the destination frame.
+        normalized : bool, default False
+            If True, assume v_src and v_dst are already unit vectors.
+
+        Returns
+        -------
+        Rotation
+            Rotation matrix (3×3 or batch of matrices) aligning v_src to v_dst.
+        """
+        import numpy as np
+        from .rotation import Rotation
+
+        if up is None:
+            return Rotation.from_vectors(v_src, v_dst, normalized=normalized)
+
+        # Arrays and types
+        v_src   = np.asarray(v_src,   dtype=np.float32)
+        v_dst   = np.asarray(v_dst,   dtype=np.float32)
+        up      = np.asarray(up,      dtype=np.float32)
+        upward  = np.asarray(upward,  dtype=np.float32)
+
+        # Broadcast
+        v_src, v_dst, up, upward = np.broadcast_arrays(v_src, v_dst, up, upward)
+        is_scalar = v_src.shape == (3,)
+        if is_scalar:
+            v_src   = v_src[None, :]
+            v_dst   = v_dst[None, :]
+            up      = up[None, :]
+            upward  = upward[None, :]
+
+        eps = 1e-12
+
+        def safe_normalize(v):
+            n = np.linalg.norm(v, axis=-1, keepdims=True)
+            return np.divide(v, n, where=(n > eps), out=np.zeros_like(v))
+
+        if not normalized:
+            v_src = safe_normalize(v_src)
+            v_dst = safe_normalize(v_dst)
+
+        def fallback_up(forward):
+            # Choisit un axe de base le moins aligné avec forward
+            a = np.abs(forward)
+            # index de la plus petite composante absolue (par batch)
+            idx = np.argmin(a, axis=-1)
+            e = np.eye(3, dtype=forward.dtype)[idx]           # (..., 3)
+            return e
+
+        def make_basis(forward, up_hint):
+            # 1) essaie avec up_hint fourni
+            right = np.cross(forward, up_hint)
+            rn = np.linalg.norm(right, axis=-1, keepdims=True)
+            need_fallback = rn <= eps
+
+            if np.any(need_fallback):
+                # 2) remplace localement par un up orthogonal garanti
+                alt_up = fallback_up(forward)
+                right_fb = np.cross(forward, alt_up)
+                # combine fallback et cas normal
+                right = np.where(need_fallback, right_fb, right)
+                rn = np.linalg.norm(right, axis=-1, keepdims=True)
+
+            right = np.divide(right, rn, where=(rn > eps), out=np.zeros_like(right))
+            up_ortho = np.cross(right, forward)
+            up_ortho = safe_normalize(up_ortho)
+
+            # Colonnes = (right, up, forward)
+            return np.stack([right, up_ortho, forward], axis=-1)  # (..., 3, 3)
+
+        B_src = make_basis(v_src, up)
+        B_dst = make_basis(v_dst, upward)
+
+        # R = B_dst · B_src.T
+        R = B_dst @ np.swapaxes(B_src, -2, -1)
+
+        if is_scalar:
+            R = R[0]
+
+        return Rotation(R, copy=False)
+
 
 
 

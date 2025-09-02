@@ -1753,9 +1753,10 @@ class Curve(Geometry):
             # Translation
             all_points += curve.points.position.reshape(nsplines, N, 1, 3)
 
+            # Add to mesh
             all_points = all_points.reshape(-1, 3)
-
             mesh.add_points(all_points)
+
 
             # Transfer trans domain attributes
             mesh.points.transfer_attributes(curve.points, shape=(nsplines, N, nprof), other_shape=(nsplines, N, 1))
