@@ -24,7 +24,7 @@
 - [Quaternion][npblender.Quaternion]
 - [Transformation][npblender.Transformation]
 - [maths][npblender.maths] module
-- [distribs][npblender.maths.distribs] module
+- [maths.distribs][npblender.maths.distribs] module
 
 ### Animation
 - [Camera][npblender.Camera] : for camera culling
