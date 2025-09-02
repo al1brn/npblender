@@ -13,6 +13,10 @@
       
       
       
+        <link rel="prev" href="../mesh/">
+      
+      
+        <link rel="next" href="../cloud/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -225,7 +229,7 @@
   
   
   <span class="md-ellipsis">
-    Accueil
+    Home
     
   </span>
   
@@ -239,8 +243,10 @@
       
   
   
+    
   
   
+  
     
     
     
@@ -251,11 +257,11 @@
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
@@ -271,7 +277,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             Référence API
@@ -290,7 +296,7 @@
   
   
   <span class="md-ellipsis">
-    npblender
+    Home
     
   </span>
   
@@ -314,6 +320,644 @@
   
   <span class="md-ellipsis">
     Mesh
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Curve
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Curve
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.bounding_box" class="md-nav__link">
+    <span class="md-ellipsis">
+      bounding_box
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.bounding_box_dims" class="md-nav__link">
+    <span class="md-ellipsis">
+      bounding_box_dims
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.length" class="md-nav__link">
+    <span class="md-ellipsis">
+      length
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.max_size" class="md-nav__link">
+    <span class="md-ellipsis">
+      max_size
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.add_bezier" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_bezier
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.add_materials" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_materials
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.add_poly" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_poly
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.add_splines" class="md-nav__link">
+    <span class="md-ellipsis">
+      add_splines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.apply_scale" class="md-nav__link">
+    <span class="md-ellipsis">
+      apply_scale
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.arc" class="md-nav__link">
+    <span class="md-ellipsis">
+      arc
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.bezier_circle" class="md-nav__link">
+    <span class="md-ellipsis">
+      bezier_circle
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.bezier_segment" class="md-nav__link">
+    <span class="md-ellipsis">
+      bezier_segment
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.blender_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      blender_data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.capture" class="md-nav__link">
+    <span class="md-ellipsis">
+      capture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.check" class="md-nav__link">
+    <span class="md-ellipsis">
+      check
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.circle" class="md-nav__link">
+    <span class="md-ellipsis">
+      circle
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.clear" class="md-nav__link">
+    <span class="md-ellipsis">
+      clear
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.compute_attribute_on_domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      compute_attribute_on_domain
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.compute_bezier_handles" class="md-nav__link">
+    <span class="md-ellipsis">
+      compute_bezier_handles
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.delete_points" class="md-nav__link">
+    <span class="md-ellipsis">
+      delete_points
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.delete_splines" class="md-nav__link">
+    <span class="md-ellipsis">
+      delete_splines
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.evaluate" class="md-nav__link">
+    <span class="md-ellipsis">
+      evaluate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.for_each_bucket" class="md-nav__link">
+    <span class="md-ellipsis">
+      for_each_bucket
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.from_curve" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_curve
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.from_curve_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_curve_data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.from_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_dict
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.from_object" class="md-nav__link">
+    <span class="md-ellipsis">
+      from_object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.get_cubic_envelop" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_cubic_envelop
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.get_material_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_material_index
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.get_points_selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      get_points_selection
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.join" class="md-nav__link">
+    <span class="md-ellipsis">
+      join
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.join_attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      join_attributes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.line" class="md-nav__link">
+    <span class="md-ellipsis">
+      line
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.load_models" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_models
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.load_object" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.multiply" class="md-nav__link">
+    <span class="md-ellipsis">
+      multiply
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.no_view" class="md-nav__link">
+    <span class="md-ellipsis">
+      no_view
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.object" class="md-nav__link">
+    <span class="md-ellipsis">
+      object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.quadratic_bezier" class="md-nav__link">
+    <span class="md-ellipsis">
+      quadratic_bezier
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.quadrilateral" class="md-nav__link">
+    <span class="md-ellipsis">
+      quadrilateral
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.rotate" class="md-nav__link">
+    <span class="md-ellipsis">
+      rotate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.sample_attributes" class="md-nav__link">
+    <span class="md-ellipsis">
+      sample_attributes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.select" class="md-nav__link">
+    <span class="md-ellipsis">
+      select
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.spiral" class="md-nav__link">
+    <span class="md-ellipsis">
+      spiral
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.star" class="md-nav__link">
+    <span class="md-ellipsis">
+      star
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.tangent" class="md-nav__link">
+    <span class="md-ellipsis">
+      tangent
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.to_bezier" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_bezier
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.to_curve_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_curve_data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.to_dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_dict
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.to_mesh" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_mesh
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.to_object" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.to_poly" class="md-nav__link">
+    <span class="md-ellipsis">
+      to_poly
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.transform" class="md-nav__link">
+    <span class="md-ellipsis">
+      transform
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      transformation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.translate" class="md-nav__link">
+    <span class="md-ellipsis">
+      translate
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.curve.Curve.xyfunction" class="md-nav__link">
+    <span class="md-ellipsis">
+      xyfunction
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloud/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Cloud
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../instances/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Instances
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../meshes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Meshes
     
   </span>
   
