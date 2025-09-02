@@ -666,6 +666,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.Rotation.look_at_OLD" class="md-nav__link">
+    <span class="md-ellipsis">
+      look_at_OLD
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.Rotation.reshape" class="md-nav__link">
     <span class="md-ellipsis">
       reshape
@@ -2559,6 +2568,151 @@ is close to identity within <code>tol</code>.</p>
 
 <a href="#npblender.Rotation.look_at" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature codehilite"><pre><span></span><code><span class="nf">look_at</span><span class="p">(</span><span class="n">v_src</span><span class="p">,</span> <span class="n">v_dst</span><span class="p">,</span> <span class="n">up</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upward</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a Rotation that aligns the local frame (v_src, up) to (v_dst, upward),
+preserving right-handedness.</p>
+<p>If <code>up</code> is None, only the forward direction is used (i.e. v_src → v_dst),
+and roll is undefined. The returned rotation minimizes the angular difference.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>v_src</code>
+            </td>
+            <td>
+                  <code>(<span title="array_like">array_like</span>, <span title="shape">shape</span>(..., 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source forward vector(s).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>v_dst</code>
+            </td>
+            <td>
+                  <code>(<span title="array_like">array_like</span>, <span title="shape">shape</span>(..., 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target forward vector(s).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>up</code>
+            </td>
+            <td>
+                  <code>(<span title="array_like">array_like</span>, <span title="shape">shape</span>(..., 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Up vector(s) in the source frame. If None, only direction is used.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>upward</code>
+            </td>
+            <td>
+                  <code>(<span title="array_like">array_like</span>, <span title="shape">shape</span>(..., 3))</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Up vector(s) in the destination frame.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(0, 0, 1)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>normalized</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, assume v_src and v_dst are already unit vectors.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Rotation (npblender.maths.rotation.Rotation)" href="#npblender.Rotation">Rotation</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Rotation matrix (3×3 or batch of matrices) aligning v_src to v_dst.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Rotation.look_at_OLD" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">look_at_OLD</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#npblender.Rotation.look_at_OLD" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">look_at_OLD</span><span class="p">(</span><span class="n">v_src</span><span class="p">,</span> <span class="n">v_dst</span><span class="p">,</span> <span class="n">up</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">upward</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
