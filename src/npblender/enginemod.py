@@ -741,7 +741,14 @@ class Engine:
 # One single instance of Engine class
 # ====================================================================================================
 
-engine = Engine()
+engine: Engine | None = None
+
+def get_engine() -> Engine:
+    global engine
+    if engine is None:
+        engine = Engine()
+    return engine
+
 
 # ====================================================================================================
 # Lock interface to avoid crashes
@@ -756,6 +763,8 @@ def lock_interface(value):
 # ====================================================================================================
 
 def update(scene, depsgraph):
+
+    engine = get_engine()
 
     # Rendering : update is done by before_render_image
     if engine.rendering:
@@ -780,6 +789,8 @@ def update(scene, depsgraph):
 
 def before_render(scene):
 
+    engine = get_engine()
+
     print("Engine> Start rendering")
 
     # To be sure
@@ -792,6 +803,9 @@ def before_render(scene):
 # ----------------------------------------------------------------------------------------------------
 
 def after_render(scene):
+
+    engine = get_engine()
+
     print("Engine> Render completed")
     engine._rendering = False
     engine._depsgraph = None
@@ -801,6 +815,8 @@ def after_render(scene):
 # ----------------------------------------------------------------------------------------------------
 
 def before_render_image(scene, depsgraph):
+
+    engine = get_engine()
 
     # Points to the right scene (depsgraph has been set by update)
     engine._scene = scene
@@ -1152,45 +1168,47 @@ class npblenderBakePanel(bpy.types.Panel):
 
 def register():
 
+    eng = get_engine()
+    
     create_scene_properties()
 
-    # Handle on change post to get the depsgraph
-
-    # ----- Frame change
-    bpy.app.handlers.frame_change_post.clear()
+    # Clean and append
+    bpy.app.handlers.frame_change_post[:] = [
+        h for h in bpy.app.handlers.frame_change_post if h.__name__ != update.__name__
+    ]
     bpy.app.handlers.frame_change_post.append(update)
 
-    # ----- Render init
-    bpy.app.handlers.render_init.clear()
+    bpy.app.handlers.render_init[:] = [h for h in bpy.app.handlers.render_init if h.__name__ != before_render.__name__]
     bpy.app.handlers.render_init.append(before_render)
 
-    # ----- Render done
-    bpy.app.handlers.render_complete.clear()
+    bpy.app.handlers.render_complete[:] = [h for h in bpy.app.handlers.render_complete if h.__name__ != after_render.__name__]
     bpy.app.handlers.render_complete.append(after_render)
 
-    bpy.app.handlers.render_cancel.clear()
+    bpy.app.handlers.render_cancel[:] = [h for h in bpy.app.handlers.render_cancel if h.__name__ != after_render.__name__]
     bpy.app.handlers.render_cancel.append(after_render)
-
-    # ----- UI
 
     bpy.utils.register_class(npblenderBake)
     bpy.utils.register_class(npblenderDelBakeFiles)
     bpy.utils.register_class(npblenderBakePanel)
 
-
 def unregister():
-    bpy.app.handlers.frame_change_post.remove(update)
-    bpy.app.handlers.render_init.remove(before_render)
-    bpy.app.handlers.render_complete.remove(after_render)
-    bpy.app.handlers.render_cancel.remove(after_render)
+    for L, f in [
+        (bpy.app.handlers.frame_change_post, update),
+        (bpy.app.handlers.render_init,       before_render),
+        (bpy.app.handlers.render_complete,   after_render),
+        (bpy.app.handlers.render_cancel,     after_render),
+    ]:
+        try:
+            L.remove(f)
+        except ValueError:
+            pass
 
-    bpy.utils.unregister_class(npblenderBakePanel)
-    bpy.utils.unregister_class(npblenderDelBakeFiles)
-    bpy.utils.unregister_class(npblenderBake)
+    for cls in (npblenderBakePanel, npblenderDelBakeFiles, npblenderBake):
+        try:
+            bpy.utils.unregister_class(cls)
+        except Exception:
+            pass
 
-# ----------------------------------------------------------------------------------------------------
-# Register
-# ----------------------------------------------------------------------------------------------------
-
-register()
-
+    # No engine
+    global engine
+    engine = None
