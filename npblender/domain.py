@@ -2241,6 +2241,7 @@ class Point(PointDomain):
     # ====================================================================================================
 
     def line_dist(self, point0=(-1, -1, -1), point1=(1, 1, 1), count=10, density=None, seed=None):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('tangent')
         d = distribs.line_dist(point0, point1, count, density, seed)
         self.append(position=d['points'], tangent=d['tangents'])
@@ -2258,6 +2259,7 @@ class Point(PointDomain):
         density=None,
         seed=None,
     ):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('tangent')
         self.new_float('angle')
         d = distribs.arc_dist(
@@ -2275,6 +2277,7 @@ class Point(PointDomain):
         density=None,
         seed=None,
     ):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('tangent')
         self.new_float('angle')
         d = distribs.circle_dist(radius, scale, center, count, density, seed)
@@ -2300,6 +2303,7 @@ class Point(PointDomain):
         density=None,
         seed=None
     ):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('tangent')
         self.new_float('angle')
         d = distribs.pie_dist(
@@ -2314,6 +2318,7 @@ class Point(PointDomain):
         d = distribs.disk_dist(
             radius, outer_radius, center, normal, count, density, seed
         )
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.append(position=d['points'], tangent=d['tangents'], angle=d['angles'])
         return self
 
@@ -2330,6 +2335,7 @@ class Point(PointDomain):
         density=None,
         seed=None,
     ):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('normal')
         self.new_vector('tangent')
         self.new_float('angle')
@@ -2349,6 +2355,7 @@ class Point(PointDomain):
         density=None,
         seed=None
     ):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('normal')
         self.new_float('theta')
         self.new_float('phi')
@@ -2368,6 +2375,7 @@ class Point(PointDomain):
         density=None,
         seed=None
     ):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('normal')
         d = distribs.dome_dist(
             radius, scale, axis, angle, use_vonmises, center, count, density, seed
@@ -2376,6 +2384,7 @@ class Point(PointDomain):
         return self
 
     def cube_dist(self, size=1, center=(0, 0, 0), count=10, density=None, seed=None):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.append(position = distribs.cube_dist(size, center, count, density, seed)['points'])
         return self
 
@@ -2392,6 +2401,7 @@ class Point(PointDomain):
         seed=None,
         **kwargs
     ):
+        """ see distributions in [maths.distribs][npblender.maths.distribs]"""
         self.new_vector('normal')        
         d = distribs.ball_dist(
             radius, axis, angle, use_vonmises, center, count, density, scale, seed, **kwargs)

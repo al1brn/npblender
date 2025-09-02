@@ -15,7 +15,7 @@ theme:
 nav:
   - Home: index.md
   - Référence API:
-      - Home: api/index.md
+      - Index: api/index.md
       - Mesh: api/mesh.md
       - Curve: api/curve.md
       - Cloud: api/cloud.md

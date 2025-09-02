@@ -25,7 +25,6 @@
 - [Transformation][npblender.Transformation]
 - [maths][npblender.maths] module
 - [maths.distribs][npblender.maths.distribs] module
-- [maths.utils][npblender.maths.utils] module
 
 ### Animation
 - [Camera][npblender.Camera] : for camera culling
