@@ -45,6 +45,7 @@ plugins:
             - sys.modules.setdefault("bmesh", types.ModuleType("bmesh"))
             - sys.modules.setdefault("mathutils", types.ModuleType("mathutils"))          
           options:
+            allow_inspection: false          
             docstring_style: numpy             
             docstring_section_style: table     # sections (Arguments, Returns, etc.) en tableau
             separate_signature: true           # signature dans un bloc code sous le heading
@@ -52,16 +53,23 @@ plugins:
             show_source: false                 # (optionnel) masque le lien "Source"
             merge_init_into_class: true        # doc de __init__ fusionnée dans la classe
             show_submodules: false
-            show_private_members: false        # cache _membre
-            show_special_members: false        # cache __dunder__
-            show_undocumented_members: false   # évite d’afficher sans docstring
-            filters:
-              - "!^_"            # sécurité : exclut tout ce qui commence par _
-              - "!^__.*__$"      # exclut __dunder__
+            #show_private_members: false        # cache _membre
+            #show_special_members: false        # cache __dunder__
+            #show_undocumented_members: false   # évite d’afficher sans docstring
+            #filters:
+            #  - "!^_"            # sécurité : exclut tout ce qui commence par _
+            #  - "!^__.*__$"      # exclut __dunder__
             show_root_heading: true        # <— H1 = nom de l’objet (sert de “header” avec la docstring de classe)
             show_root_full_path: false     # <-- show only "Vertex" instead of "npblender.Vertex"
             heading_level: 1               # <— niveau de titre pour la racine
             members_order: alphabetical    # <— ordre alphabétique des méthodes/membres
+            extra:                       # <- options "non standard" ici
+              show_private_members: false
+              show_special_members: false
+              show_undocumented_members: false
+              filters:
+                - "!^_"
+                - "!^__.*__$"            
 
   - autorefs
 
