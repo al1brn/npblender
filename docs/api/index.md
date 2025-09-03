@@ -9,7 +9,7 @@
     - `corners`: [Corner][npblender.Corner]
     - `edges`: [Edge][npblender.Edge]
     - `faces`: [Face][npblender.Face]
-- [Curve][npblender.curve.Curve]
+- [Curve][npblender.Curve]
     - `points`: [ControlPoint][npblender.ControlPoint]
     - `splines`: [Spline][npblender.Spline]
 - [Cloud][npblender.Cloud]

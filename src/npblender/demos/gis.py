@@ -1,7 +1,8 @@
 import numpy as np
 
 from npblender.blender import pil_to_bl_image
-from npblender.gis.gisservices  import Area, BlenderArea, IgnImages, IgnAltitudes #, RgeAlti
+from npblender.gis.areas  import Area, BlenderArea
+from npblender.gis.gisservices  import IgnImages, IgnAltitudes
 from npblender import Mesh, Curve
 
 # ====================================================================================================

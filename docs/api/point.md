@@ -1,4 +1,4 @@
-::: npblender.domain.Point
+::: npblender.Point
     options:
       inherited_members: true        # inclure les méthodes héritées (PointDomain)
       show_bases: false              # masquer "Bases: PointDomain"

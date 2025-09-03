@@ -1,3 +1,3 @@
-::: npblender.instances.Instances
+::: npblender.Instances
     options:
       inherited_members: true

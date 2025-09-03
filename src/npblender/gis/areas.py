@@ -34,6 +34,8 @@ Usage example:
     >>> import areas
 """
 
+__all__ = ['Area', 'BlenderArea']
+
 import numpy as np
 from pyproj import Geod, Transformer
 import requests

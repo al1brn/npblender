@@ -1016,7 +1016,7 @@ class Mesh(Geometry):
         It supports referencing existing vertices through corners or adding new vertices.
 
         > ***Note:***
-        > To add independent geometry with new vertices, use [`Mesh.join_geometry`](npblender.mesh.Mesh.joint_geometry) instead.
+        > To add independent geometry with new vertices, use [`Mesh.join_geometry`](npblender.Mesh.joint_geometry) instead.
 
         Examples
         --------
@@ -1154,7 +1154,7 @@ class Mesh(Geometry):
         (points, corners, faces, edges) which do not refer to existing vertices. The new mesh
         is then joined to the current mesh instance.
 
-        To add geometry using existing vertices, see [`Mesh.add_geometry`](npblender.mesh.Mesh.add_geometry).
+        To add geometry using existing vertices, see [`Mesh.add_geometry`](npblender.Mesh.add_geometry).
 
         Parameters
         ----------

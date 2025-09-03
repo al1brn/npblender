@@ -68,53 +68,53 @@ class Curve(Geometry):
 
         Initializes empty domains by default, or builds a curve from provided
         control points and spline sizes/types. If both `points` and `splines` are
-        already instances of [`ControlPoint`](npblender.domain.ControlPoint) and
-        [`Spline`](npblender.domain.Spline), the curve is created as a **view**
+        already instances of [`ControlPoint`](npblender.ControlPoint) and
+        [`Spline`](npblender.Spline), the curve is created as a **view**
         on these domains (no data copy). Otherwise, domains are allocated and
-        populated via [`add_splines`](npblender.geometry.curve.Curve.add_splines).
+        populated via [`add_splines`](npblender.Curve.add_splines).
 
         Parameters
         ----------
-        points : array-like or [`ControlPoint`](npblender.domain.ControlPoint), optional
+        points : array-like or [`ControlPoint`](npblender.ControlPoint), optional
             Control-point positions (and optional per-point attributes) used to
             populate the curve. If a `ControlPoint` domain is provided together
             with a `Spline` domain, the curve becomes a view on them.
-        splines : array-like or [`Spline`](npblender.domain.Spline), optional
+        splines : array-like or [`Spline`](npblender.Spline), optional
             Per-spline control-point counts (when building), or a ready-made
             `Spline` domain (to create a view).
         curve_type : int, default=POLY
             Default spline type for construction. One of
-            [`POLY`](npblender.constants.POLY),
-            [`BEZIER`](npblender.constants.BEZIER),
-            [`NURBS`](npblender.constants.NURBS).
+            [`BEZIER`](npblender.BEZIER),
+            [`POLY`](npblender.POLY),
+            [`NURBS`](npblender.NURBS).
             Ignored when `points`/`splines` are full domains.
         materials : str or sequence of str, optional
             Material names used by the curve. A single string is accepted and
             promoted to a one-element list.
         attr_from : object, optional
             Source whose transferable attributes are joined into this geometry
-            (see [`join_attributes`](npblender.geometry.geometry.Geometry.join_attributes)).
+            (see [`join_attributes`](npblender.Geometry.join_attributes)).
         **attrs
             Additional geometry attributes to forward to
-            [`add_splines`](npblender.geometry.curve.Curve.add_splines) during construction.
+            [`add_splines`](npblender.Curve.add_splines) during construction.
 
         Notes
         -----
         - When `points` and `splines` are provided as domains, the instance is a
         **view**: `self.is_view` is `True` if the sum of `splines.loop_total`
         differs from `len(points)`. Use
-        [`no_view`](npblender.geometry.curve.Curve.no_view) to materialize a
+        [`no_view`](npblender.Curve.no_view) to materialize a
         standalone copy. :contentReference[oaicite:0]{index=0}
         - Otherwise, the constructor allocates empty
-        [`ControlPoint`](npblender.domain.ControlPoint) and
-        [`Spline`](npblender.domain.Spline) domains, joins attributes from
+        [`ControlPoint`](npblende.ControlPoint) and
+        [`Spline`](npblender.Spline) domains, joins attributes from
         `attr_from` if any, then calls
-        [`add_splines`](npblender.geometry.curve.Curve.add_splines). :contentReference[oaicite:1]{index=1}
+        [`add_splines`](npblender.Curve.add_splines). :contentReference[oaicite:1]{index=1}
 
         Raises
         ------
         ValueError
-            Propagated from [`add_splines`](npblender.geometry.curve.Curve.add_splines)
+            Propagated from [`add_splines`](npblender.Curve.add_splines)
             when `curve_type` is not a single value (e.g., a list). :contentReference[oaicite:2]{index=2}
         """
 
@@ -231,7 +231,7 @@ class Curve(Geometry):
         """
         Validate internal spline bookkeeping.
 
-        Delegates to [`Spline.check`][npblender.domain.Spline.check]. When invalid
+        Delegates to [`Spline.check`][npblender.Spline.check]. When invalid
         and `halt=True`, raises; otherwise prints a message.
 
         Parameters
@@ -986,7 +986,7 @@ class Curve(Geometry):
         splines : int or 1D array of int or None, optional
             Per-spline point counts. If `None`, inferred from `points`.
         curve_type : int, default=POLY
-            [`POLY`][npblender.constants.POLY] or [`NURBS`][npblender.constants.NURBS].
+            [`POLY`][npblender.POLY] or [`NURBS`][npblender.NURBS].
         cyclic : bool or 1D array of bool, default=False
             Whether each spline is closed.
         w : float, default=1.0
@@ -1083,13 +1083,13 @@ class Curve(Geometry):
         ----------
         points : ndarray or None, optional
             Control-point coordinates. Shape depends on `splines` (see
-            [`add_bezier`][npblender.curve.Curve.add_bezier] and
-            [`add_poly`][npblender.curve.Curve.add_poly]).
+            [`add_bezier`][npblender.Curve.add_bezier] and
+            [`add_poly`][npblender.Curve.add_poly]).
         splines : int or 1D array of int or None, optional
             Per-spline sizes. If `None`, inferred from `points` shape.
         curve_type : int, default=POLY
-            One of [`BEZIER`][npblender.constants.BEZIER], [`POLY`][npblender.constants.POLY],
-            [`NURBS`][npblender.constants.NURBS].
+            One of [`BEZIER`][npblender.BEZIER], [`POLY`][npblender.POLY],
+            [`NURBS`][npblender.NURBS].
         **attrs
             Mixed per-point and per-spline attributes to broadcast and assign.
 
@@ -1642,7 +1642,7 @@ class Curve(Geometry):
 
         Returns
         -------
-        [Mesh][npblender.mesh.Mesh]
+        [Mesh][npblender.Mesh]
             The generated mesh.
         """
 
@@ -1940,8 +1940,8 @@ class Curve(Geometry):
 
         See Also
         --------
-        [Curve.circle](npblender.domain.Curve.circle),
-        [Curve.bezier_circle](npblender.domain.Curve.bezier_circle)
+        [Curve.circle](npblender.Curve.circle),
+        [Curve.bezier_circle](npblender.Curve.bezier_circle)
         """
 
         ag0, ag1 = (start_angle + sweep_angle - 2*np.pi, start_angle) if invert_arc else (start_angle, start_angle + sweep_angle)
@@ -2217,8 +2217,8 @@ class Curve(Geometry):
 
         See Also
         --------
-        [Curve.circle](npblender.domain.Curve.circle),
-        [Curve.arc](npblender.domain.Curve.arc)
+        [Curve.circle](npblender.Curve.circle),
+        [Curve.arc](npblender.Curve.arc)
         """
 
         points = max(3, points)

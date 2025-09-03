@@ -1,0 +1,19 @@
+schema_version = "1.0.0"
+
+id = "npblender"
+version = "3.0.0"
+name = "npblender"
+tagline = "Create and modify geometry with NumPy"
+maintainer = "Alain Bernard"
+type = "add-on"
+
+blender_version_min = "4.5.0"
+license = ["SPDX:MIT"]
+
+tags = ["Animation", "Physics", "Scripting", "User Interface"]
+
+website = "https://al1brn.github.io/npblender/"
+
+
+[build]
+python_dependencies = ["numpy"]

@@ -275,10 +275,10 @@ class Domain(FieldArray):
 
         Domains are never instancied directly but by owning geometries.
 
-        Actual Domains are [`Vertex`][npblender.domain.Vertex], [`Faces`][npblender.domain.Faces],
-        [`Corner`][npblender.domain.Corner], [`Edge`][npblender.domain.Edge],
-        [`ControlPoint`][npblender.domain.ControlPoint], [`Spline`][npblender.domain.Spline]
-        and [`Point`][npblender.domain.Point].
+        Actual Domains are [`Vertex`][npblender.Vertex], [`Faces`][npblender.Faces],
+        [`Corner`][npblender.Corner], [`Edge`][npblender.Edge],
+        [`ControlPoint`][npblender.ControlPoint], [`Spline`][npblender.Spline]
+        and [`Point`][npblender.Point].
 
         Domains are initialized with their defaults attributes, for instance `position` for
         point domaines.
@@ -1197,7 +1197,7 @@ class PointDomain(Domain):
         tuple or None
             When entering local space: ``(shape_out, pivot_broadcasted)`` where
             ``shape_out`` is the output shape from
-            [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation)
+            [`_get_shape_for_operation`](npblender._get_shape_for_operation)
             and ``pivot_broadcasted`` has shape ``(..., 3)``.
             When restoring: returns `None`.
         """
@@ -1284,7 +1284,7 @@ class PointDomain(Domain):
 
         > ***Caution:*** If a provided batch cannot be aligned with the domain,
         a `ValueError` is raised by
-        [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation).
+        [`_get_shape_for_operation`](npblender._get_shape_for_operation).
         """
         return self._translate(translation)
 
@@ -1301,7 +1301,7 @@ class PointDomain(Domain):
         """Apply per-axis scales to points, optionally about a pivot.
 
         The scaling is broadcast across the domain using
-        [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation).
+        [`_get_shape_for_operation`](npblender._get_shape_for_operation).
         If a pivot is given, points are moved to the local frame, scaled, then moved back.
 
         Parameters
@@ -1328,7 +1328,7 @@ class PointDomain(Domain):
         ```
 
         > ***Note:*** If broadcasting fails, a `ValueError` is raised by
-        [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation).
+        [`_get_shape_for_operation`](npblender._get_shape_for_operation).
         """
         return self._apply_scale(scale, pivot=pivot)
     
@@ -1451,7 +1451,7 @@ class Vertex(PointDomain):
         all its incident corners (i.e., the face-wise average). The input attribute
         can be given by name or as an array aligned with the vertex domain. The
         attribute is validated with
-        [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute).
+        [`_check_attribute_to_compute`](npblender._check_attribute_to_compute).
 
         Parameters
         ----------
@@ -1474,7 +1474,7 @@ class Vertex(PointDomain):
         ------
         AttributeError
             If `attr` is scalar or its first dimension does not match ``len(self)`` (raised by
-            [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute)).
+            [`_check_attribute_to_compute`](npblender._check_attribute_to_compute)).
         IndexError
             If `corners.vertex_index` contains indices outside ``[0, len(self))``.
         TypeError
@@ -1487,9 +1487,9 @@ class Vertex(PointDomain):
 
         See Also
         --------
-        [`compute_attribute_on_corners`](npblender.domain.Vertex.compute_attribute_on_corners) :
+        [`compute_attribute_on_corners`](npblender.Vertex.compute_attribute_on_corners) :
             Scatter vertex attributes to corners.
-        [`compute_attribute_on_edges`](npblender.domain.Vertex.compute_attribute_on_edges) :
+        [`compute_attribute_on_edges`](npblender.Vertex.compute_attribute_on_edges) :
             Average vertex attributes on edges.
 
         Examples
@@ -1531,7 +1531,7 @@ class Vertex(PointDomain):
 
         For each corner, copies the attribute of its associated vertex (via
         ``corners.vertex_index``). The attribute is validated with
-        [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute).
+        [`_check_attribute_to_compute`](npblender._check_attribute_to_compute).
 
         Parameters
         ----------
@@ -1551,7 +1551,7 @@ class Vertex(PointDomain):
         ------
         AttributeError
             If `attr` is scalar or its first dimension does not match ``len(self)`` (raised by
-            [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute)).
+            [`_check_attribute_to_compute`](npblender._check_attribute_to_compute)).
         IndexError
             If `corners.vertex_index` contains indices outside ``[0, len(self))``.
 
@@ -1584,7 +1584,7 @@ class Vertex(PointDomain):
 
         For every edge, returns the mean of the attribute at its two endpoint
         vertices (``(v0, v1)``). The attribute is validated with
-        [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute).
+        [`_check_attribute_to_compute`](npblender._check_attribute_to_compute).
 
         Parameters
         ----------
@@ -1604,7 +1604,7 @@ class Vertex(PointDomain):
         ------
         AttributeError
             If `attr` is scalar or its first dimension does not match ``len(self)`` (raised by
-            [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute)).
+            [`_check_attribute_to_compute`](npblender._check_attribute_to_compute)).
         IndexError
             If `edges.vertex0` or `edges.vertex1` contain indices outside ``[0, len(self))``.
         TypeError
@@ -1730,7 +1730,7 @@ class ControlPoint(PointDomain):
         AttributeError
             If `attr` is scalar or its first dimension does not match ``len(self)``
             (raised by
-            [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute)).
+            [`_check_attribute_to_compute`](npblender._check_attribute_to_compute)).
         IndexError
             If ``splines.loop_start``/``loop_total`` describe ranges outside
             ``[0, len(self))``.
@@ -1780,7 +1780,7 @@ class ControlPoint(PointDomain):
         """Apply per-axis scales to control points, and scale handles as well.
 
         First applies per-axis scaling to ``position`` via
-        [`apply_scale`](npblender.domain.PointDomain.apply_scale), then, if Bezier
+        [`apply_scale`](npblender.PointDomain.apply_scale), then, if Bezier
         handles are present, scales ``handle_left`` and ``handle_right`` by the
         same `scale`.
 
@@ -1801,7 +1801,7 @@ class ControlPoint(PointDomain):
         ------
         ValueError
             If the operand cannot be aligned with the domain size (raised by
-            [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation)).
+            [`_get_shape_for_operation`](npblender._get_shape_for_operation)).
 
         Examples
         --------
@@ -1830,7 +1830,7 @@ class ControlPoint(PointDomain):
         """Apply a linear transform to control points; rotate handles consistently.
 
         Applies the transform to ``position`` via
-        [`transform`](npblender.domain.PointDomain.transform). If Bezier handles
+        [`transform`](npblender.PointDomain.transform). If Bezier handles
         are present, applies **only the rotation part** to ``handle_left`` and
         ``handle_right`` (i.e., scales are not applied to handles). Broadcasting is
         resolved with
@@ -1851,7 +1851,7 @@ class ControlPoint(PointDomain):
         ------
         ValueError
             If the operand cannot be aligned with the domain size (raised by
-            [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation)).
+            [`_get_shape_for_operation`](npblender._get_shape_for_operation)).
         TypeError
             If `transfo` does not support the ``@`` operator with vectors or lacks
             a usable ``rotation`` component for handle updates.
@@ -2053,9 +2053,9 @@ class Point(PointDomain):
 
         See Also
         --------
-        [`rotation`](npblender.domain.Point.rotation) :
+        [`rotation`](npblender.Point.rotation) :
             Access the per-point rotation object.
-        [`get_rotation`](npblender.domain.Point.get_rotation) :
+        [`get_rotation`](npblender.Point.get_rotation) :
             Safe accessor that can return a default.
         """
         return "quat" in self.actual_names or "euler" in self.actual_names
@@ -2075,9 +2075,9 @@ class Point(PointDomain):
 
         See Also
         --------
-        [`has_rotation`](npblender.domain.Point.has_rotation) :
+        [`has_rotation`](npblender.Point.has_rotation) :
             Check if a rotation is available.
-        [`get_rotation`](npblender.domain.Point.get_rotation) :
+        [`get_rotation`](npblender.Point.get_rotation) :
             Return a default when no rotation is stored.
 
         Examples
@@ -2121,13 +2121,13 @@ class Point(PointDomain):
         Returns
         -------
         Any or None
-            [`rotation`](npblender.domain.Point.rotation) if available; otherwise
+            [`rotation`](npblender.Point.rotation) if available; otherwise
             `default`.
 
         See Also
         --------
-        [`has_rotation`](npblender.domain.Point.has_rotation)
-        [`rotation`](npblender.domain.Point.rotation)
+        [`has_rotation`](npblender.Point.has_rotation)
+        [`rotation`](npblender.Point.rotation)
         """
         if self.has_rotation:
             return self.rotation
@@ -2142,7 +2142,7 @@ class Point(PointDomain):
         """Apply per-axis scales to positions and multiply the `scale` attribute.
 
         Calls the base point scaling
-        ([`apply_scale`](npblender.domain.PointDomain.apply_scale)) to update
+        ([`apply_scale`](npblender.PointDomain.apply_scale)) to update
         ``position`` (optionally about `pivot`), then multiplies the per-point
         ``scale`` attribute when present.
 
@@ -2162,7 +2162,7 @@ class Point(PointDomain):
         ------
         ValueError
             If broadcasting cannot align inputs with the domain (raised by
-            [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation)).
+            [`_get_shape_for_operation`](npblender._get_shape_for_operation)).
         """
         super().apply_scale(scale, pivot=pivot)
 
@@ -2182,7 +2182,7 @@ class Point(PointDomain):
         """Transform positions and compose stored orientation.
 
         First applies the linear transform to ``position`` via the base implementation
-        ([`transform`](npblender.domain.PointDomain.transform)). Then, if a rotation
+        ([`transform`](npblender.PointDomain.transform)). Then, if a rotation
         field exists (``euler`` or ``quat``), composes it with `transfo`’s rotation
         component and writes back to the same representation.
 
@@ -2204,7 +2204,7 @@ class Point(PointDomain):
         ------
         ValueError
             If broadcasting cannot align inputs with the domain (raised by
-            [`_get_shape_for_operation`](npblender.domain.Domain._get_shape_for_operation)).
+            [`_get_shape_for_operation`](npblender._get_shape_for_operation)).
         TypeError
             If `transfo` does not support the ``@`` operator with vectors or lacks
             a usable rotation component.
@@ -2511,8 +2511,8 @@ class Point(PointDomain):
 
         See Also
         --------
-        [`speed_along`](npblender.domain.Point.speed_along)
-        [`disk_speed`](npblender.domain.Point.disk_speed)
+        [`speed_along`](npblender.Point.speed_along)
+        [`disk_speed`](npblender.Point.disk_speed)
         """
         speed = self.get(speed)
         return distribs.shake_vectors(
@@ -2650,7 +2650,7 @@ class Corner(Domain):
 
         See Also
         --------
-        [`new_vector2`](npblender.domain.Domain.new_vector2) :
+        [`new_vector2`](npblender.new_vector2) :
             Registers a 2D vector attribute.
         """
         self.new_vector2(name)
@@ -2667,7 +2667,7 @@ class Corner(Domain):
         For each vertex, computes the mean of the source attribute over all
         incident corners (as defined by ``vertex_index``). The attribute is
         validated with
-        [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute).
+        [`_check_attribute_to_compute`](npblender._check_attribute_to_compute).
 
         Parameters
         ----------
@@ -2689,7 +2689,7 @@ class Corner(Domain):
         AttributeError
             If `attr` is scalar or its first dimension does not match ``len(self)``
             (raised by
-            [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute)).
+            [`_check_attribute_to_compute`](npblender._check_attribute_to_compute)).
         IndexError
             If ``vertex_index`` contains indices outside ``[0, len(points))``.
         TypeError
@@ -2833,7 +2833,7 @@ class FaceSplineDomain(Domain):
 
         See Also
         --------
-        [`compute_loop_start`](npblender.domain.FaceSplineDomain.compute_loop_start) :
+        [`compute_loop_start`](npblender.FaceSplineDomain.compute_loop_start) :
             Compute offsets for *new* items to be appended.
         """
         if len(self):
@@ -2854,7 +2854,7 @@ class FaceSplineDomain(Domain):
 
         See Also
         --------
-        [`compute_loop_start`](npblender.domain.FaceSplineDomain.compute_loop_start)
+        [`compute_loop_start`](npblender.FaceSplineDomain.compute_loop_start)
         """
         if len(self):
             return self.loop_start[-1] + self.loop_total[-1]
@@ -2874,7 +2874,7 @@ class FaceSplineDomain(Domain):
         -------
         int or ndarray or None
             Offsets starting from
-            [`next_loop_start`](npblender.domain.FaceSplineDomain.next_loop_start),
+            [`next_loop_start`](npblender.FaceSplineDomain.next_loop_start),
             shaped like `loop_total`.
 
         Examples
@@ -2903,7 +2903,7 @@ class FaceSplineDomain(Domain):
         """Append new items given their sizes.
 
         If ``loop_start`` is not provided in ``fields``, computes it from `sizes`
-        using [`compute_loop_start`](npblender.domain.FaceSplineDomain.compute_loop_start).
+        using [`compute_loop_start`](npblender.FaceSplineDomain.compute_loop_start).
 
         Parameters
         ----------
@@ -2964,7 +2964,7 @@ class FaceSplineDomain(Domain):
 
         After deleting items via ``super().delete(selection)``, recomputes
         ``loop_start`` with
-        [`update_loop_start`](npblender.domain.FaceSplineDomain.update_loop_start).
+        [`update_loop_start`](npblender.FaceSplineDomain.update_loop_start).
 
         Parameters
         ----------
@@ -2977,7 +2977,7 @@ class FaceSplineDomain(Domain):
 
         See Also
         --------
-        [`update_loop_start`](npblender.domain.FaceSplineDomain.update_loop_start)
+        [`update_loop_start`](npblender.FaceSplineDomain.update_loop_start)
         """
         super().delete(selection)
         self.update_loop_start()
@@ -3138,9 +3138,9 @@ class Face(FaceSplineDomain):
 
         Notes
         -----
-        - Internally calls [`delete`](npblender.domain.delete) on the face
+        - Internally calls [`delete`](npblender.delete) on the face
         domain, which updates loop bookkeeping (see
-        [`update_loop_start`](npblender.domain.update_loop_start)).
+        [`update_loop_start`](npblender.update_loop_start)).
         - Corners corresponding to the deleted faces are also removed via
         ``corners.delete(...)``.
 
@@ -3162,73 +3162,12 @@ class Face(FaceSplineDomain):
     # ====================================================================================================
 
     # ----------------------------------------------------------------------------------------------------
-    # Get the edges per face as start, count arrays
-    # ----------------------------------------------------------------------------------------------------
-
-    def get_face_edges(self, corners):
-        """
-        Build per-face edge list as ordered vertex-index pairs.
-
-        For each corner loop of each face, returns the undirected edge as a
-        pair ``(min(v_prev, v_curr), max(v_prev, v_curr))`` so that an edge
-        appears in consistent order regardless of traversal direction.
-
-        Parameters
-        ----------
-        corners : Corner
-            Corner domain providing the ``vertex_index`` array.
-
-        Returns
-        -------
-        numpy.ndarray of shape (M, 2), dtype=int
-            One edge per corner (M is the total number of corners across faces).
-
-        See Also
-        --------
-        [`get_edges`](npblender.domain.get_edges)
-            Get the unique set of edges across all faces.
-        """
-
-        @njit(cache=True)
-        def _get_edges(loop_start, loop_total, vertex_index):
-
-            ncorners = vertex_index.shape[0]
-            edges =  np.empty((ncorners, 2), dtype=np.int32)
-
-            nfaces = loop_start.shape[0]
-            iedge = 0
-            for iface in range(nfaces):
-                start = loop_start[iface]
-                total = loop_total[iface]
-                for icorner in range(start, start + total):
-                    ipoint = vertex_index[icorner]
-                    if icorner == 0:
-                        iprec = vertex_index[start + total - 1]
-                    else:
-                        iprec = vertex_index[ipoint - 1]
-
-                    if iprec < ipoint:
-                        edges[iedge, 0] = iprec
-                        edges[iedge, 1] = ipoint
-                    else:
-                        edges[iedge, 0] = ipoint
-                        edges[iedge, 1] = iprec
-                    iedge += 1
-
-            return edges
-        
-        return _get_edges(self.loop_start, self.loop_total, corners.vertex_index)
-
-    # ----------------------------------------------------------------------------------------------------
     # Get all the edges as ordered couples
     # ----------------------------------------------------------------------------------------------------
 
     def get_edges(self, corners):
         """
         Return the unique undirected edges present in the faces.
-
-        Uses [`get_face_edges`](npblender.domain.get_face_edges) and deduplicates
-        edges with ``np.unique(..., axis=0)``.
 
         Parameters
         ----------
@@ -3240,8 +3179,14 @@ class Face(FaceSplineDomain):
         numpy.ndarray of shape (E, 2), dtype=int
             Unique vertex-index pairs for all edges.
         """
-        edges = self.get_face_edges(corners)
-        return np.unique(edges, axis=0)
+        edges = np.zeros((len(corners), 2), bint)
+        edges[:, 0] = corners.vertex_index
+        edges[:-1, 1] = corners.vertex_index[1:]
+        edges[self.loop_start + self.loop_total - 1, 1] = corners.vertex_index[self.loop_start]
+        
+        edges = np.sort(edges, axis=-1)
+        edges = np.unique(edges, axis=0)
+        return edges
     
     # ====================================================================================================
     # Get position
@@ -3304,9 +3249,9 @@ class Face(FaceSplineDomain):
 
         See Also
         --------
-        [`area`](npblender.domain.Face.area)
-        [`normal`](npblender.domain.Face.normal)
-        [`get_surface`](npblender.domain.Face.get_surface)
+        [`area`](npblender.Face.area)
+        [`normal`](npblender.Face.normal)
+        [`get_surface`](npblender.Face.get_surface)
         """
 
         # ---------------------------------------------------------------------------
@@ -3359,7 +3304,7 @@ class Face(FaceSplineDomain):
         Compute face areas.
 
         Returns the scalar area of each polygonal face by taking half the Euclidean
-        norm of its area-weighted normal vector (see [`area_vectors`](npblender.domain.Face.area_vectors)).
+        norm of its area-weighted normal vector (see [`area_vectors`](npblender.Face.area_vectors)).
 
         Parameters
         ----------
@@ -3377,14 +3322,14 @@ class Face(FaceSplineDomain):
         -----
         - Internally, faces are triangulated and triangle cross-products are summed
         to form area vectors; the area is half the vector norm. See
-        [`area_vectors`](npblender.domain.Face.area_vectors) for details.
+        [`area_vectors`](npblender.Face.area_vectors) for details.
         - Degenerate faces (zero area) produce zeros here.
 
         See Also
         --------
-        [`area_vectors`](npblender.domain.Face.area_vectors)
-        [`normal`](npblender.domain.Face.normal)
-        [`get_surface`](npblender.domain.Face.get_surface)
+        [`area_vectors`](npblender.Face.area_vectors)
+        [`normal`](npblender.Face.normal)
+        [`get_surface`](npblender.Face.get_surface)
         """
         return np.linalg.norm(self.area_vectors(corners, points), axis=-1)/2
 
@@ -3397,7 +3342,7 @@ class Face(FaceSplineDomain):
         Compute per-face unit normals.
 
         Returns a normalized area vector for each face (see
-        [`area_vectors`](npblender.domain.Face.area_vectors)). The direction follows the
+        [`area_vectors`](npblender.Face.area_vectors)). The direction follows the
         winding of the face’s corners.
 
         Parameters
@@ -3421,9 +3366,9 @@ class Face(FaceSplineDomain):
 
         See Also
         --------
-        [`area_vectors`](npblender.domain.Face.area_vectors)
-        [`area`](npblender.domain.Face.area)
-        [`get_surface`](npblender.domain.Face.get_surface)
+        [`area_vectors`](npblender.Face.area_vectors)
+        [`area`](npblender.Face.area)
+        [`get_surface`](npblender.Face.get_surface)
         """
         sv = self.area_vectors(corners, points)
         return sv / np.linalg.norm(sv, axis=-1)[:, None]
@@ -3752,7 +3697,7 @@ class Edge(Domain):
         ----------
         face_edges : ndarray of shape ``(M, 2)`` and dtype int
             Vertex-index pairs representing edges built from faces (e.g., via
-            [`get_face_edges`](npblender.domain.Face.get_face_edges)).
+            [`get_face_edges`](npblender.Face.get_face_edges)).
 
         Returns
         -------
@@ -3807,7 +3752,7 @@ class Edge(Domain):
         AttributeError
             If ``attr`` is a string and no such edge attribute exists, or if the
             provided array length does not match ``len(self)`` (validated by
-            [`_check_attribute_to_compute`](npblender.domain.Domain._check_attribute_to_compute)).
+            [`_check_attribute_to_compute`](npblender._check_attribute_to_compute)).
         IndexError
             If an endpoint index falls outside ``[0, len(points))``.
         TypeError
@@ -4067,7 +4012,7 @@ class Spline(FaceSplineDomain):
         --------
         ```python
         import bpy
-        from npblender.domain import Spline
+        from npblender import Spline
 
         curve = bpy.data.curves["MyCurve"]
         splines = Spline()
@@ -4142,7 +4087,7 @@ class Spline(FaceSplineDomain):
         --------
         ```python
         import bpy
-        from npblender.domain import Spline
+        from npblender import Spline
 
         curve = bpy.data.curves["MyCurve"]
         splines = Spline()

@@ -64,16 +64,16 @@ class Cloud(Geometry):
 
     Attributes
     ----------
-    points : [Point][npblender.domain.Point]
+    points : [Point][npblender.Point]
         Point domain storing per-point attributes (e.g., `position`, `normal`, ...).
 
     Notes
     -----
     - This class focuses on **point-only** data. For topological data
-      (faces/edges), use [`Mesh`](npblender.mesh.Mesh).
+      (faces/edges), use [`Mesh`](npblender.Mesh).
     - Blender interoperability accepts both `bpy.types.Mesh` and
       `bpy.types.PointCloud` when reading, but writing currently targets a
-      Mesh data block (see [`to_data`](npblender.cloud.Cloud.to_data)).
+      Mesh data block (see [`to_data`](npblender.Cloud.to_data)).
     """
 
     def __init__(self, points=None, attr_from=None, **attrs):
@@ -87,7 +87,7 @@ class Cloud(Geometry):
             pass them via `**attrs`.
         attr_from : object, optional
             Source whose attribute schemas should be merged into this geometry,
-            see [`join_attributes`](npblender.geometry.Geometry.join_attributes).
+            see [`join_attributes`](npblender.Geometry.join_attributes).
         **attrs
             Additional per-point attributes to append alongside `points`.
         """
@@ -175,7 +175,7 @@ class Cloud(Geometry):
 
         Parameters
         ----------
-        other : [Geometry][npblender.geometry.Geometry]
+        other : [Geometry][npblender.Geometry]
             Source geometry (must have a `points` domain).
         selection : selection or None, optional
             Selection on points **to keep**; if provided, the complement is deleted
@@ -213,7 +213,7 @@ class Cloud(Geometry):
     @classmethod
     def from_cloud(cls, other, selection=None):
         """
-        Synonym of [`from_geometry`](npblender.cloud.Cloud.from_geometry).
+        Synonym of [`from_geometry`](npblender.Cloud.from_geometry).
 
         Parameters
         ----------

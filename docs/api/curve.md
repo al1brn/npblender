@@ -1,4 +1,4 @@
 
-::: npblender.curve.Curve
+::: npblender.Curve
     options:
       inherited_members: true

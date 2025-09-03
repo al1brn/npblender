@@ -1,3 +1,4 @@
+
 from .camera import Camera
 
 from .enginemod import engine, Animation
@@ -41,5 +42,26 @@ __all__ = [
     "blender",
     "Rotation", "Quaternion", "Transformation",
 ]
+
+# ---------------------------------------------------------------------------
+# Add constants
+
+from . import constants as _pkg
+
+from .constants import *    
+
+__all__.extend(list(_pkg.__all__))
+
+# ---------------------------------------------------------------------------
+# Add deps
+
+from . import deps as _pkg
+
+from .deps import *    
+
+__all__.extend(list(_pkg.__all__))
+
+
+
 
 

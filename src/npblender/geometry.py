@@ -47,8 +47,8 @@ class Geometry:
     """
     Base class for concrete geometries.
 
-    `Geometry` defines common behaviors shared by actual geometries such as [Mesh][npblender.mesh.Mesh]
-    or [Curve][npblender.curve.Curve] : attribute propagation across domains, Blender I/O helpers, simple
+    `Geometry` defines common behaviors shared by actual geometries such as [Mesh][npblender.Mesh]
+    or [Curve][npblender.Curve] : attribute propagation across domains, Blender I/O helpers, simple
     transforms, and material bookkeeping. Concrete subclasses override
     `domain_names` and implement domain-specific logic.
 
@@ -195,13 +195,13 @@ class Geometry:
         Notes
         -----
         Implemented mappings include:
-        - points → faces: [`Point.compute_attribute_on_faces`](npblender.domain.Point.compute_attribute_on_faces)
-        - points → edges: [`Point.compute_attribute_on_edges`](npblender.domain.Point.compute_attribute_on_edges)
-        - points → corners: [`Point.compute_attribute_on_corners`](npblender.domain.Point.compute_attribute_on_corners)
-        - points → splines: [`Point.compute_attribute_on_splines`](npblender.domain.Point.compute_attribute_on_splines)
-        - faces → points: [`Face.compute_attribute_on_points`](npblender.domain.Face.compute_attribute_on_points)
-        - edges → points: [`Edge.compute_attribute_on_points`](npblender.domain.Edge.compute_attribute_on_points)
-        - corners → points: [`Corner.compute_attribute_on_points`](npblender.domain.Corner.compute_attribute_on_points)
+        - points → faces: [`Point.compute_attribute_on_faces`](npblender.Point.compute_attribute_on_faces)
+        - points → edges: [`Point.compute_attribute_on_edges`](npblender.Point.compute_attribute_on_edges)
+        - points → corners: [`Point.compute_attribute_on_corners`](npblender.Point.compute_attribute_on_corners)
+        - points → splines: [`Point.compute_attribute_on_splines`](npblender.Point.compute_attribute_on_splines)
+        - faces → points: [`Face.compute_attribute_on_points`](npblender.Face.compute_attribute_on_points)
+        - edges → points: [`Edge.compute_attribute_on_points`](npblender.Edge.compute_attribute_on_points)
+        - corners → points: [`Corner.compute_attribute_on_points`](npblender.Corner.compute_attribute_on_points)
         """
 
         if domain_from == domain_to:
@@ -299,7 +299,7 @@ class Geometry:
         Returns
         -------
         Mesh or Curve or None
-            A [`Mesh`](npblender.mesh.Mesh) or a [`Curve`](npblender.geometry.curve.Curve),
+            A [`Mesh`](npblender.Mesh) or a [`Curve`](npblender.geometry.curve.Curve),
             or `None` if the object is not found.
 
         Raises
@@ -347,7 +347,7 @@ class Geometry:
         tuples of either, or already-instantiated `Mesh`/`Curve`. Returns a flat
         list of geometries discovered or constructed.
 
-        This method is mainly intended to be used by [`Instances`][npblender.instances.Instances]
+        This method is mainly intended to be used by [`Instances`][npblender.Instances]
         to load its models.
 
         Parameters
@@ -572,7 +572,7 @@ class Geometry:
         Operates in-place on `points.position` and, when present, Bezier handles
         (`points.handle_left`, `points.handle_right`). Shapes can represent packets
         of points: broadcasting rules are handled by
-        [`Point._get_shape_for_operation`](npblender.domain.Point._get_shape_for_operation).
+        [`Point._get_shape_for_operation`](npblender.Point._get_shape_for_operation).
 
         Parameters
         ----------
@@ -713,7 +713,7 @@ class Geometry:
         """
         Translate points (convenience wrapper).
 
-        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+        ***See:*** [`transformation`][npblender.Geometry.transformation]
 
         Parameters
         ----------
@@ -731,7 +731,7 @@ class Geometry:
         """
         Scale points (convenience wrapper).
 
-        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+        ***See:*** [`transformation`][npblender.Geometry.transformation]
 
         Parameters
         ----------
@@ -751,7 +751,7 @@ class Geometry:
         """
         Rotate points (convenience wrapper).
 
-        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+        ***See:*** [`transformation`][npblender.Geometry.transformation]
 
         Parameters
         ----------
@@ -771,7 +771,7 @@ class Geometry:
         """
         Apply a rotation matrix or batch of matrices.
 
-        ***See:*** [`transformation`][npblender.geometry.Geometry.transformation]
+        ***See:*** [`transformation`][npblender.Geometry.transformation]
 
         Parameters
         ----------
@@ -836,7 +836,7 @@ class Geometry:
         Return a cube mesh that encloses the geometry’s bounding box.
 
         Uses the bounding box dimensions to build a cube via
-        [`Mesh.cube`](npblender.mesh.Mesh.cube), forwarding this geometry’s
+        [`Mesh.cube`](npblender.Mesh.cube), forwarding this geometry’s
         `materials` if present.
 
         Returns

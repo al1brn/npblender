@@ -37,11 +37,11 @@ class Instances(Geometry):
 
     Attributes
     ----------
-    points : [Point][npblender.domain.Point]
+    points : [Point][npblender.Point]
         Per-instance attributes (e.g., `position`, optional `rotation`, `scale`,
         `model_index`, plus any user fields).
-    models : list[[Geometry][npblender.geometry.Geometry]]
-        List of source models to instance (e.g., [Mesh][npblender.mesh.Mesh],
+    models : list[[Geometry][npblender.Geometry]]
+        List of source models to instance (e.g., [Mesh][npblender.Mesh],
         [Curve][npblender.geometry.curve.Curve]).
     low_resols : list[dict]
         Optional Level-of-Detail (LOD) entries, each as
@@ -73,9 +73,9 @@ class Instances(Geometry):
 
         Notes
         -----
-        - Models are loaded via [`Geometry.load_models`][npblender.geometry.Geometry.load_models].
+        - Models are loaded via [`Geometry.load_models`][npblender.Geometry.load_models].
         - `low_resols` starts empty and can be populated with
-        [`add_low_resol`](npblender.instances.Instances.add_low_resol).
+        [`add_low_resol`](npblender.Instances.add_low_resol).
         """
 
         self.points  = Point()
@@ -233,7 +233,7 @@ class Instances(Geometry):
         Notes
         -----
         - Up to 10 levels are created, stopping when the max vertex count drops to ≤ 8.
-        - Each level is recorded via [`add_low_resol`](npblender.instances.Instances.add_low_resol).
+        - Each level is recorded via [`add_low_resol`](npblender.Instances.add_low_resol).
         """
 
         from .camera import Camera
@@ -294,7 +294,7 @@ class Instances(Geometry):
 
         Duplicates each model for its selected instances, applies per-instance
         transform (translation, optional rotation/scale), and accumulates results
-        into a [Mesh][npblender.mesh.Mesh] and/or a
+        into a [Mesh][npblender.Mesh] and/or a
         [Curve][npblender.geometry.curve.Curve]. With `camera_culling=True`,
         hidden instances are skipped and LODs may be used.
 
@@ -307,7 +307,7 @@ class Instances(Geometry):
         -------
         dict
             A dictionary with keys:
-            - ``"mesh"`` : a [Mesh][npblender.mesh.Mesh] or `None`
+            - ``"mesh"`` : a [Mesh][npblender.Mesh] or `None`
             - ``"curve"``: a [Curve][npblender.geometry.curve.Curve] or `None`
 
         Raises
@@ -699,9 +699,9 @@ class Meshes(Geometry):
 
     Attributes
     ----------
-    mesh : [Mesh][npblender.mesh.Mesh]
+    mesh : [Mesh][npblender.Mesh]
         The source mesh containing all vertices (possibly many concatenated copies).
-    points : [Point][npblender.domain.Point]
+    points : [Point][npblender.Point]
         Per-piece attributes. At least `position` is present (piece centroid).
     buckets : list[numpy.ndarray]
         List of arrays with shape `(n_pieces, piece_vertex_count)` indexing rows
@@ -721,12 +721,12 @@ class Meshes(Geometry):
 
         Parameters
         ----------
-        mesh : [Mesh][npblender.mesh.Mesh] or None, optional
+        mesh : [Mesh][npblender.Mesh] or None, optional
             Mesh to be bucketized. If `None`, creates an empty container.
         mesh_id : array-like or None, optional
             Per-vertex group id used to split the mesh into pieces (passed to
             `mesh.points.make_buckets`).
-        attr_from : [Geometry][npblender.geometry.Geometry] or None, optional
+        attr_from : [Geometry][npblender.Geometry] or None, optional
             Geometry to copy attribute schemas from (matching domain names).
         **attributes
             Extra per-piece attributes appended to `points`.
@@ -898,7 +898,7 @@ class Meshes(Geometry):
 
         Parameters
         ----------
-        mesh : [Mesh][npblender.mesh.Mesh]
+        mesh : [Mesh][npblender.Mesh]
             Source mesh.
 
         Returns
@@ -969,7 +969,7 @@ class Meshes(Geometry):
 
         Returns
         -------
-        [Mesh][npblender.mesh.Mesh]
+        [Mesh][npblender.Mesh]
             A mesh with all pieces transformed into world placement. :contentReference[oaicite:12]{index=12}
         """
 

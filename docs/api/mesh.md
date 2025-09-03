@@ -1,3 +1,3 @@
-::: npblender.mesh.Mesh
+::: npblender.Mesh
     options:
       inherited_members: true

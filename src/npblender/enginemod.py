@@ -34,7 +34,7 @@ import numpy as np
 
 import bpy
 
-from . bakefile import BakeFile
+from .bakefile import BakeFile
 
 # ====================================================================================================
 # Animation Engine
@@ -96,7 +96,7 @@ class Engine:
 
     Attributes
     ----------
-    animations : list[npblender.engine.Animation]
+    animations : list[npblender.Animation]
         Global list of registered animations driven by the engine.
     bake_file : npblender.bakefile.BakeFile or None
         Active bake file when baking is enabled in the scene, else `None`.
@@ -741,13 +741,7 @@ class Engine:
 # One single instance of Engine class
 # ====================================================================================================
 
-engine: Engine | None = None
-
-def get_engine() -> Engine:
-    global engine
-    if engine is None:
-        engine = Engine()
-    return engine
+engine = Engine()
 
 
 # ====================================================================================================
@@ -763,8 +757,6 @@ def lock_interface(value):
 # ====================================================================================================
 
 def update(scene, depsgraph):
-
-    engine = get_engine()
 
     # Rendering : update is done by before_render_image
     if engine.rendering:
@@ -789,10 +781,6 @@ def update(scene, depsgraph):
 
 def before_render(scene):
 
-    engine = get_engine()
-
-    print("Engine> Start rendering")
-
     # To be sure
     lock_interface(True)
 
@@ -804,8 +792,6 @@ def before_render(scene):
 
 def after_render(scene):
 
-    engine = get_engine()
-
     print("Engine> Render completed")
     engine._rendering = False
     engine._depsgraph = None
@@ -815,8 +801,6 @@ def after_render(scene):
 # ----------------------------------------------------------------------------------------------------
 
 def before_render_image(scene, depsgraph):
-
-    engine = get_engine()
 
     # Points to the right scene (depsgraph has been set by update)
     engine._scene = scene
@@ -1076,16 +1060,24 @@ class DemoAnimation(Animation):
 
 def create_scene_properties():
 
+    #raise Exception("Oups")
     Scene = bpy.types.Scene
 
-    Scene.npblender_use_bake            = bpy.props.BoolProperty(   name="Bake animation")
-    Scene.npblender_temp_folder         = bpy.props.StringProperty( name="Temp folder")
-    Scene.npblender_bake_name           = bpy.props.StringProperty( name="Name")
-
-    scene = bpy.context.scene
-    scene.npblender_use_bake     = False
-    scene.npblender_temp_folder  = bpy.context.preferences.filepaths.temporary_directory
-    scene.npblender_bake_name    = "bake"
+    if not hasattr(Scene, "npblender_use_bake"):
+        Scene.npblender_use_bake = bpy.props.BoolProperty(
+            name="Bake animation",
+            default=False,
+        )
+    if not hasattr(Scene, "npblender_temp_folder"):
+        Scene.npblender_temp_folder = bpy.props.StringProperty(
+            name="Temp folder",
+            default="",  # pas de bpy.context ici !
+        )
+    if not hasattr(Scene, "npblender_bake_name"):
+        Scene.npblender_bake_name = bpy.props.StringProperty(
+            name="Name",
+            default="bake",
+        )
 
 # ----------------------------------------------------------------------------------------------------
 # Bake file operator
@@ -1168,8 +1160,6 @@ class npblenderBakePanel(bpy.types.Panel):
 
 def register():
 
-    eng = get_engine()
-    
     create_scene_properties()
 
     # Clean and append

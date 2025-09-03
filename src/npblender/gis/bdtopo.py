@@ -6,16 +6,11 @@ import os
 import numpy as np
 
 import numpy as np
-from shapely.geometry import Polygon, MultiPolygon, Point, LineString, MultiLineString
-from shapely.strtree import STRtree
+from shapely.geometry import Polygon, Point, LineString
 from shapely.ops import unary_union, linemerge
-from shapely import affinity
 
 
-if __name__ == "__main__":
-    from areas import Area, BlenderArea
-else:
-    from .areas import Area, BlenderArea
+from .areas import Area, BlenderArea
 
 class BDTopo():
 

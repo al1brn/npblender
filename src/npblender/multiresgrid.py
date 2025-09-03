@@ -313,7 +313,7 @@ class MultiResGrid(Mesh):
     def demo_sphere(cls, depth=6):
 
         from .camera import Camera
-        from .engine import engine
+        from .enginemod import engine
 
         sphere = cls.sphere_demo()
 
@@ -332,7 +332,7 @@ class MultiResGrid(Mesh):
     def demo_terrain(cls, depth=8):
 
         from .camera import Camera
-        from .engine import engine
+        from .enginemod import engine
         from .maths.perlin import noise
 
         def altitude(x, y):

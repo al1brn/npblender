@@ -2,7 +2,7 @@
 import inspect
 
 import numpy as np
-from .engine import Animation
+from .enginemod import Animation
 from .maths.easings import maprange
 from .maths import Quaternion
 

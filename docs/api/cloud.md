@@ -1,3 +1,3 @@
-::: npblender.cloud.Cloud
+::: npblender.Cloud
     options:
       inherited_members: true

@@ -39,7 +39,7 @@ Usage example:
     >>> scipy = ensure_package("scipy")
 """
 
-__all__ = ["ensure_package"]
+__all__ = ["ensure_package", "uninstall_package"]
 
 import sys
 import os

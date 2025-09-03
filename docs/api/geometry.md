@@ -1,3 +1,3 @@
-::: npblender.geometry.Geometry
+::: npblender.Geometry
     options:
       inherited_members: true
