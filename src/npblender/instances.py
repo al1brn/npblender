@@ -75,7 +75,7 @@ class Instances(Geometry):
         -----
         - Models are loaded via [`Geometry.load_models`][npblender.Geometry.load_models].
         - `low_resols` starts empty and can be populated with
-        [`add_low_resol`](npblender.Instances.add_low_resol).
+        [`add_low_resol`][npblender.Instances.add_low_resol].
         """
 
         self.points  = Point()
@@ -233,7 +233,7 @@ class Instances(Geometry):
         Notes
         -----
         - Up to 10 levels are created, stopping when the max vertex count drops to ≤ 8.
-        - Each level is recorded via [`add_low_resol`](npblender.Instances.add_low_resol).
+        - Each level is recorded via [`add_low_resol`][npblender.Instances.add_low_resol].
         """
 
         from .camera import Camera

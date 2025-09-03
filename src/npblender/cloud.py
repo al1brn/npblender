@@ -73,7 +73,7 @@ class Cloud(Geometry):
       (faces/edges), use [`Mesh`][npblender.Mesh].
     - Blender interoperability accepts both `bpy.types.Mesh` and
       `bpy.types.PointCloud` when reading, but writing currently targets a
-      Mesh data block (see [`to_data`](npblender.Cloud.to_data)).
+      Mesh data block (see [`to_data`][npblender.Cloud.to_data]).
     """
 
     def __init__(self, points=None, attr_from=None, **attrs):
@@ -87,7 +87,7 @@ class Cloud(Geometry):
             pass them via `**attrs`.
         attr_from : object, optional
             Source whose attribute schemas should be merged into this geometry,
-            see [`join_attributes`](npblender.Geometry.join_attributes).
+            see [`join_attributes`][npblender.Geometry.join_attributes].
         **attrs
             Additional per-point attributes to append alongside `points`.
         """
@@ -213,7 +213,7 @@ class Cloud(Geometry):
     @classmethod
     def from_cloud(cls, other, selection=None):
         """
-        Synonym of [`from_geometry`](npblender.Cloud.from_geometry).
+        Synonym of [`from_geometry`][npblender.Cloud.from_geometry].
 
         Parameters
         ----------
@@ -264,7 +264,7 @@ class Cloud(Geometry):
         ----------
         data : bpy.types.Mesh or bpy.types.PointCloud or str
             A Blender data-block or a resolvable identifier accepted by
-            [`blender.get_data`](npblender.blender.get_data).
+            [`blender.get_data`][npblender.blender.get_data].
 
         Returns
         -------
@@ -316,7 +316,7 @@ class Cloud(Geometry):
         ----------
         data : bpy.types.Mesh or str
             Target mesh data (or identifier resolvable by
-            [`blender.get_data`](npblender.blender.get_data)). The geometry is
+            [`blender.get_data`][npblender.blender.get_data]). The geometry is
             cleared and repopulated.
 
         Returns
@@ -370,7 +370,7 @@ class Cloud(Geometry):
         Parameters
         ----------
         obj : str or bpy.types.Object
-            Object or name resolvable by [`blender.get_object`](npblender.blender.get_object).
+            Object or name resolvable by [`blender.get_object`][npblender.blender.get_object].
         evaluated : bool, default=False
             If True, read from the evaluated object (modifiers applied).
 

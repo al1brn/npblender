@@ -195,13 +195,13 @@ class Geometry:
         Notes
         -----
         Implemented mappings include:
-        - points → faces: [`Point.compute_attribute_on_faces`](npblender.Point.compute_attribute_on_faces)
-        - points → edges: [`Point.compute_attribute_on_edges`](npblender.Point.compute_attribute_on_edges)
-        - points → corners: [`Point.compute_attribute_on_corners`](npblender.Point.compute_attribute_on_corners)
-        - points → splines: [`Point.compute_attribute_on_splines`](npblender.Point.compute_attribute_on_splines)
-        - faces → points: [`Face.compute_attribute_on_points`](npblender.Face.compute_attribute_on_points)
-        - edges → points: [`Edge.compute_attribute_on_points`](npblender.Edge.compute_attribute_on_points)
-        - corners → points: [`Corner.compute_attribute_on_points`](npblender.Corner.compute_attribute_on_points)
+        - points → faces: [`Point.compute_attribute_on_faces`][npblender.Point.compute_attribute_on_faces]
+        - points → edges: [`Point.compute_attribute_on_edges`][npblender.Point.compute_attribute_on_edges]
+        - points → corners: [`Point.compute_attribute_on_corners`][npblender.Point.compute_attribute_on_corners]
+        - points → splines: [`Point.compute_attribute_on_splines`][npblender.Point.compute_attribute_on_splines]
+        - faces → points: [`Face.compute_attribute_on_points`][npblender.Face.compute_attribute_on_points]
+        - edges → points: [`Edge.compute_attribute_on_points`][npblender.Edge.compute_attribute_on_points]
+        - corners → points: [`Corner.compute_attribute_on_points`][npblender.Corner.compute_attribute_on_points]
         """
 
         if domain_from == domain_to:
@@ -299,7 +299,7 @@ class Geometry:
         Returns
         -------
         Mesh or Curve or None
-            A [`Mesh`][npblender.Mesh] or a Curve,
+            A [`Mesh`][npblender.Mesh] or a [`Curve`][npblender.Curve],
             or `None` if the object is not found.
 
         Raises
@@ -572,7 +572,7 @@ class Geometry:
         Operates in-place on `points.position` and, when present, Bezier handles
         (`points.handle_left`, `points.handle_right`). Shapes can represent packets
         of points: broadcasting rules are handled by
-        [`Point._get_shape_for_operation`](npblender.Point._get_shape_for_operation).
+        [`Point._get_shape_for_operation`][npblender.Point._get_shape_for_operation].
 
         Parameters
         ----------
@@ -836,7 +836,7 @@ class Geometry:
         Return a cube mesh that encloses the geometry’s bounding box.
 
         Uses the bounding box dimensions to build a cube via
-        [`Mesh.cube`](npblender.Mesh.cube), forwarding this geometry’s
+        [`Mesh.cube`][npblender.Mesh.cube], forwarding this geometry’s
         `materials` if present.
 
         Returns
