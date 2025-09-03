@@ -1,7 +1,7 @@
 
 from .camera import Camera
 
-from .enginemod import engine, Animation
+from .enginemod import engine, Animation, Engine
 from .fieldarray import FieldArray
 from .domain import Domain, Point, Vertex, ControlPoint, Corner, Face, Edge, Spline
 from .shapekeys import ShapeKeys
@@ -30,7 +30,7 @@ __all__ = [
     "VERSION",
     "BLENDER_VERSION",
     "Camera",
-    "engine", "Animation",
+    "engine", "Animation", "Engine",
     "FieldArray",
     "Domain", "Point", "Vertex", "ControlPoint", "Corner", "Face", "Edge", "Spline",
     "ShapeKeys",
