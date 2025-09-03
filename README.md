@@ -46,7 +46,7 @@ For details on Blender’s script directories, see the Blender Manual:
 ```python
 # Run inside Blender's Python console or Text Editor
 import numpy as np
-from npblender.mesh import Mesh
+from npblender import Mesh
 
 # 1) Create a parametric grid
 plate = Mesh.grid(size_x=2, size_y=2, vertices_x=50, vertices_y=50)

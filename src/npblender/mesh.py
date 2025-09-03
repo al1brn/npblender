@@ -1489,17 +1489,17 @@ class Mesh(Geometry):
         -------
         dict
             A dictionary of the newly added geometry, as returned by
-            [`add_geometry`](np.blender.mesh.Mesh.add_geometry). Includes at least keys for
+            [`add_geometry`][npblender.Mesh.add_geometry]. Includes at least keys for
             'faces' and 'corners'. In FANS mode, also includes the added 'points' if a new
             center is created.
 
         Notes
         -----
-        - In 'NGON' mode, a UV map is generated using [`disk_uv_map`](np.blender.mesh.Mesh.disk_uv_map).
-        - In 'FANS' mode, the fan topology is created with [`fans_corners`](np.blender.mesh.Mesh.fans_corners)
-        and UVs are generated with [`disk_uv_map`](np.blender.mesh.Mesh.disk_uv_map).
+        - In 'NGON' mode, a UV map is generated using [`disk_uv_map`][npblender.Mesh.disk_uv_map].
+        - In 'FANS' mode, the fan topology is created with [`fans_corners`][npblender.Mesh.fans_corners]
+        and UVs are generated with [`disk_uv_map`][npblender.Mesh.disk_uv_map].
         - If `segments > 1` in FANS mode, radial edges are subdivided using
-        [`split_edges`](np.blender.mesh.Mesh.split_edges).
+        [`split_edges`][npblender.Mesh.split_edges].
 
         Examples
         --------
@@ -1523,13 +1523,13 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+        [`add_geometry`][npblender.Mesh.add_geometry] :
             Method used to add the created geometry to the mesh.
-        [`split_edges`](np.blender.mesh.Mesh.split_edges) :
+        [`split_edges`][npblender.Mesh.split_edges] :
             Used to subdivide radial edges in FANS mode.
-        [`disk_uv_map`](np.blender.mesh.Mesh.disk_uv_map) :
+        [`disk_uv_map`][npblender.Mesh.disk_uv_map] :
             Generates UV coordinates for circular caps.
-        [`fans_corners`](np.blender.mesh.Mesh.fans_corners) :
+        [`fans_corners`][npblender.Mesh.fans_corners] :
             Generates corner topology for FANS mode.
 
         > ***Warning:*** This function modifies the mesh **in place** and may
@@ -1608,9 +1608,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`delete_loops`](np.blender.mesh.Faces.delete_loops) :
+        [`delete_loops`][npblender.Faces.delete_loops] :
             Method used internally to remove the corners and faces.
-        [`corners`](np.blender.mesh.Mesh.corners) :
+        [`corners`][npblender.Mesh.corners] :
             Corner array of the mesh, used to identify face connectivity.
 
         > ***Warning:*** This function permanently deletes faces and their
@@ -1988,7 +1988,7 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`Mesh`](np.blender.mesh.Mesh) :
+        [`Mesh`][npblender.Mesh] :
             The mesh class used to construct and manage geometry.
 
         > ***Note:*** This constructor is useful for importing raw point data or
@@ -2031,7 +2031,7 @@ class Mesh(Geometry):
         - If `start` and `end` are arrays of shape `(N, 3)`, the method generates
         `N` independent polylines, each subdivided into `segments`.
         - For higher-dimensional batched input, the function reshapes the grid and
-        constructs edges using [`col_edges`](np.blender.mesh.col_edges).
+        constructs edges using [`col_edges`][npblender.col_edges].
 
         Examples
         --------
@@ -2055,9 +2055,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`border_edges`](np.blender.mesh.border_edges) :
+        [`border_edges`][npblender.border_edges] :
             Helper for constructing consecutive edges in a single polyline.
-        [`col_edges`](np.blender.mesh.col_edges) :
+        [`col_edges`][npblender.col_edges] :
             Helper for constructing edges in multi-dimensional point grids.
 
         > ***Note:*** The line mesh consists only of vertices and edges,
@@ -2113,8 +2113,8 @@ class Mesh(Geometry):
         -----
         - The grid is created with `'ij'` indexing, so coordinates follow
         NumPy's `meshgrid(..., indexing='ij')` convention.
-        - UV coordinates are generated using [`grid_uv_map`](np.blender.mesh.grid_uv_map).
-        - The grid topology is built using [`grid_corners`](np.blender.mesh.grid_corners).
+        - UV coordinates are generated using [`grid_uv_map`][npblender.grid_uv_map].
+        - The grid topology is built using [`grid_corners`][npblender.grid_corners].
 
         Examples
         --------
@@ -2132,9 +2132,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`grid_corners`](np.blender.mesh.grid_corners) :
+        [`grid_corners`][npblender.grid_corners] :
             Helper for constructing the corner topology of the grid.
-        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+        [`grid_uv_map`][npblender.grid_uv_map] :
             Generates UV coordinates for a regular grid.
 
         > ***Important:*** The grid is always created with `'ij'` indexing
@@ -2215,7 +2215,7 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`Mesh`](np.blender.mesh.Mesh) :
+        [`Mesh`][npblender.Mesh] :
             The mesh class used to construct and manage geometry.
 
         > ***Note:*** The cube is centered at the origin and scaled by `size/2`
@@ -2256,7 +2256,7 @@ class Mesh(Geometry):
         triangle fans (not yet implemented in this method, but the behavior
         corresponds to `cap='FANS'`).
         
-        > ***Note:*** The [`disk`](np.blender.mesh.Mesh.disk) method provides the same
+        > ***Note:*** The [`disk`][npblender.Mesh.disk] method provides the same
         > functionality with `cap='NGON'` as its default mode.
 
         Parameters
@@ -2283,8 +2283,8 @@ class Mesh(Geometry):
         - `cap='NONE'`: returns only the ring of edges.
         - `cap='NGON'`: fills the circle with a polygon face.
         - `cap='FANS'`: fills the circle with a fan of triangles around a central point.
-        - UV coordinates are generated with [`disk_uv_map`](np.blender.mesh.disk_uv_map).
-        - Fan topology is generated with [`fans_corners`](np.blender.mesh.fans_corners).
+        - UV coordinates are generated with [`disk_uv_map`][npblender.disk_uv_map].
+        - Fan topology is generated with [`fans_corners`][npblender.fans_corners].
 
         Examples
         --------
@@ -2308,11 +2308,11 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`disk`](np.blender.mesh.Mesh.disk) :
+        [`disk`][npblender.Mesh.disk] :
             Equivalent method for creating disks (default `cap='NGON'`).
-        [`disk_uv_map`](np.blender.mesh.disk_uv_map) :
+        [`disk_uv_map`][npblender.disk_uv_map] :
             Generates UV coordinates for circular caps.
-        [`fans_corners`](np.blender.mesh.fans_corners) :
+        [`fans_corners`][npblender.fans_corners] :
             Generates corner topology for triangle fans.
 
         > ***Caution:*** When using `cap='FANS'`, a new center vertex is added.
@@ -2359,7 +2359,7 @@ class Mesh(Geometry):
         """
         Create a disk mesh.
 
-        This is equivalent to [`circle`](np.blender.mesh.Mesh.circle), but with
+        This is equivalent to [`circle`][npblender.Mesh.circle], but with
         `cap='NGON'` as the default filling mode.
 
         Parameters
@@ -2397,11 +2397,11 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`circle`](np.blender.mesh.Mesh.circle) :
+        [`circle`][npblender.Mesh.circle] :
             General method for circle/disk creation with customizable cap.
-        [`disk_uv_map`](np.blender.mesh.disk_uv_map) :
+        [`disk_uv_map`][npblender.disk_uv_map] :
             Generates UV coordinates for circular caps.
-        [`fans_corners`](np.blender.mesh.fans_corners) :
+        [`fans_corners`][npblender.fans_corners] :
             Generates corner topology for triangle fans.
 
         > ***Note:*** This method is a shorthand for `circle(..., cap='NGON')`.
@@ -2451,7 +2451,7 @@ class Mesh(Geometry):
         Notes
         -----
         - If both `radius_top` and `radius_bottom` are zero, the result is an empty mesh.
-        - Internally calls [`bl_cone`](np.blender.mesh.Mesh.bl_cone) with
+        - Internally calls [`bl_cone`][npblender.Mesh.bl_cone] with
         `cap_ends` and `cap_tris` derived from `fill_type`.
         - UVs are generated automatically by Blender's cone operator.
 
@@ -2479,9 +2479,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`bl_cone`](np.blender.mesh.Mesh.bl_cone) :
+        [`bl_cone`][npblender.Mesh.bl_cone] :
             Low-level constructor for cones and cylinders.
-        [`bl_circle`](np.blender.mesh.Mesh.bl_circle) :
+        [`bl_circle`][npblender.Mesh.bl_circle] :
             For creating circle primitives with optional triangle fan filling.
 
         > ***Note:*** Use `fill_type='NONE'` to create an open-ended cone or cylinder.
@@ -2540,7 +2540,7 @@ class Mesh(Geometry):
 
         Notes
         -----
-        - Internally calls [`bl_cone`](np.blender.mesh.Mesh.bl_cone) with `radius1 = radius2 = radius`.
+        - Internally calls [`bl_cone`][npblender.Mesh.bl_cone] with `radius1 = radius2 = radius`.
         - UVs are generated automatically by Blender's cone operator.
 
         Examples
@@ -2565,9 +2565,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`bl_cone`](np.blender.mesh.Mesh.bl_cone) :
+        [`bl_cone`][npblender.Mesh.bl_cone] :
             Low-level constructor for cones and cylinders.
-        [`cone`](np.blender.mesh.Mesh.cone) :
+        [`cone`][npblender.Mesh.cone] :
             Generalized method for cones and cylinders.
 
         > ***Note:*** This method is a convenience wrapper for `bl_cone` with
@@ -2614,7 +2614,7 @@ class Mesh(Geometry):
         -----
         - The base radius is scaled by `size * sqrt(3)/2` so that the pyramid has
         approximately unit proportions when `size=1`.
-        - Internally calls [`cone`](np.blender.mesh.Mesh.cone) with `vertices=3`.
+        - Internally calls [`cone`][npblender.Mesh.cone] with `vertices=3`.
 
         Examples
         --------
@@ -2632,9 +2632,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`cone`](np.blender.mesh.Mesh.cone) :
+        [`cone`][npblender.Mesh.cone] :
             Generalized method for cones and pyramids.
-        [`bl_cone`](np.blender.mesh.Mesh.bl_cone) :
+        [`bl_cone`][npblender.Mesh.bl_cone] :
             Low-level constructor for cone-based primitives.
 
         > ***Note:*** This method is equivalent to creating a triangular-based cone.
@@ -2689,12 +2689,12 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`icosphere`](np.blender.mesh.Mesh.icosphere) :
+        [`icosphere`][npblender.Mesh.icosphere] :
             Alternative sphere primitive with more uniform vertex distribution.
         [`bmesh.ops.create_uvsphere`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_uvsphere) :
             BMesh operator used for creating UV spheres.
 
-        > ***Note:*** Use [`icosphere`](np.blender.mesh.Mesh.icosphere) if you need
+        > ***Note:*** Use [`icosphere`][npblender.Mesh.icosphere] if you need
         > a more uniform tessellation without poles.
         """
         mesh = cls(materials=materials)
@@ -2753,12 +2753,12 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`uvsphere`](np.blender.mesh.Mesh.uvsphere) :
+        [`uvsphere`][npblender.Mesh.uvsphere] :
             Sphere primitive based on UV parameterization.
         [`bmesh.ops.create_icosphere`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_icosphere) :
             BMesh operator used for creating icospheres.
 
-        > ***Note:*** Use [`uvsphere`](np.blender.mesh.Mesh.uvsphere) when you
+        > ***Note:*** Use [`uvsphere`][npblender.Mesh.uvsphere] when you
         > require consistent UV mapping, and `icosphere` for uniform tessellation.
         """
         subdivisions = min(10, subdivisions)
@@ -2801,11 +2801,11 @@ class Mesh(Geometry):
         - The torus is constructed by sweeping a circle of radius `minor_radius`
         around a larger circle of radius `major_radius`.
         - The transformation of the cross-section is handled by
-        [`Transformation`](np.blender.transform.Transformation) and
-        [`Rotation`](np.blender.rotation.Rotation).
-        - UV coordinates are generated using [`grid_uv_map`](np.blender.mesh.grid_uv_map),
+        [`Transformation`][npblender.transform.Transformation] and
+        [`Rotation`][npblender.rotation.Rotation].
+        - UV coordinates are generated using [`grid_uv_map`][npblender.grid_uv_map],
         resulting in a square parameterization.
-        - Topology is constructed with [`grid_corners`](np.blender.mesh.grid_corners)
+        - Topology is constructed with [`grid_corners`][npblender.grid_corners]
         with both axes closed.
 
         Examples
@@ -2825,13 +2825,13 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`grid_corners`](np.blender.mesh.grid_corners) :
+        [`grid_corners`][npblender.grid_corners] :
             Helper for constructing the corner topology of the torus grid.
-        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+        [`grid_uv_map`][npblender.grid_uv_map] :
             Generates UV coordinates for grid-like surfaces.
-        [`Transformation`](np.blender.transform.Transformation) :
+        [`Transformation`][npblender.transform.Transformation] :
             Used to position and orient the swept circle.
-        [`Rotation`](np.blender.rotation.Rotation) :
+        [`Rotation`][npblender.rotation.Rotation] :
             Used to orient the minor circle along the sweep path.
 
         > ***Note:*** UV coordinates are generated with an offset of π to match
@@ -2953,11 +2953,11 @@ class Mesh(Geometry):
 
         Notes
         -----
-        - The shaft is created with [`cylinder`](np.blender.mesh.Mesh.cylinder).
-        - The head is created with [`cone`](np.blender.mesh.Mesh.cone) using
+        - The shaft is created with [`cylinder`][npblender.Mesh.cylinder].
+        - The head is created with [`cone`][npblender.Mesh.cone] using
         `fill_type='FANS'` for proper triangulation.
         - The arrow is aligned to `vector` using
-        [`Rotation.look_at`](np.blender.rotation.Rotation.look_at).
+        [`Rotation.look_at`][npblender.rotation.Rotation.look_at].
         - A small correction is applied to avoid overlap between shaft and head.
 
         Examples
@@ -2982,11 +2982,11 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`cylinder`](np.blender.mesh.Mesh.cylinder) :
+        [`cylinder`][npblender.Mesh.cylinder] :
             Used to create the arrow shaft.
-        [`cone`](np.blender.mesh.Mesh.cone) :
+        [`cone`][npblender.Mesh.cone] :
             Used to create the arrow head.
-        [`Rotation.look_at`](np.blender.rotation.Rotation.look_at) :
+        [`Rotation.look_at`][npblender.rotation.Rotation.look_at] :
             Utility to orient the arrow along a target vector.
 
         > ***Caution:*** If `vector` has zero length, the arrow cannot be
@@ -3071,9 +3071,9 @@ class Mesh(Geometry):
         `head_height = head_radius / tan(angle)`.
         - Arrows with very small vectors are handled specially to avoid degenerate
         geometry (a minimum total length of approximately `2 * head_height` is enforced).
-        - Alignment is achieved with [`Rotation.look_at`](np.blender.rotation.Rotation.look_at).
-        - The shaft is built from [`cylinder`](np.blender.mesh.Mesh.cylinder), and the
-        head from [`cone`](np.blender.mesh.Mesh.cone) (when `head is None`).
+        - Alignment is achieved with [`Rotation.look_at`][npblender.rotation.Rotation.look_at].
+        - The shaft is built from [`cylinder`][npblender.Mesh.cylinder], and the
+        head from [`cone`][npblender.Mesh.cone] (when `head is None`).
 
         Examples
         --------
@@ -3101,13 +3101,13 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`arrow`](np.blender.mesh.Mesh.arrow) :
+        [`arrow`][npblender.Mesh.arrow] :
             Convenience method to create a single arrow.
-        [`cylinder`](np.blender.mesh.Mesh.cylinder) :
+        [`cylinder`][npblender.Mesh.cylinder] :
             Used to create the arrow shafts.
-        [`cone`](np.blender.mesh.Mesh.cone) :
+        [`cone`][npblender.Mesh.cone] :
             Used to create the arrow heads (when `head is None`).
-        [`Rotation.look_at`](np.blender.rotation.Rotation.look_at) :
+        [`Rotation.look_at`][npblender.rotation.Rotation.look_at] :
             Used to orient arrows along their vectors.
 
         > ***Caution:*** `locations` and `vectors` must have the same length (N).
@@ -3287,13 +3287,13 @@ class Mesh(Geometry):
         Notes
         -----
         - Construction steps:
-        1) Create a torus with [`torus`](np.blender.mesh.Mesh.torus).
+        1) Create a torus with [`torus`][npblender.Mesh.torus].
         2) Delete approximately half the vertices on the negative Y side with
-            [`delete_vertices`](np.blender.mesh.Mesh.delete_vertices).
+            [`delete_vertices`][npblender.Mesh.delete_vertices].
         3) Duplicate and mirror the remaining half to the other side.
         4) Bridge the facing border loops with
-            [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) (twice, crossing).
-        5) Recompute and assign UVs using [`grid_uv_map`](np.blender.mesh.grid_uv_map)
+            [`bridge_loops`][npblender.Mesh.bridge_loops] (twice, crossing).
+        5) Recompute and assign UVs using [`grid_uv_map`][npblender.grid_uv_map]
             to distribute the texture coordinates and minimize stretching.
         - When `length - 2 * radius` is smaller than ~`radius / 10`, the method
         returns the original torus since elongation would be negligible.
@@ -3315,15 +3315,15 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`torus`](np.blender.mesh.Mesh.torus) :
+        [`torus`][npblender.Mesh.torus] :
             Base primitive used to start the link.
-        [`delete_vertices`](np.blender.mesh.Mesh.delete_vertices) :
+        [`delete_vertices`][npblender.Mesh.delete_vertices] :
             Used to remove half of the torus before mirroring.
-        [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) :
+        [`bridge_loops`][npblender.Mesh.bridge_loops] :
             Used to reconnect mirrored borders.
-        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+        [`grid_uv_map`][npblender.grid_uv_map] :
             Generates UVs for the final link surface.
-        [`from_mesh`](np.blender.mesh.Mesh.from_mesh) :
+        [`from_mesh`][npblender.Mesh.from_mesh] :
             Utility for duplicating mesh halves before joining.
 
         > ***Caution:*** Very small `section` relative to `major_segments` can
@@ -3407,13 +3407,13 @@ class Mesh(Geometry):
             selected vertex, or an array of vectors with one per selected vertex.
         **attributes : dict, optional
             Optional attributes to attach to the created geometry (forwarded to
-            [`add_geometry`](np.blender.mesh.Mesh.add_geometry)).
+            [`add_geometry`][npblender.Mesh.add_geometry]).
 
         Returns
         -------
         dict
             Dictionary describing the created geometry as returned by
-            [`add_geometry`](np.blender.mesh.Mesh.add_geometry). Contains at least:
+            [`add_geometry`][npblender.Mesh.add_geometry]. Contains at least:
             - `'points'`: indices of newly added vertices.
             - `'edges'`: indices of newly added edges.
 
@@ -3427,7 +3427,7 @@ class Mesh(Geometry):
         -----
         - New vertices are positioned at `points[selection] + offset`.
         - One edge is created between each original vertex and its newly created
-        counterpart using [`edges_between`](np.blender.mesh.edges_between).
+        counterpart using [`edges_between`][npblender.edges_between].
 
         Examples
         --------
@@ -3447,9 +3447,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+        [`add_geometry`][npblender.Mesh.add_geometry] :
             Adds new points/edges/faces and returns their indices.
-        [`edges_between`](np.blender.mesh.edges_between) :
+        [`edges_between`][npblender.edges_between] :
             Builds edge pairs between two index arrays of equal length.
 
         > ***Caution:*** When `offset` is an array, its length must match the
@@ -3497,7 +3497,7 @@ class Mesh(Geometry):
         -------
         dict
             Dictionary describing the created geometry as returned by
-            [`add_geometry`](np.blender.mesh.Mesh.add_geometry). Contains at least:
+            [`add_geometry`][npblender.Mesh.add_geometry]. Contains at least:
             - `'points'`: indices of the duplicated (offset) vertices.
             - `'corners'`: indices of the generated quad strip corners.
             - `'faces'`: face arity (4 for quads).
@@ -3513,10 +3513,10 @@ class Mesh(Geometry):
         - New vertices are computed as `points[loop] + offset` (with broadcasting if
         `offset` is a single vector).
         - Side faces are constructed using the topology from
-        [`grid_corners`](np.blender.mesh.grid_corners) with two rows (original and
+        [`grid_corners`][npblender.grid_corners] with two rows (original and
         offset loop).
         - UVs for the side strip are generated by
-        [`grid_uv_map`](np.blender.mesh.grid_uv_map) with matching parameters.
+        [`grid_uv_map`][npblender.grid_uv_map] with matching parameters.
 
         Examples
         --------
@@ -3535,13 +3535,13 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`extrude_vertices`](np.blender.mesh.Mesh.extrude_vertices) :
+        [`extrude_vertices`][npblender.Mesh.extrude_vertices] :
             Extrude isolated vertices with edges to their duplicates.
-        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+        [`add_geometry`][npblender.Mesh.add_geometry] :
             Adds the new points/corners/faces and returns their indices.
-        [`grid_corners`](np.blender.mesh.grid_corners) :
+        [`grid_corners`][npblender.grid_corners] :
             Builds the quad topology of the side strip.
-        [`grid_uv_map`](np.blender.mesh.grid_uv_map) :
+        [`grid_uv_map`][npblender.grid_uv_map] :
             Generates UVs for the side strip.
 
         > ***Caution:*** `offset` must be either a single `(3,)` vector or an array
@@ -3637,9 +3637,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`extrude_vertices`](np.blender.mesh.Mesh.extrude_vertices) :
+        [`extrude_vertices`][npblender.Mesh.extrude_vertices] :
             Extrude isolated vertices.
-        [`extrude_loop`](np.blender.mesh.Mesh.extrude_loop) :
+        [`extrude_loop`][npblender.Mesh.extrude_loop] :
             Extrude a vertex loop into a quad strip.
 
         > ***Caution:*** If `offset` is given per-face, its length must match the
@@ -3751,11 +3751,11 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`extrude_faces`](np.blender.mesh.Mesh.extrude_faces) :
+        [`extrude_faces`][npblender.Mesh.extrude_faces] :
             Extrude faces individually (discrete), not as a connected region.
-        [`extrude_loop`](np.blender.mesh.Mesh.extrude_loop) :
+        [`extrude_loop`][npblender.Mesh.extrude_loop] :
             Create a quad strip by offsetting a vertex loop.
-        [`extrude_vertices`](np.blender.mesh.Mesh.extrude_vertices) :
+        [`extrude_vertices`][npblender.Mesh.extrude_vertices] :
             Duplicate and connect selected vertices.
 
         > ***Caution:*** `offset` must be a 3D vector. Non-3D inputs may cause the
@@ -3872,9 +3872,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`extrude_faces`](np.blender.mesh.Mesh.extrude_faces) :
+        [`extrude_faces`][npblender.Mesh.extrude_faces] :
             Extrude faces discretely instead of insetting.
-        [`extrude_region`](np.blender.mesh.Mesh.extrude_region) :
+        [`extrude_region`][npblender.Mesh.extrude_region] :
             Extrude connected face regions.
         """
 
@@ -3933,16 +3933,16 @@ class Mesh(Geometry):
         -------
         None
             Modifies the mesh **in place**. Returns `None`.
-            The bottom face indices produced by [`add_geometry`](np.blender.mesh.Mesh.add_geometry)
+            The bottom face indices produced by [`add_geometry`][npblender.Mesh.add_geometry]
             are stored internally and their `material_index` is set to `bottom_material_index`.
 
         Notes
         -----
         - The outer boundary loop is derived from the provided grid `shape` assuming
         a regular lattice of `nx * ny` points laid out with NumPy’s `'ij'` indexing.
-        - A new ring of points is created at Z = `z` via [`add_points`](np.blender.mesh.Mesh.add_points).
+        - A new ring of points is created at Z = `z` via [`add_points`][npblender.Mesh.add_points].
         - The vertical side wall is created by bridging loops with
-        [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) using `close=True`.
+        [`bridge_loops`][npblender.Mesh.bridge_loops] using `close=True`.
         - The bottom face material is assigned by ensuring and editing the optional
         `material_index` field on `self.faces`.
 
@@ -3956,11 +3956,11 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`add_points`](np.blender.mesh.Mesh.add_points) :
+        [`add_points`][npblender.Mesh.add_points] :
             Adds the new base ring vertices at Z = `z`.
-        [`add_geometry`](np.blender.mesh.Mesh.add_geometry) :
+        [`add_geometry`][npblender.Mesh.add_geometry] :
             Creates the bottom polygon from the added ring.
-        [`bridge_loops`](np.blender.mesh.Mesh.bridge_loops) :
+        [`bridge_loops`][npblender.Mesh.bridge_loops] :
             Connects the side wall between original and new boundary loops.
 
         > ***Caution:*** This method assumes the mesh vertices correspond to a regular
@@ -4014,8 +4014,8 @@ class Mesh(Geometry):
         - Internally, a Blender **Boolean** modifier is added to `self`, pointing to
         `other`, and then applied via `bpy.ops.object.modifier_apply`.
         - The result is read back as a new mesh using
-        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object).
-        - Context managers [`object`](np.blender.mesh.Mesh.object) are used to obtain
+        [`Mesh.from_object`][npblender.Mesh.from_object].
+        - Context managers [`object`][npblender.Mesh.object] are used to obtain
         temporary Blender objects for both meshes.
 
         Examples
@@ -4040,9 +4040,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object) :
+        [`Mesh.from_object`][npblender.Mesh.from_object] :
             Converts a Blender object back into a mesh wrapper.
-        [`object`](np.blender.mesh.Mesh.object) :
+        [`object`][npblender.Mesh.object] :
             Context manager yielding a temporary Blender object.
 
         > ***Warning:*** Applying the modifier is **destructive** to the underlying
@@ -4096,7 +4096,7 @@ class Mesh(Geometry):
         `use_even_offset=True` for consistent thickness.
         - The modifier is applied destructively via
         `bpy.ops.object.modifier_apply`, and the resulting mesh is retrieved with
-        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object).
+        [`Mesh.from_object`][npblender.Mesh.from_object].
         - Works best on manifold surfaces (open meshes may produce artifacts).
 
         Examples
@@ -4116,9 +4116,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`Mesh.from_object`](np.blender.mesh.Mesh.from_object) :
+        [`Mesh.from_object`][npblender.Mesh.from_object] :
             Converts a Blender object back into a mesh wrapper.
-        [`object`](np.blender.mesh.Mesh.object) :
+        [`object`][npblender.Mesh.object] :
             Context manager yielding a temporary Blender object.
 
         > ***Caution:*** Applying the modifier is **destructive** to the underlying
@@ -4208,7 +4208,7 @@ class Mesh(Geometry):
 
         Notes
         -----
-        - Creates a copy of the current mesh with [`Mesh.from_mesh`](np.blender.mesh.Mesh.from_mesh).
+        - Creates a copy of the current mesh with [`Mesh.from_mesh`][npblender.Mesh.from_mesh].
         - Triangulation is applied in-place on the copy via
         [`bmesh.ops.triangulate`](https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.triangulate).
         - The original mesh is left unchanged.
@@ -4229,7 +4229,7 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`Mesh.from_mesh`](np.blender.mesh.Mesh.from_mesh) :
+        [`Mesh.from_mesh`][npblender.Mesh.from_mesh] :
             Utility to duplicate the mesh before applying triangulation.
 
         > ***Note:*** If `selection` is empty, the method returns `None`.
@@ -4276,10 +4276,10 @@ class Mesh(Geometry):
 
         Notes
         -----
-        - The copy is created with [`Mesh.from_mesh`](np.blender.mesh.Mesh.from_mesh).
-        - Duplicate vertices are merged with [`remove_doubles`](np.blender.mesh.Mesh.remove_doubles).
+        - The copy is created with [`Mesh.from_mesh`][npblender.Mesh.from_mesh].
+        - Duplicate vertices are merged with [`remove_doubles`][npblender.Mesh.remove_doubles].
         - If too few vertices remain, a fallback is generated using
-        [`get_cubic_envelop`](np.blender.mesh.Mesh.get_cubic_envelop).
+        [`get_cubic_envelop`][npblender.Mesh.get_cubic_envelop].
 
         Examples
         --------
@@ -4291,9 +4291,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`remove_doubles`](np.blender.mesh.Mesh.remove_doubles) :
+        [`remove_doubles`][npblender.Mesh.remove_doubles] :
             Merges vertices within a distance threshold.
-        [`get_cubic_envelop`](np.blender.mesh.Mesh.get_cubic_envelop) :
+        [`get_cubic_envelop`][npblender.Mesh.get_cubic_envelop] :
             Provides a fallback cubic mesh when simplification collapses geometry.
         """
         copy = Mesh.from_mesh(self)
@@ -4354,9 +4354,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`join_geometry`](np.blender.mesh.Mesh.join_geometry) :
+        [`join_geometry`][npblender.Mesh.join_geometry] :
             Utility to assemble new meshes from points, corners, faces, and attributes.
-        [`join`](np.blender.mesh.Mesh.join) :
+        [`join`][npblender.Mesh.join] :
             Used internally to accumulate separated islands.
 
         > ***Caution:*** The number of groups must equal the number of faces in
@@ -4462,9 +4462,9 @@ class Mesh(Geometry):
 
         See Also
         --------
-        [`triangulate`](np.blender.mesh.Mesh.triangulate) :
+        [`triangulate`][npblender.Mesh.triangulate] :
             Triangulation can improve robustness before dualization.
-        [`remove_doubles`](np.blender.mesh.Mesh.remove_doubles) :
+        [`remove_doubles`][npblender.Mesh.remove_doubles] :
             Helpful for cleaning geometry prior to constructing the dual.
 
         > ***Caution:*** On meshes with boundaries or non-manifold edges, some

@@ -42,7 +42,7 @@ class Instances(Geometry):
         `model_index`, plus any user fields).
     models : list[[Geometry][npblender.Geometry]]
         List of source models to instance (e.g., [Mesh][npblender.Mesh],
-        [Curve][npblender.geometry.curve.Curve]).
+        [Curve][npblender.Curve]).
     low_resols : list[dict]
         Optional Level-of-Detail (LOD) entries, each as
         `{"dist": float, "models": list[Geometry]}`.
@@ -295,7 +295,7 @@ class Instances(Geometry):
         Duplicates each model for its selected instances, applies per-instance
         transform (translation, optional rotation/scale), and accumulates results
         into a [Mesh][npblender.Mesh] and/or a
-        [Curve][npblender.geometry.curve.Curve]. With `camera_culling=True`,
+        [Curve][npblender.Curve]. With `camera_culling=True`,
         hidden instances are skipped and LODs may be used.
 
         Parameters
@@ -308,7 +308,7 @@ class Instances(Geometry):
         dict
             A dictionary with keys:
             - ``"mesh"`` : a [Mesh][npblender.Mesh] or `None`
-            - ``"curve"``: a [Curve][npblender.geometry.curve.Curve] or `None`
+            - ``"curve"``: a [Curve][npblender.Curve] or `None`
 
         Raises
         ------
@@ -451,7 +451,7 @@ class Instances(Geometry):
             Base name for created objects.
         profile : Curve or None, optional
             Profile to sweep along curve outputs (see
-            [`Curve.to_mesh`][npblender.geometry.curve.Curve.to_mesh]).
+            [`Curve.to_mesh`][npblender.Curve.to_mesh]).
         caps : bool, default=True
             Close ends when sweeping.
         use_radius : bool, default=True
