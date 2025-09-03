@@ -468,6 +468,24 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.Rotation.__invert__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __invert__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Rotation.__matmul__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __matmul__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.Rotation.angle_to" class="md-nav__link">
     <span class="md-ellipsis">
       angle_to
@@ -881,6 +899,106 @@ which avoids unnecessary allocations.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Rotation.__invert__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__invert__</span>
+
+
+<a href="#npblender.Rotation.__invert__" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">__invert__</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Operator overload: return the inverse of the rotation (~R).</p>
+<p>Equivalent to <code>R.inverse()</code>. Subclasses can override <code>inverse()</code> to
+customize this behavior.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Rotation.__matmul__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__matmul__</span>
+
+
+<a href="#npblender.Rotation.__matmul__" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">__matmul__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Overload <code>@</code> for rotations.</p>
+<ul>
+<li><code>R @ S</code> where both are <code>Rotation</code> → composition (apply <em>R</em>, puis <em>S</em>).</li>
+<li><code>R @ v</code> where <em>v</em> has shape <code>(..., 3)</code> → applique la rotation.</li>
+</ul>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>other</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Rotation (npblender.maths.rotation.Rotation)" href="#npblender.Rotation">Rotation</a> or <span title="array_like">array_like</span>(..., 3)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Rotation (npblender.maths.rotation.Rotation)" href="#npblender.Rotation">Rotation</a> or <span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 

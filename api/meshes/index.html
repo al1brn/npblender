@@ -1032,7 +1032,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a></code></p>
 
 
         <p>Bucketed mesh instances.</p>
@@ -1063,7 +1063,7 @@ groupded in buckets of the same size (same number of vertices).</p>
           <tr class="doc-section-item">
             <td><code><span title="npblender.instances.Meshes.mesh">mesh</span></code></td>
             <td>
-                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>]</code>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1074,7 +1074,7 @@ groupded in buckets of the same size (same number of vertices).</p>
           <tr class="doc-section-item">
             <td><code><span title="npblender.instances.Meshes.points">points</span></code></td>
             <td>
-                  <code>[<a class="autorefs autorefs-internal" title="Point (npblender.domain.Point)" href="../point/#npblender.domain.Point">Point</a>][<a class="autorefs autorefs-internal" title="Point (npblender.domain.Point)" href="../point/#npblender.domain.Point">Point</a>]</code>
+                  <code>[<a class="autorefs autorefs-internal" title="Point (npblender.domain.Point)" href="../point/#npblender.Point">Point</a>][<a class="autorefs autorefs-internal" title="Point (npblender.Point)" href="../point/#npblender.Point">Point</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1124,7 +1124,7 @@ vertices are around the origin. :contentReference[oaicite:1]{index=1}</p>
                 <code>mesh</code>
             </td>
             <td>
-                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>] or None</code>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>] or None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1157,7 +1157,7 @@ vertices are around the origin. :contentReference[oaicite:1]{index=1}</p>
                 <code>attr_from</code>
             </td>
             <td>
-                  <code>[<a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a>][<a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a>] or None</code>
+                  <code>[<a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a>][<a class="autorefs autorefs-internal" title="Geometry (npblender.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a>] or None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1489,7 +1489,7 @@ length matches the concatenation of bucket rows (see iteration order). :contentR
     <div class="doc doc-contents ">
 
         <p>Scale points (convenience wrapper).</p>
-<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.Geometry.transformation"><code>transformation</code></a></p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1550,7 +1550,7 @@ length matches the concatenation of bucket rows (see iteration order). :contentR
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1868,13 +1868,13 @@ returns <code>attr</code> unchanged.</p>
 <details class="note" open>
   <summary>Notes</summary>
   <p>Implemented mappings include:
-- points → faces: <a href="npblender.domain.Point.compute_attribute_on_faces"><code>Point.compute_attribute_on_faces</code></a>
-- points → edges: <a href="npblender.domain.Point.compute_attribute_on_edges"><code>Point.compute_attribute_on_edges</code></a>
-- points → corners: <a href="npblender.domain.Point.compute_attribute_on_corners"><code>Point.compute_attribute_on_corners</code></a>
-- points → splines: <a href="npblender.domain.Point.compute_attribute_on_splines"><code>Point.compute_attribute_on_splines</code></a>
-- faces → points: <a href="npblender.domain.Face.compute_attribute_on_points"><code>Face.compute_attribute_on_points</code></a>
-- edges → points: <a href="npblender.domain.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
-- corners → points: <a href="npblender.domain.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
+- points → faces: <a href="npblender.Point.compute_attribute_on_faces"><code>Point.compute_attribute_on_faces</code></a>
+- points → edges: <a href="npblender.Point.compute_attribute_on_edges"><code>Point.compute_attribute_on_edges</code></a>
+- points → corners: <a href="npblender.Point.compute_attribute_on_corners"><code>Point.compute_attribute_on_corners</code></a>
+- points → splines: <a href="npblender.Point.compute_attribute_on_splines"><code>Point.compute_attribute_on_splines</code></a>
+- faces → points: <a href="npblender.Face.compute_attribute_on_points"><code>Face.compute_attribute_on_points</code></a>
+- edges → points: <a href="npblender.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
+- corners → points: <a href="npblender.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
 </details>
 
     </div>
@@ -1997,7 +1997,7 @@ domain, then uses it as <code>mesh_id</code> to create buckets.</p>
                 <code>mesh</code>
             </td>
             <td>
-                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>]</code>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2157,7 +2157,7 @@ per-piece point domain.</p>
 
         <p>Return a cube mesh that encloses the geometry’s bounding box.</p>
 <p>Uses the bounding box dimensions to build a cube via
-<a href="npblender.mesh.Mesh.cube"><code>Mesh.cube</code></a>, forwarding this geometry’s
+<a href="npblender.Mesh.cube"><code>Mesh.cube</code></a>, forwarding this geometry’s
 <code>materials</code> if present.</p>
 
 
@@ -2172,7 +2172,7 @@ per-piece point domain.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a></code>
+                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2448,7 +2448,7 @@ domains by name (e.g., <code>faces=False</code>).</p>
                 <code>other</code>
             </td>
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a> or None</code>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a> or None</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2489,7 +2489,7 @@ domains by name (e.g., <code>faces=False</code>).</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -2532,7 +2532,7 @@ domains by name (e.g., <code>faces=False</code>).</p>
 <p>Accepts mixed inputs such as Blender collections, Blender objects, lists/
 tuples of either, or already-instantiated <code>Mesh</code>/<code>Curve</code>. Returns a flat
 list of geometries discovered or constructed.</p>
-<p>This method is mainly intended to be used by <a class="autorefs autorefs-internal" title="Instances" href="../instances/#npblender.instances.Instances"><code>Instances</code></a>
+<p>This method is mainly intended to be used by <a class="autorefs autorefs-internal" title="Instances" href="../instances/#npblender.Instances"><code>Instances</code></a>
 to load its models.</p>
 
 
@@ -2680,11 +2680,11 @@ matching geometry by calling the subclass' <code>from_object</code>.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a> or <a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="../curve/#npblender.curve.Curve">Curve</a> or None</code>
+                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a> or <a class="autorefs autorefs-internal" title="Curve (npblender.curve.Curve)" href="../curve/#npblender.Curve">Curve</a> or None</code>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A <a href="npblender.mesh.Mesh"><code>Mesh</code></a> or a <a href="npblender.geometry.curve.Curve"><code>Curve</code></a>,
+                <p>A <a href="npblender.Mesh"><code>Mesh</code></a> or a <a href="npblender.geometry.curve.Curve"><code>Curve</code></a>,
 or <code>None</code> if the object is not found.</p>
               </div>
             </td>
@@ -2972,7 +2972,7 @@ vertices addressed by each bucket.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.mesh.Mesh">Mesh</a>]</code>
+                  <code>[<a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>][<a class="autorefs autorefs-internal" title="Mesh (npblender.Mesh)" href="../mesh/#npblender.Mesh">Mesh</a>]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3002,7 +3002,7 @@ vertices addressed by each bucket.</p>
     <div class="doc doc-contents ">
 
         <p>Rotate points (convenience wrapper).</p>
-<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.Geometry.transformation"><code>transformation</code></a></p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3063,7 +3063,7 @@ vertices addressed by each bucket.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3267,7 +3267,7 @@ then writes the piece value to all vertices of each row in the buckets.</p>
     <div class="doc doc-contents ">
 
         <p>Apply a rotation matrix or batch of matrices.</p>
-<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.Geometry.transformation"><code>transformation</code></a></p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3312,7 +3312,7 @@ then writes the piece value to all vertices of each row in the buckets.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3345,7 +3345,7 @@ then writes the piece value to all vertices of each row in the buckets.</p>
 <p>Operates in-place on <code>points.position</code> and, when present, Bezier handles
 (<code>points.handle_left</code>, <code>points.handle_right</code>). Shapes can represent packets
 of points: broadcasting rules are handled by
-<a href="npblender.domain.Point._get_shape_for_operation"><code>Point._get_shape_for_operation</code></a>.</p>
+<a href="npblender.Point._get_shape_for_operation"><code>Point._get_shape_for_operation</code></a>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3440,7 +3440,7 @@ broadcasting rules as <code>scale</code>/<code>translation</code>.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a></code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -3487,7 +3487,7 @@ broadcasting rules as <code>scale</code>/<code>translation</code>.</p>
     <div class="doc doc-contents ">
 
         <p>Translate points (convenience wrapper).</p>
-<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.geometry.Geometry.transformation"><code>transformation</code></a></p>
+<p><strong><em>See:</em></strong> <a class="autorefs autorefs-internal" title="transformation" href="../geometry/#npblender.Geometry.transformation"><code>transformation</code></a></p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3532,7 +3532,7 @@ broadcasting rules as <code>scale</code>/<code>translation</code>.</p>
       <tbody>
           <tr class="doc-section-item">
             <td>
-                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.geometry.Geometry">Geometry</a></code>
+                  <code><a class="autorefs autorefs-internal" title="Geometry (npblender.geometry.Geometry)" href="../geometry/#npblender.Geometry">Geometry</a></code>
             </td>
             <td>
               <div class="doc-md-description">

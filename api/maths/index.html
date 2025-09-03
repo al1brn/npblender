@@ -450,93 +450,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#npblender.maths.Easings" class="md-nav__link">
-    <span class="md-ellipsis">
-      Easings
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Easings">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings._bezier_eval_segment" class="md-nav__link">
-    <span class="md-ellipsis">
-      _bezier_eval_segment
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings._default_handles_for_segment" class="md-nav__link">
-    <span class="md-ellipsis">
-      _default_handles_for_segment
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings._endpoint_slope" class="md-nav__link">
-    <span class="md-ellipsis">
-      _endpoint_slope
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings._segment_tangent_value" class="md-nav__link">
-    <span class="md-ellipsis">
-      _segment_tangent_value
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings.add" class="md-nav__link">
-    <span class="md-ellipsis">
-      add
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings.bezier" class="md-nav__link">
-    <span class="md-ellipsis">
-      bezier
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings.compute_bezier_handles" class="md-nav__link">
-    <span class="md-ellipsis">
-      compute_bezier_handles
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Easings.evaluate" class="md-nav__link">
-    <span class="md-ellipsis">
-      evaluate
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#npblender.maths.get_angled" class="md-nav__link">
     <span class="md-ellipsis">
       get_angled
@@ -639,234 +552,6 @@
 
 
 
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="npblender.maths.Easings" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">Easings</span>
-
-
-<a href="#npblender.maths.Easings" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Easings</span><span class="p">(</span><span class="o">*</span><span class="n">items</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-
-        <p>A chain of Easing segments. Each Easing defines a key at (t0, v0) and
-interpolation mode/easing/extrapolation <em>to the NEXT key</em>.</p>
-
-
-
-
-
-
-
-
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings._bezier_eval_segment" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">_bezier_eval_segment</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
-  </span>
-
-<a href="#npblender.maths.Easings._bezier_eval_segment" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">_bezier_eval_segment</span><span class="p">(</span><span class="n">t_query</span><span class="p">,</span> <span class="n">P0</span><span class="p">,</span> <span class="n">P1</span><span class="p">,</span> <span class="n">P2</span><span class="p">,</span> <span class="n">P3</span><span class="p">,</span> <span class="n">max_iter</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">tol</span><span class="o">=</span><span class="mf">1e-06</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Evaluate cubic Bezier in (time,value) space.
-Pk = (tx, vy). Solve Bx(s)=t for s∈[0,1], then return By(s).</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings._default_handles_for_segment" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">_default_handles_for_segment</span>
-
-
-<a href="#npblender.maths.Easings._default_handles_for_segment" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">_default_handles_for_segment</span><span class="p">(</span><span class="n">i_left</span><span class="p">,</span> <span class="n">frac</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Compute default (right, left) handles for segment [i_left -&gt; i_left+1].
-Returns P1 (right of left key) and P2 (left of right key) as (tx, vy) pairs.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings._endpoint_slope" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">_endpoint_slope</span>
-
-
-<a href="#npblender.maths.Easings._endpoint_slope" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">_endpoint_slope</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Estimate dv/dt at key i using surrounding keys.
-Monotone-clamped average of adjacent secants; endpoint -&gt; single secant.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings._segment_tangent_value" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">_segment_tangent_value</span>
-
-
-<a href="#npblender.maths.Easings._segment_tangent_value" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">_segment_tangent_value</span><span class="p">(</span><span class="n">i_left</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;right&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Linear extrapolation using the tangent at the endpoint of segment [i_left -&gt; i_left+1].
-end='right' uses slope at u=1; end='left' uses slope at u=0.
-Falls back to secant if slope is non-finite.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings.add" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">add</span>
-
-
-<a href="#npblender.maths.Easings.add" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">add</span><span class="p">(</span><span class="n">easing</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Insert keeping t0 strictly increasing (no duplicates).</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings.bezier" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">bezier</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
-  </span>
-
-<a href="#npblender.maths.Easings.bezier" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">bezier</span><span class="p">(</span><span class="o">*</span><span class="n">points</span><span class="p">,</span> <span class="n">extrapolation</span><span class="o">=</span><span class="s1">&#39;CONSTANT&#39;</span><span class="p">,</span> <span class="n">handle_type</span><span class="o">=</span><span class="s1">&#39;AUTO&#39;</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Build a BEZIER easing chain from (t, v) points.
-- points: either (t, v), (t, v), ... or a single iterable of (t, v)
-- handle_type: 'AUTO' (recompute each time) or 'FREE' (fill None once)
-- extrapolation: 'CONSTANT' or 'LINEAR'
-Handles are computed via compute_bezier_handles() for a smooth curve.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings.compute_bezier_handles" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">compute_bezier_handles</span>
-
-
-<a href="#npblender.maths.Easings.compute_bezier_handles" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">compute_bezier_handles</span><span class="p">(</span><span class="n">frac</span><span class="o">=</span><span class="mf">1.0</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Recompute default Bezier handles:
-- For a BEZIER key with handle_type 'AUTO' → always reset its handle(s).
-- For a BEZIER key with handle_type 'FREE' → set only if currently None.
-Right handle belongs to the left key of the segment; left handle to the right key.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Easings.evaluate" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">evaluate</span>
-
-
-<a href="#npblender.maths.Easings.evaluate" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">evaluate</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Vectorized evaluation over t (scalar or array). For each interval [t_i, t_{i+1}),
-call the segment's interpolation; for the last key, use its extrapolation rule.</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div>
 
 
 <div class="doc doc-object doc-function">
@@ -1192,13 +877,294 @@ azimuth on the cone). If 'random', sample uniform in [0, 2*pi).</p>
 
 
 <a href="#npblender.maths.maprange" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">maprange</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">v1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">back</span><span class="o">=</span><span class="mf">1.70158</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;LINEAR&#39;</span><span class="p">,</span> <span class="n">easing</span><span class="o">=</span><span class="s1">&#39;IN&#39;</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">maprange</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">v1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">back</span><span class="o">=</span><span class="mf">1.70158</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;LINEAR&#39;</span><span class="p">,</span> <span class="n">easing</span><span class="o">=</span><span class="s1">&#39;AUTO&#39;</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>If normalized=True, <code>t</code> is already u∈[0,1] and we only remap to [v0,v1].
-Otherwise we compute u = (t - t0) / (t1 - t0) first.</p>
+        <p>Remap a value (or array) from a source range to a target range with easing.</p>
+<p>If <code>normalized=True</code>, <code>t</code> is interpreted directly as a normalized parameter
+<code>u ∈ [0, 1]</code> and only the output mapping <code>[0,1] → [v0, v1]</code> is applied.
+Otherwise, a normalized parameter is computed as
+<code>u = clip((t - t0) / (t1 - t0), 0, 1)</code> before easing and remapping.</p>
+
+
+<details class="supported-easing-*modes*" open>
+  <summary>Supported easing <em>modes</em></summary>
+  <p>The <code>mode</code> selects the easing curve family (case-insensitive):</p>
+<p><code>'LINEAR', 'CONSTANT', 'QUAD', 'CUBIC', 'QUART', 'QUINT', 'EXPO', 'SINE',
+'CIRC', 'BACK', 'BOUNCE', 'ELASTIC', 'BEZIER', 'SMOOTH', 'SMOOTHER'</code></p>
+</details>
+
+<details class="easing-*direction*" open>
+  <summary>Easing <em>direction</em></summary>
+  <p>The <code>easing</code> variant controls the direction/shape inside the family:</p>
+<p><code>'IN'</code>, <code>'OUT'</code>, <code>'IN_OUT'</code>, or <code>'AUTO'</code>.</p>
+<p>You may also pass the combined syntax <code>"{MODE}.{EASING}"</code> in the <code>mode</code>
+argument (e.g., <code>"CIRC.IN"</code>). In that case, the suffix sets the easing
+direction and <strong>takes precedence</strong>; the separate <code>easing</code> parameter is ignored.</p>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>t</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="array">array</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Value(s) to remap. If <code>normalized=True</code>, <code>t</code> is already the normalized
+parameter <code>u</code>. Otherwise it is first mapped from <code>[t0, t1]</code> to <code>[0, 1]</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>t0</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="array">array</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source range. Can broadcast against <code>t</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0, 1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>t1</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="array">array</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Source range. Can broadcast against <code>t</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0, 1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>v0</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="array">array</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target range. Can be scalars or arrays; broadcasting applies.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0, 1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>v1</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span> or <span title="array">array</span> - <span title="like">like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target range. Can be scalars or arrays; broadcasting applies.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0, 1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>factor</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Generic intensity/shape factor used by some easing families.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>back</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Overshoot parameter for <code>'BACK'</code> easing.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.70158</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>amplitude</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Amplitude parameter for <code>'ELASTIC'</code> easing.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>period</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Period parameter for <code>'ELASTIC'</code> easing.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.3</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mode</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Easing family name, optionally with <code>.IN</code>, <code>.OUT</code>, or <code>.IN_OUT</code> suffix.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;LINEAR&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>easing</code>
+            </td>
+            <td>
+                  <code>(<span title="IN">IN</span>, <span title="OUT">OUT</span>, <span title="IN_OUT">IN_OUT</span>, <span title="AUTO">AUTO</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Direction/variant. Ignored if <code>mode</code> already contains a suffix.</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;IN&#39;,&#39;OUT&#39;,&#39;IN_OUT&#39;,&#39;AUTO&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>normalized</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, skip normalization of <code>t</code> (assume <code>t</code> is already <code>u ∈ [0,1]</code>).</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span> or <span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Remapped value(s): <code>v0 + (v1 - v0) * eased(u)</code>. The shape is the
+broadcasted shape of the inputs.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>Inputs are converted with <code>np.asarray</code> and broadcast per NumPy rules.</li>
+<li>If <code>t0 == t1</code> and <code>normalized=False</code>, the normalization step is ill-defined
+  and will yield <code>inf</code>/<code>nan</code>; ensure the source range has non-zero extent.</li>
+<li>The semantics of <code>'AUTO'</code> are delegated to the underlying easing
+  implementation (commonly selects a reasonable default for the family).</li>
+</ul>
+</details>
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <p>Linear remap of a scalar from [0, 10] to [0, 1]:
+<div class="highlight"><pre><span></span><code><span class="n">y</span> <span class="o">=</span> <span class="n">maprange</span><span class="p">(</span><span class="mf">7.5</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">v1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;LINEAR&#39;</span><span class="p">)</span>
+</code></pre></div></p>
+<p>Ease-in circular from [0, 1] to [0, 100], using combined syntax:
+<div class="highlight"><pre><span></span><code><span class="n">y</span> <span class="o">=</span> <span class="n">maprange</span><span class="p">(</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">v1</span><span class="o">=</span><span class="mf">100.0</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;CIRC.IN&#39;</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div></p>
+<p>Vectorized easing-out cubic from [-1, +1] to [0, 1]:
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="n">t</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">maprange</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">t0</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">t1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">v1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;CUBIC&#39;</span><span class="p">,</span> <span class="n">easing</span><span class="o">=</span><span class="s1">&#39;OUT&#39;</span><span class="p">)</span>
+</code></pre></div></p>
+<p>Elastic easing with custom amplitude/period:
+<div class="highlight"><pre><span></span><code><span class="n">u</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">maprange</span><span class="p">(</span><span class="n">u</span><span class="p">,</span> <span class="n">v0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">v1</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;ELASTIC&#39;</span><span class="p">,</span> <span class="n">easing</span><span class="o">=</span><span class="s1">&#39;IN_OUT&#39;</span><span class="p">,</span>
+             <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">amplitude</span><span class="o">=</span><span class="mf">1.2</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mf">0.25</span><span class="p">)</span>
+</code></pre></div></p>
 
 
     </div>

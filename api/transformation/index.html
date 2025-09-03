@@ -495,6 +495,24 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.Transformation.__invert__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __invert__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Transformation.__matmul__" class="md-nav__link">
+    <span class="md-ellipsis">
+      __matmul__
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.Transformation.apply" class="md-nav__link">
     <span class="md-ellipsis">
       apply
@@ -870,6 +888,52 @@ which avoids unnecessary allocations.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Transformation.__invert__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__invert__</span>
+
+
+<a href="#npblender.Transformation.__invert__" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">__invert__</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Overload the ~ operator to return the inverse transformation.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Transformation.__matmul__" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">__matmul__</span>
+
+
+<a href="#npblender.Transformation.__matmul__" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">__matmul__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Overload the <strong>@</strong> operator.</p>
+<ul>
+<li><strong>Transformation @ Transformation</strong>  → composition (self ∘ other)
+  where the right operand is applied first, then <em>self</em> (column‑major
+  convention).</li>
+<li><strong>Transformation @ vectors</strong>  → alias for :py:meth:<code>transform</code>.</li>
+</ul>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
