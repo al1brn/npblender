@@ -38,12 +38,12 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          paths: ["."]
-          import:
-            mock:
-              - bpy
-              - bmesh
-              - mathutils
+          paths: ["src"]
+          setup_commands:
+            - import sys, types
+            - sys.modules.setdefault("bpy", types.ModuleType("bpy"))
+            - sys.modules.setdefault("bmesh", types.ModuleType("bmesh"))
+            - sys.modules.setdefault("mathutils", types.ModuleType("mathutils"))          
           options:
             docstring_style: numpy             
             docstring_section_style: table     # sections (Arguments, Returns, etc.) en tableau
