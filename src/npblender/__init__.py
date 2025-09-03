@@ -3,7 +3,7 @@ from .camera import Camera
 
 from .enginemod import engine, Animation
 from .fieldarray import FieldArray
-from .domain import Point, Vertex, ControlPoint, Corner, Face, Edge, Spline
+from .domain import Domain, Point, Vertex, ControlPoint, Corner, Face, Edge, Spline
 from .shapekeys import ShapeKeys
 
 from .geometry import Geometry
@@ -32,7 +32,7 @@ __all__ = [
     "Camera",
     "engine", "Animation",
     "FieldArray",
-    "Point", "Vertex", "ControlPoint", "Corner", "Face", "Edge", "Spline",
+    "Domain", "Point", "Vertex", "ControlPoint", "Corner", "Face", "Edge", "Spline",
     "ShapeKeys",
     "Geometry", "Cloud", "Mesh", "Curve",
     "Instances", "Meshes",
