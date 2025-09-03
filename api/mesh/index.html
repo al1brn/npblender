@@ -2850,11 +2850,21 @@ arrow length.</li>
 <details class="note" open>
   <summary>Notes</summary>
   <ul>
-<li>The shaft is created with <a href="np.blender.mesh.Mesh.cylinder"><code>cylinder</code></a>.</li>
-<li>The head is created with <a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> using
+<li>The shaft is created with <a class="autorefs autorefs-internal" title="cylinder
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cylinder"><code>cylinder</code></a>.</li>
+<li>The head is created with <a class="autorefs autorefs-internal" title="cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cone"><code>cone</code></a> using
 <code>fill_type='FANS'</code> for proper triangulation.</li>
 <li>The arrow is aligned to <code>vector</code> using
-<a href="np.blender.rotation.Rotation.look_at"><code>Rotation.look_at</code></a>.</li>
+[<code>Rotation.look_at</code>][npblender.rotation.Rotation.look_at].</li>
 <li>A small correction is applied to avoid overlap between shaft and head.</li>
 </ul>
 </details>
@@ -2873,11 +2883,21 @@ arrow length.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.cylinder"><code>cylinder</code></a> :
+  <p><a class="autorefs autorefs-internal" title="cylinder
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cylinder"><code>cylinder</code></a> :
     Used to create the arrow shaft.
-<a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> :
+<a class="autorefs autorefs-internal" title="cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cone"><code>cone</code></a> :
     Used to create the arrow head.
-<a href="np.blender.rotation.Rotation.look_at"><code>Rotation.look_at</code></a> :
+[<code>Rotation.look_at</code>][npblender.rotation.Rotation.look_at] :
     Utility to orient the arrow along a target vector.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> If <code>vector</code> has zero length, the arrow cannot be
@@ -3708,8 +3728,13 @@ modifier.</p>
 <li>Internally, a Blender <strong>Boolean</strong> modifier is added to <code>self</code>, pointing to
 <code>other</code>, and then applied via <code>bpy.ops.object.modifier_apply</code>.</li>
 <li>The result is read back as a new mesh using
-<a href="np.blender.mesh.Mesh.from_object"><code>Mesh.from_object</code></a>.</li>
-<li>Context managers <a href="np.blender.mesh.Mesh.object"><code>object</code></a> are used to obtain
+<a class="autorefs autorefs-internal" title="from_object
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_object"><code>Mesh.from_object</code></a>.</li>
+<li>Context managers <a class="autorefs autorefs-internal" title="object" href="#npblender.Mesh.object"><code>object</code></a> are used to obtain
 temporary Blender objects for both meshes.</li>
 </ul>
 </details>
@@ -3728,9 +3753,14 @@ temporary Blender objects for both meshes.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.from_object"><code>Mesh.from_object</code></a> :
+  <p><a class="autorefs autorefs-internal" title="from_object
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_object"><code>Mesh.from_object</code></a> :
     Converts a Blender object back into a mesh wrapper.
-<a href="np.blender.mesh.Mesh.object"><code>object</code></a> :
+<a class="autorefs autorefs-internal" title="object" href="#npblender.Mesh.object"><code>object</code></a> :
     Context manager yielding a temporary Blender object.</p>
 <blockquote>
 <p><strong><em>Warning:</em></strong> Applying the modifier is <strong>destructive</strong> to the underlying
@@ -4248,13 +4278,18 @@ the long axis before elongation). Default is 1.0.</p>
   <summary>Notes</summary>
   <ul>
 <li>Construction steps:
-1) Create a torus with <a href="np.blender.mesh.Mesh.torus"><code>torus</code></a>.
+1) Create a torus with <a class="autorefs autorefs-internal" title="torus
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.torus"><code>torus</code></a>.
 2) Delete approximately half the vertices on the negative Y side with
-    <a href="np.blender.mesh.Mesh.delete_vertices"><code>delete_vertices</code></a>.
+    <a class="autorefs autorefs-internal" title="delete_vertices" href="#npblender.Mesh.delete_vertices"><code>delete_vertices</code></a>.
 3) Duplicate and mirror the remaining half to the other side.
 4) Bridge the facing border loops with
-    <a href="np.blender.mesh.Mesh.bridge_loops"><code>bridge_loops</code></a> (twice, crossing).
-5) Recompute and assign UVs using <a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a>
+    <a class="autorefs autorefs-internal" title="bridge_loops" href="#npblender.Mesh.bridge_loops"><code>bridge_loops</code></a> (twice, crossing).
+5) Recompute and assign UVs using [<code>grid_uv_map</code>][npblender.grid_uv_map]
     to distribute the texture coordinates and minimize stretching.</li>
 <li>When <code>length - 2 * radius</code> is smaller than ~<code>radius / 10</code>, the method
 returns the original torus since elongation would be negligible.</li>
@@ -4273,15 +4308,25 @@ returns the original torus since elongation would be negligible.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.torus"><code>torus</code></a> :
+  <p><a class="autorefs autorefs-internal" title="torus
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.torus"><code>torus</code></a> :
     Base primitive used to start the link.
-<a href="np.blender.mesh.Mesh.delete_vertices"><code>delete_vertices</code></a> :
+<a class="autorefs autorefs-internal" title="delete_vertices" href="#npblender.Mesh.delete_vertices"><code>delete_vertices</code></a> :
     Used to remove half of the torus before mirroring.
-<a href="np.blender.mesh.Mesh.bridge_loops"><code>bridge_loops</code></a> :
+<a class="autorefs autorefs-internal" title="bridge_loops" href="#npblender.Mesh.bridge_loops"><code>bridge_loops</code></a> :
     Used to reconnect mirrored borders.
-<a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a> :
+[<code>grid_uv_map</code>][npblender.grid_uv_map] :
     Generates UVs for the final link surface.
-<a href="np.blender.mesh.Mesh.from_mesh"><code>from_mesh</code></a> :
+<a class="autorefs autorefs-internal" title="from_mesh
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_mesh"><code>from_mesh</code></a> :
     Utility for duplicating mesh halves before joining.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> Very small <code>section</code> relative to <code>major_segments</code> can
@@ -4440,7 +4485,12 @@ it raises an exception to prevent Blender from crashing if inconsistencies are f
 triangle fans (not yet implemented in this method, but the behavior
 corresponds to <code>cap='FANS'</code>).</p>
 <blockquote>
-<p><strong><em>Note:</em></strong> The <a href="np.blender.mesh.Mesh.disk"><code>disk</code></a> method provides the same
+<p><strong><em>Note:</em></strong> The <a class="autorefs autorefs-internal" title="disk
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.disk"><code>disk</code></a> method provides the same
 functionality with <code>cap='NGON'</code> as its default mode.</p>
 </blockquote>
 
@@ -4570,8 +4620,8 @@ filled with a single polygon when <code>cap='NGON'</code>. Default is 0.</p>
 <li><code>cap='NONE'</code>: returns only the ring of edges.</li>
 <li><code>cap='NGON'</code>: fills the circle with a polygon face.</li>
 <li><code>cap='FANS'</code>: fills the circle with a fan of triangles around a central point.</li>
-<li>UV coordinates are generated with <a href="np.blender.mesh.disk_uv_map"><code>disk_uv_map</code></a>.</li>
-<li>Fan topology is generated with <a href="np.blender.mesh.fans_corners"><code>fans_corners</code></a>.</li>
+<li>UV coordinates are generated with [<code>disk_uv_map</code>][npblender.disk_uv_map].</li>
+<li>Fan topology is generated with [<code>fans_corners</code>][npblender.fans_corners].</li>
 </ul>
 </details>
 
@@ -4589,11 +4639,16 @@ filled with a single polygon when <code>cap='NGON'</code>. Default is 0.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.disk"><code>disk</code></a> :
+  <p><a class="autorefs autorefs-internal" title="disk
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.disk"><code>disk</code></a> :
     Equivalent method for creating disks (default <code>cap='NGON'</code>).
-<a href="np.blender.mesh.disk_uv_map"><code>disk_uv_map</code></a> :
+[<code>disk_uv_map</code>][npblender.disk_uv_map] :
     Generates UV coordinates for circular caps.
-<a href="np.blender.mesh.fans_corners"><code>fans_corners</code></a> :
+[<code>fans_corners</code>][npblender.fans_corners] :
     Generates corner topology for triangle fans.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> When using <code>cap='FANS'</code>, a new center vertex is added.</p>
@@ -4979,7 +5034,12 @@ Default is <code>'NGON'</code>.</p>
   <summary>Notes</summary>
   <ul>
 <li>If both <code>radius_top</code> and <code>radius_bottom</code> are zero, the result is an empty mesh.</li>
-<li>Internally calls <a href="np.blender.mesh.Mesh.bl_cone"><code>bl_cone</code></a> with
+<li>Internally calls <a class="autorefs autorefs-internal" title="bl_cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.bl_cone"><code>bl_cone</code></a> with
 <code>cap_ends</code> and <code>cap_tris</code> derived from <code>fill_type</code>.</li>
 <li>UVs are generated automatically by Blender's cone operator.</li>
 </ul>
@@ -5001,9 +5061,19 @@ Default is <code>'NGON'</code>.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.bl_cone"><code>bl_cone</code></a> :
+  <p><a class="autorefs autorefs-internal" title="bl_cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.bl_cone"><code>bl_cone</code></a> :
     Low-level constructor for cones and cylinders.
-<a href="np.blender.mesh.Mesh.bl_circle"><code>bl_circle</code></a> :
+<a class="autorefs autorefs-internal" title="bl_circle
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.bl_circle"><code>bl_circle</code></a> :
     For creating circle primitives with optional triangle fan filling.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> Use <code>fill_type='NONE'</code> to create an open-ended cone or cylinder.</p>
@@ -5129,7 +5199,7 @@ a cross-like layout.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh"><code>Mesh</code></a> :
+  <p><a class="autorefs autorefs-internal" title="Mesh" href="#npblender.Mesh"><code>Mesh</code></a> :
     The mesh class used to construct and manage geometry.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> The cube is centered at the origin and scaled by <code>size/2</code>
@@ -5303,7 +5373,12 @@ Default is <code>'NGON'</code>.</p>
 <details class="note" open>
   <summary>Notes</summary>
   <ul>
-<li>Internally calls <a href="np.blender.mesh.Mesh.bl_cone"><code>bl_cone</code></a> with <code>radius1 = radius2 = radius</code>.</li>
+<li>Internally calls <a class="autorefs autorefs-internal" title="bl_cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.bl_cone"><code>bl_cone</code></a> with <code>radius1 = radius2 = radius</code>.</li>
 <li>UVs are generated automatically by Blender's cone operator.</li>
 </ul>
 </details>
@@ -5322,9 +5397,19 @@ Default is <code>'NGON'</code>.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.bl_cone"><code>bl_cone</code></a> :
+  <p><a class="autorefs autorefs-internal" title="bl_cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.bl_cone"><code>bl_cone</code></a> :
     Low-level constructor for cones and cylinders.
-<a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> :
+<a class="autorefs autorefs-internal" title="cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cone"><code>cone</code></a> :
     Generalized method for cones and cylinders.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> This method is a convenience wrapper for <code>bl_cone</code> with
@@ -5408,9 +5493,9 @@ equal top and bottom radii.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Faces.delete_loops"><code>delete_loops</code></a> :
+  <p>[<code>delete_loops</code>][npblender.Faces.delete_loops] :
     Method used internally to remove the corners and faces.
-<a href="np.blender.mesh.Mesh.corners"><code>corners</code></a> :
+[<code>corners</code>][npblender.Mesh.corners] :
     Corner array of the mesh, used to identify face connectivity.</p>
 <blockquote>
 <p><strong><em>Warning:</em></strong> This function permanently deletes faces and their
@@ -5582,7 +5667,12 @@ the union of all matched vertices will be deleted.</p>
     <div class="doc doc-contents ">
 
         <p>Create a disk mesh.</p>
-<p>This is equivalent to <a href="np.blender.mesh.Mesh.circle"><code>circle</code></a>, but with
+<p>This is equivalent to <a class="autorefs autorefs-internal" title="circle
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.circle"><code>circle</code></a>, but with
 <code>cap='NGON'</code> as the default filling mode.</p>
 
 
@@ -5716,11 +5806,16 @@ Default is 0 (single n-gon when <code>cap='NGON'</code>).</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.circle"><code>circle</code></a> :
+  <p><a class="autorefs autorefs-internal" title="circle
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.circle"><code>circle</code></a> :
     General method for circle/disk creation with customizable cap.
-<a href="np.blender.mesh.disk_uv_map"><code>disk_uv_map</code></a> :
+[<code>disk_uv_map</code>][npblender.disk_uv_map] :
     Generates UV coordinates for circular caps.
-<a href="np.blender.mesh.fans_corners"><code>fans_corners</code></a> :
+[<code>fans_corners</code>][npblender.fans_corners] :
     Generates corner topology for triangle fans.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> This method is a shorthand for <code>circle(..., cap='NGON')</code>.</p>
@@ -5859,9 +5954,9 @@ created in such cases.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.triangulate"><code>triangulate</code></a> :
+  <p><a class="autorefs autorefs-internal" title="triangulate" href="#npblender.Mesh.triangulate"><code>triangulate</code></a> :
     Triangulation can improve robustness before dualization.
-<a href="np.blender.mesh.Mesh.remove_doubles"><code>remove_doubles</code></a> :
+<a class="autorefs autorefs-internal" title="remove_doubles" href="#npblender.Mesh.remove_doubles"><code>remove_doubles</code></a> :
     Helpful for cleaning geometry prior to constructing the dual.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> On meshes with boundaries or non-manifold edges, some
@@ -6059,9 +6154,9 @@ to duplicate each selected face independently.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.extrude_vertices"><code>extrude_vertices</code></a> :
+  <p><a class="autorefs autorefs-internal" title="extrude_vertices" href="#npblender.Mesh.extrude_vertices"><code>extrude_vertices</code></a> :
     Extrude isolated vertices.
-<a href="np.blender.mesh.Mesh.extrude_loop"><code>extrude_loop</code></a> :
+<a class="autorefs autorefs-internal" title="extrude_loop" href="#npblender.Mesh.extrude_loop"><code>extrude_loop</code></a> :
     Extrude a vertex loop into a quad strip.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> If <code>offset</code> is given per-face, its length must match the
@@ -6206,7 +6301,7 @@ layout. Default is False.</p>
             <td>
               <div class="doc-md-description">
                 <p>Dictionary describing the created geometry as returned by
-<a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a>. Contains at least:
+<a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a>. Contains at least:
 - <code>'points'</code>: indices of the duplicated (offset) vertices.
 - <code>'corners'</code>: indices of the generated quad strip corners.
 - <code>'faces'</code>: face arity (4 for quads).</p>
@@ -6247,10 +6342,10 @@ layout. Default is False.</p>
 <li>New vertices are computed as <code>points[loop] + offset</code> (with broadcasting if
 <code>offset</code> is a single vector).</li>
 <li>Side faces are constructed using the topology from
-<a href="np.blender.mesh.grid_corners"><code>grid_corners</code></a> with two rows (original and
+[<code>grid_corners</code>][npblender.grid_corners] with two rows (original and
 offset loop).</li>
 <li>UVs for the side strip are generated by
-<a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a> with matching parameters.</li>
+[<code>grid_uv_map</code>][npblender.grid_uv_map] with matching parameters.</li>
 </ul>
 </details>
 
@@ -6266,13 +6361,13 @@ offset loop).</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.extrude_vertices"><code>extrude_vertices</code></a> :
+  <p><a class="autorefs autorefs-internal" title="extrude_vertices" href="#npblender.Mesh.extrude_vertices"><code>extrude_vertices</code></a> :
     Extrude isolated vertices with edges to their duplicates.
-<a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a> :
+<a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a> :
     Adds the new points/corners/faces and returns their indices.
-<a href="np.blender.mesh.grid_corners"><code>grid_corners</code></a> :
+[<code>grid_corners</code>][npblender.grid_corners] :
     Builds the quad topology of the side strip.
-<a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a> :
+[<code>grid_uv_map</code>][npblender.grid_uv_map] :
     Generates UVs for the side strip.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> <code>offset</code> must be either a single <code>(3,)</code> vector or an array
@@ -6440,11 +6535,11 @@ collecting the adjacent face opposite to each extruded face.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.extrude_faces"><code>extrude_faces</code></a> :
+  <p><a class="autorefs autorefs-internal" title="extrude_faces" href="#npblender.Mesh.extrude_faces"><code>extrude_faces</code></a> :
     Extrude faces individually (discrete), not as a connected region.
-<a href="np.blender.mesh.Mesh.extrude_loop"><code>extrude_loop</code></a> :
+<a class="autorefs autorefs-internal" title="extrude_loop" href="#npblender.Mesh.extrude_loop"><code>extrude_loop</code></a> :
     Create a quad strip by offsetting a vertex loop.
-<a href="np.blender.mesh.Mesh.extrude_vertices"><code>extrude_vertices</code></a> :
+<a class="autorefs autorefs-internal" title="extrude_vertices" href="#npblender.Mesh.extrude_vertices"><code>extrude_vertices</code></a> :
     Duplicate and connect selected vertices.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> <code>offset</code> must be a 3D vector. Non-3D inputs may cause the
@@ -6530,7 +6625,7 @@ selected vertex, or an array of vectors with one per selected vertex.</p>
             <td>
               <div class="doc-md-description">
                 <p>Optional attributes to attach to the created geometry (forwarded to
-<a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a>).</p>
+<a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a>).</p>
               </div>
             </td>
             <td>
@@ -6557,7 +6652,7 @@ selected vertex, or an array of vectors with one per selected vertex.</p>
             <td>
               <div class="doc-md-description">
                 <p>Dictionary describing the created geometry as returned by
-<a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a>. Contains at least:
+<a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a>. Contains at least:
 - <code>'points'</code>: indices of newly added vertices.
 - <code>'edges'</code>: indices of newly added edges.</p>
               </div>
@@ -6596,7 +6691,7 @@ selected vertex, or an array of vectors with one per selected vertex.</p>
   <ul>
 <li>New vertices are positioned at <code>points[selection] + offset</code>.</li>
 <li>One edge is created between each original vertex and its newly created
-counterpart using <a href="np.blender.mesh.edges_between"><code>edges_between</code></a>.</li>
+counterpart using [<code>edges_between</code>][npblender.edges_between].</li>
 </ul>
 </details>
 
@@ -6613,9 +6708,9 @@ counterpart using <a href="np.blender.mesh.edges_between"><code>edges_between</c
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a> :
+  <p><a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a> :
     Adds new points/edges/faces and returns their indices.
-<a href="np.blender.mesh.edges_between"><code>edges_between</code></a> :
+[<code>edges_between</code>][npblender.edges_between] :
     Builds edge pairs between two index arrays of equal length.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> When <code>offset</code> is an array, its length must match the
@@ -6848,7 +6943,7 @@ Default is 1 (no subdivision).</p>
             <td>
               <div class="doc-md-description">
                 <p>A dictionary of the newly added geometry, as returned by
-<a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a>. Includes at least keys for
+<a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a>. Includes at least keys for
 'faces' and 'corners'. In FANS mode, also includes the added 'points' if a new
 center is created.</p>
               </div>
@@ -6861,11 +6956,11 @@ center is created.</p>
 <details class="note" open>
   <summary>Notes</summary>
   <ul>
-<li>In 'NGON' mode, a UV map is generated using <a href="np.blender.mesh.Mesh.disk_uv_map"><code>disk_uv_map</code></a>.</li>
-<li>In 'FANS' mode, the fan topology is created with <a href="np.blender.mesh.Mesh.fans_corners"><code>fans_corners</code></a>
-and UVs are generated with <a href="np.blender.mesh.Mesh.disk_uv_map"><code>disk_uv_map</code></a>.</li>
+<li>In 'NGON' mode, a UV map is generated using [<code>disk_uv_map</code>][npblender.Mesh.disk_uv_map].</li>
+<li>In 'FANS' mode, the fan topology is created with [<code>fans_corners</code>][npblender.Mesh.fans_corners]
+and UVs are generated with [<code>disk_uv_map</code>][npblender.Mesh.disk_uv_map].</li>
 <li>If <code>segments &gt; 1</code> in FANS mode, radial edges are subdivided using
-<a href="np.blender.mesh.Mesh.split_edges"><code>split_edges</code></a>.</li>
+<a class="autorefs autorefs-internal" title="split_edges" href="#npblender.Mesh.split_edges"><code>split_edges</code></a>.</li>
 </ul>
 </details>
 
@@ -6883,13 +6978,13 @@ and UVs are generated with <a href="np.blender.mesh.Mesh.disk_uv_map"><code>disk
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a> :
+  <p><a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a> :
     Method used to add the created geometry to the mesh.
-<a href="np.blender.mesh.Mesh.split_edges"><code>split_edges</code></a> :
+<a class="autorefs autorefs-internal" title="split_edges" href="#npblender.Mesh.split_edges"><code>split_edges</code></a> :
     Used to subdivide radial edges in FANS mode.
-<a href="np.blender.mesh.Mesh.disk_uv_map"><code>disk_uv_map</code></a> :
+[<code>disk_uv_map</code>][npblender.Mesh.disk_uv_map] :
     Generates UV coordinates for circular caps.
-<a href="np.blender.mesh.Mesh.fans_corners"><code>fans_corners</code></a> :
+[<code>fans_corners</code>][npblender.Mesh.fans_corners] :
     Generates corner topology for FANS mode.</p>
 <blockquote>
 <p><strong><em>Warning:</em></strong> This function modifies the mesh <strong>in place</strong> and may
@@ -7778,8 +7873,8 @@ meaning the generated arrays have shape <code>(vertices_x, vertices_y)</code>.</
   <ul>
 <li>The grid is created with <code>'ij'</code> indexing, so coordinates follow
 NumPy's <code>meshgrid(..., indexing='ij')</code> convention.</li>
-<li>UV coordinates are generated using <a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a>.</li>
-<li>The grid topology is built using <a href="np.blender.mesh.grid_corners"><code>grid_corners</code></a>.</li>
+<li>UV coordinates are generated using [<code>grid_uv_map</code>][npblender.grid_uv_map].</li>
+<li>The grid topology is built using [<code>grid_corners</code>][npblender.grid_corners].</li>
 </ul>
 </details>
 
@@ -7794,9 +7889,9 @@ NumPy's <code>meshgrid(..., indexing='ij')</code> convention.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.grid_corners"><code>grid_corners</code></a> :
+  <p>[<code>grid_corners</code>][npblender.grid_corners] :
     Helper for constructing the corner topology of the grid.
-<a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a> :
+[<code>grid_uv_map</code>][npblender.grid_uv_map] :
     Generates UV coordinates for a regular grid.</p>
 <blockquote>
 <p><strong><em>Important:</em></strong> The grid is always created with <code>'ij'</code> indexing
@@ -7939,12 +8034,22 @@ making it suitable for certain simulation and subdivision tasks.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.uvsphere"><code>uvsphere</code></a> :
+  <p><a class="autorefs autorefs-internal" title="uvsphere
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.uvsphere"><code>uvsphere</code></a> :
     Sphere primitive based on UV parameterization.
 <a href="https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_icosphere"><code>bmesh.ops.create_icosphere</code></a> :
     BMesh operator used for creating icospheres.</p>
 <blockquote>
-<p><strong><em>Note:</em></strong> Use <a href="np.blender.mesh.Mesh.uvsphere"><code>uvsphere</code></a> when you
+<p><strong><em>Note:</em></strong> Use <a class="autorefs autorefs-internal" title="uvsphere
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.uvsphere"><code>uvsphere</code></a> when you
 require consistent UV mapping, and <code>icosphere</code> for uniform tessellation.</p>
 </blockquote>
 </details>
@@ -8112,9 +8217,9 @@ require consistent UV mapping, and <code>icosphere</code> for uniform tessellati
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.extrude_faces"><code>extrude_faces</code></a> :
+  <p><a class="autorefs autorefs-internal" title="extrude_faces" href="#npblender.Mesh.extrude_faces"><code>extrude_faces</code></a> :
     Extrude faces discretely instead of insetting.
-<a href="np.blender.mesh.Mesh.extrude_region"><code>extrude_region</code></a> :
+<a class="autorefs autorefs-internal" title="extrude_region" href="#npblender.Mesh.extrude_region"><code>extrude_region</code></a> :
     Extrude connected face regions.</p>
 </details>
 
@@ -8588,7 +8693,7 @@ using <code>np.linspace</code>.</li>
 <li>If <code>start</code> and <code>end</code> are arrays of shape <code>(N, 3)</code>, the method generates
 <code>N</code> independent polylines, each subdivided into <code>segments</code>.</li>
 <li>For higher-dimensional batched input, the function reshapes the grid and
-constructs edges using <a href="np.blender.mesh.col_edges"><code>col_edges</code></a>.</li>
+constructs edges using [<code>col_edges</code>][npblender.col_edges].</li>
 </ul>
 </details>
 
@@ -8609,9 +8714,9 @@ constructs edges using <a href="np.blender.mesh.col_edges"><code>col_edges</code
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.border_edges"><code>border_edges</code></a> :
+  <p>[<code>border_edges</code>][npblender.border_edges] :
     Helper for constructing consecutive edges in a single polyline.
-<a href="np.blender.mesh.col_edges"><code>col_edges</code></a> :
+[<code>col_edges</code>][npblender.col_edges] :
     Helper for constructing edges in multi-dimensional point grids.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> The line mesh consists only of vertices and edges,
@@ -9236,7 +9341,7 @@ If <code>readonly=True</code>, the edited object is captured back into <code>sel
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh"><code>Mesh</code></a> :
+  <p><a class="autorefs autorefs-internal" title="Mesh" href="#npblender.Mesh"><code>Mesh</code></a> :
     The mesh class used to construct and manage geometry.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> This constructor is useful for importing raw point data or
@@ -9346,7 +9451,12 @@ Default is 1.</p>
   <ul>
 <li>The base radius is scaled by <code>size * sqrt(3)/2</code> so that the pyramid has
 approximately unit proportions when <code>size=1</code>.</li>
-<li>Internally calls <a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> with <code>vertices=3</code>.</li>
+<li>Internally calls <a class="autorefs autorefs-internal" title="cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cone"><code>cone</code></a> with <code>vertices=3</code>.</li>
 </ul>
 </details>
 
@@ -9361,9 +9471,19 @@ approximately unit proportions when <code>size=1</code>.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> :
+  <p><a class="autorefs autorefs-internal" title="cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cone"><code>cone</code></a> :
     Generalized method for cones and pyramids.
-<a href="np.blender.mesh.Mesh.bl_cone"><code>bl_cone</code></a> :
+<a class="autorefs autorefs-internal" title="bl_cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.bl_cone"><code>bl_cone</code></a> :
     Low-level constructor for cone-based primitives.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> This method is equivalent to creating a triangular-based cone.</p>
@@ -9681,9 +9801,9 @@ same island, with vertices duplicated so that each group is independent.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.join_geometry"><code>join_geometry</code></a> :
+  <p><a class="autorefs autorefs-internal" title="join_geometry" href="#npblender.Mesh.join_geometry"><code>join_geometry</code></a> :
     Utility to assemble new meshes from points, corners, faces, and attributes.
-<a href="np.blender.mesh.Mesh.join"><code>join</code></a> :
+<a class="autorefs autorefs-internal" title="join" href="#npblender.Mesh.join"><code>join</code></a> :
     Used internally to accumulate separated islands.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> The number of groups must equal the number of faces in
@@ -9787,10 +9907,15 @@ fewer than 8 vertices, returns a cubic envelope instead.</p>
 <details class="note" open>
   <summary>Notes</summary>
   <ul>
-<li>The copy is created with <a href="np.blender.mesh.Mesh.from_mesh"><code>Mesh.from_mesh</code></a>.</li>
-<li>Duplicate vertices are merged with <a href="np.blender.mesh.Mesh.remove_doubles"><code>remove_doubles</code></a>.</li>
+<li>The copy is created with <a class="autorefs autorefs-internal" title="from_mesh
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_mesh"><code>Mesh.from_mesh</code></a>.</li>
+<li>Duplicate vertices are merged with <a class="autorefs autorefs-internal" title="remove_doubles" href="#npblender.Mesh.remove_doubles"><code>remove_doubles</code></a>.</li>
 <li>If too few vertices remain, a fallback is generated using
-<a href="np.blender.mesh.Mesh.get_cubic_envelop"><code>get_cubic_envelop</code></a>.</li>
+<a class="autorefs autorefs-internal" title="get_cubic_envelop" href="#npblender.Mesh.get_cubic_envelop"><code>get_cubic_envelop</code></a>.</li>
 </ul>
 </details>
 
@@ -9802,9 +9927,9 @@ fewer than 8 vertices, returns a cubic envelope instead.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.remove_doubles"><code>remove_doubles</code></a> :
+  <p><a class="autorefs autorefs-internal" title="remove_doubles" href="#npblender.Mesh.remove_doubles"><code>remove_doubles</code></a> :
     Merges vertices within a distance threshold.
-<a href="np.blender.mesh.Mesh.get_cubic_envelop"><code>get_cubic_envelop</code></a> :
+<a class="autorefs autorefs-internal" title="get_cubic_envelop" href="#npblender.Mesh.get_cubic_envelop"><code>get_cubic_envelop</code></a> :
     Provides a fallback cubic mesh when simplification collapses geometry.</p>
 </details>
 
@@ -9909,7 +10034,12 @@ Default is -1.</p>
 <code>use_even_offset=True</code> for consistent thickness.</li>
 <li>The modifier is applied destructively via
 <code>bpy.ops.object.modifier_apply</code>, and the resulting mesh is retrieved with
-<a href="np.blender.mesh.Mesh.from_object"><code>Mesh.from_object</code></a>.</li>
+<a class="autorefs autorefs-internal" title="from_object
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_object"><code>Mesh.from_object</code></a>.</li>
 <li>Works best on manifold surfaces (open meshes may produce artifacts).</li>
 </ul>
 </details>
@@ -9929,9 +10059,14 @@ Default is -1.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.from_object"><code>Mesh.from_object</code></a> :
+  <p><a class="autorefs autorefs-internal" title="from_object
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_object"><code>Mesh.from_object</code></a> :
     Converts a Blender object back into a mesh wrapper.
-<a href="np.blender.mesh.Mesh.object"><code>object</code></a> :
+<a class="autorefs autorefs-internal" title="object" href="#npblender.Mesh.object"><code>object</code></a> :
     Context manager yielding a temporary Blender object.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> Applying the modifier is <strong>destructive</strong> to the underlying
@@ -10041,7 +10176,7 @@ Default is 0.</p>
             <td>
               <div class="doc-md-description">
                 <p>Modifies the mesh <strong>in place</strong>. Returns <code>None</code>.
-The bottom face indices produced by <a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a>
+The bottom face indices produced by <a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a>
 are stored internally and their <code>material_index</code> is set to <code>bottom_material_index</code>.</p>
               </div>
             </td>
@@ -10055,9 +10190,9 @@ are stored internally and their <code>material_index</code> is set to <code>bott
   <ul>
 <li>The outer boundary loop is derived from the provided grid <code>shape</code> assuming
 a regular lattice of <code>nx * ny</code> points laid out with NumPy’s <code>'ij'</code> indexing.</li>
-<li>A new ring of points is created at Z = <code>z</code> via <a href="np.blender.mesh.Mesh.add_points"><code>add_points</code></a>.</li>
+<li>A new ring of points is created at Z = <code>z</code> via <a class="autorefs autorefs-internal" title="add_points" href="#npblender.Mesh.add_points"><code>add_points</code></a>.</li>
 <li>The vertical side wall is created by bridging loops with
-<a href="np.blender.mesh.Mesh.bridge_loops"><code>bridge_loops</code></a> using <code>close=True</code>.</li>
+<a class="autorefs autorefs-internal" title="bridge_loops" href="#npblender.Mesh.bridge_loops"><code>bridge_loops</code></a> using <code>close=True</code>.</li>
 <li>The bottom face material is assigned by ensuring and editing the optional
 <code>material_index</code> field on <code>self.faces</code>.</li>
 </ul>
@@ -10071,11 +10206,11 @@ a regular lattice of <code>nx * ny</code> points laid out with NumPy’s <code>'
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.add_points"><code>add_points</code></a> :
+  <p><a class="autorefs autorefs-internal" title="add_points" href="#npblender.Mesh.add_points"><code>add_points</code></a> :
     Adds the new base ring vertices at Z = <code>z</code>.
-<a href="np.blender.mesh.Mesh.add_geometry"><code>add_geometry</code></a> :
+<a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>add_geometry</code></a> :
     Creates the bottom polygon from the added ring.
-<a href="np.blender.mesh.Mesh.bridge_loops"><code>bridge_loops</code></a> :
+<a class="autorefs autorefs-internal" title="bridge_loops" href="#npblender.Mesh.bridge_loops"><code>bridge_loops</code></a> :
     Connects the side wall between original and new boundary loops.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> This method assumes the mesh vertices correspond to a regular
@@ -10674,11 +10809,11 @@ the existing object must be a mesh.</p>
 <li>The torus is constructed by sweeping a circle of radius <code>minor_radius</code>
 around a larger circle of radius <code>major_radius</code>.</li>
 <li>The transformation of the cross-section is handled by
-<a href="np.blender.transform.Transformation"><code>Transformation</code></a> and
-<a href="np.blender.rotation.Rotation"><code>Rotation</code></a>.</li>
-<li>UV coordinates are generated using <a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a>,
+[<code>Transformation</code>][npblender.transform.Transformation] and
+[<code>Rotation</code>][npblender.rotation.Rotation].</li>
+<li>UV coordinates are generated using [<code>grid_uv_map</code>][npblender.grid_uv_map],
 resulting in a square parameterization.</li>
-<li>Topology is constructed with <a href="np.blender.mesh.grid_corners"><code>grid_corners</code></a>
+<li>Topology is constructed with [<code>grid_corners</code>][npblender.grid_corners]
 with both axes closed.</li>
 </ul>
 </details>
@@ -10695,13 +10830,13 @@ with both axes closed.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.grid_corners"><code>grid_corners</code></a> :
+  <p>[<code>grid_corners</code>][npblender.grid_corners] :
     Helper for constructing the corner topology of the torus grid.
-<a href="np.blender.mesh.grid_uv_map"><code>grid_uv_map</code></a> :
+[<code>grid_uv_map</code>][npblender.grid_uv_map] :
     Generates UV coordinates for grid-like surfaces.
-<a href="np.blender.transform.Transformation"><code>Transformation</code></a> :
+[<code>Transformation</code>][npblender.transform.Transformation] :
     Used to position and orient the swept circle.
-<a href="np.blender.rotation.Rotation"><code>Rotation</code></a> :
+[<code>Rotation</code>][npblender.rotation.Rotation] :
     Used to orient the minor circle along the sweep path.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> UV coordinates are generated with an offset of π to match
@@ -11083,7 +11218,12 @@ Returns <code>None</code> if no faces were selected.</p>
 <details class="note" open>
   <summary>Notes</summary>
   <ul>
-<li>Creates a copy of the current mesh with <a href="np.blender.mesh.Mesh.from_mesh"><code>Mesh.from_mesh</code></a>.</li>
+<li>Creates a copy of the current mesh with <a class="autorefs autorefs-internal" title="from_mesh
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_mesh"><code>Mesh.from_mesh</code></a>.</li>
 <li>Triangulation is applied in-place on the copy via
 <a href="https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.triangulate"><code>bmesh.ops.triangulate</code></a>.</li>
 <li>The original mesh is left unchanged.</li>
@@ -11101,7 +11241,12 @@ Returns <code>None</code> if no faces were selected.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.from_mesh"><code>Mesh.from_mesh</code></a> :
+  <p><a class="autorefs autorefs-internal" title="from_mesh
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.from_mesh"><code>Mesh.from_mesh</code></a> :
     Utility to duplicate the mesh before applying triangulation.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong> If <code>selection</code> is empty, the method returns <code>None</code>.</p>
@@ -11255,12 +11400,22 @@ denser vertices near the poles.</li>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.icosphere"><code>icosphere</code></a> :
+  <p><a class="autorefs autorefs-internal" title="icosphere
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.icosphere"><code>icosphere</code></a> :
     Alternative sphere primitive with more uniform vertex distribution.
 <a href="https://docs.blender.org/api/current/bmesh.ops.html#bmesh.ops.create_uvsphere"><code>bmesh.ops.create_uvsphere</code></a> :
     BMesh operator used for creating UV spheres.</p>
 <blockquote>
-<p><strong><em>Note:</em></strong> Use <a href="np.blender.mesh.Mesh.icosphere"><code>icosphere</code></a> if you need
+<p><strong><em>Note:</em></strong> Use <a class="autorefs autorefs-internal" title="icosphere
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.icosphere"><code>icosphere</code></a> if you need
 a more uniform tessellation without poles.</p>
 </blockquote>
 </details>
@@ -11487,9 +11642,19 @@ When provided, its Z size defines the head height.</p>
 <code>head_height = head_radius / tan(angle)</code>.</li>
 <li>Arrows with very small vectors are handled specially to avoid degenerate
 geometry (a minimum total length of approximately <code>2 * head_height</code> is enforced).</li>
-<li>Alignment is achieved with <a href="np.blender.rotation.Rotation.look_at"><code>Rotation.look_at</code></a>.</li>
-<li>The shaft is built from <a href="np.blender.mesh.Mesh.cylinder"><code>cylinder</code></a>, and the
-head from <a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> (when <code>head is None</code>).</li>
+<li>Alignment is achieved with [<code>Rotation.look_at</code>][npblender.rotation.Rotation.look_at].</li>
+<li>The shaft is built from <a class="autorefs autorefs-internal" title="cylinder
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cylinder"><code>cylinder</code></a>, and the
+head from <a class="autorefs autorefs-internal" title="cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cone"><code>cone</code></a> (when <code>head is None</code>).</li>
 </ul>
 </details>
 
@@ -11511,13 +11676,28 @@ head from <a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> (when <code>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="np.blender.mesh.Mesh.arrow"><code>arrow</code></a> :
+  <p><a class="autorefs autorefs-internal" title="arrow
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.arrow"><code>arrow</code></a> :
     Convenience method to create a single arrow.
-<a href="np.blender.mesh.Mesh.cylinder"><code>cylinder</code></a> :
+<a class="autorefs autorefs-internal" title="cylinder
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cylinder"><code>cylinder</code></a> :
     Used to create the arrow shafts.
-<a href="np.blender.mesh.Mesh.cone"><code>cone</code></a> :
+<a class="autorefs autorefs-internal" title="cone
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cone"><code>cone</code></a> :
     Used to create the arrow heads (when <code>head is None</code>).
-<a href="np.blender.rotation.Rotation.look_at"><code>Rotation.look_at</code></a> :
+[<code>Rotation.look_at</code>][npblender.rotation.Rotation.look_at] :
     Used to orient arrows along their vectors.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> <code>locations</code> and <code>vectors</code> must have the same length (N).
