@@ -1513,7 +1513,7 @@ dictionary. The values of the fields are copied to the new records.</p>
 
         <p>Apply per-axis scales to points, optionally about a pivot.</p>
 <p>The scaling is broadcast across the domain using
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>.
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation].
 If a pivot is given, points are moved to the local frame, scaled, then moved back.</p>
 
 
@@ -1597,7 +1597,7 @@ If a pivot is given, points are moved to the local frame, scaled, then moved bac
 </code></pre></div>
 <blockquote>
 <p><strong><em>Note:</em></strong> If broadcasting fails, a <code>ValueError</code> is raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>.</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation].</p>
 </blockquote>
 
 
@@ -1727,7 +1727,7 @@ If a pivot is given, points are moved to the local frame, scaled, then moved bac
         <p>Scatter a per-vertex attribute to corners.</p>
 <p>For each corner, copies the attribute of its associated vertex (via
 <code>corners.vertex_index</code>). The attribute is validated with
-<a href="npblender._check_attribute_to_compute"><code>_check_attribute_to_compute</code></a>.</p>
+[<code>_check_attribute_to_compute</code>][npblender._check_attribute_to_compute].</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1818,7 +1818,7 @@ item shape and dtype.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>attr</code> is scalar or its first dimension does not match <code>len(self)</code> (raised by
-<a href="npblender._check_attribute_to_compute"><code>_check_attribute_to_compute</code></a>).</p>
+[<code>_check_attribute_to_compute</code>][npblender._check_attribute_to_compute]).</p>
               </div>
             </td>
           </tr>
@@ -1862,7 +1862,7 @@ item shape and dtype.</p>
         <p>Average a per-vertex attribute over each edge.</p>
 <p>For every edge, returns the mean of the attribute at its two endpoint
 vertices (<code>(v0, v1)</code>). The attribute is validated with
-<a href="npblender._check_attribute_to_compute"><code>_check_attribute_to_compute</code></a>.</p>
+[<code>_check_attribute_to_compute</code>][npblender._check_attribute_to_compute].</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1953,7 +1953,7 @@ the dtype follows the input attribute.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>attr</code> is scalar or its first dimension does not match <code>len(self)</code> (raised by
-<a href="npblender._check_attribute_to_compute"><code>_check_attribute_to_compute</code></a>).</p>
+[<code>_check_attribute_to_compute</code>][npblender._check_attribute_to_compute]).</p>
               </div>
             </td>
           </tr>
@@ -2016,7 +2016,7 @@ with in-place division).</p>
 all its incident corners (i.e., the face-wise average). The input attribute
 can be given by name or as an array aligned with the vertex domain. The
 attribute is validated with
-<a href="npblender._check_attribute_to_compute"><code>_check_attribute_to_compute</code></a>.</p>
+[<code>_check_attribute_to_compute</code>][npblender._check_attribute_to_compute].</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2124,7 +2124,7 @@ the dtype follows the input attribute.</p>
             <td>
               <div class="doc-md-description">
                 <p>If <code>attr</code> is scalar or its first dimension does not match <code>len(self)</code> (raised by
-<a href="npblender._check_attribute_to_compute"><code>_check_attribute_to_compute</code></a>).</p>
+[<code>_check_attribute_to_compute</code>][npblender._check_attribute_to_compute]).</p>
               </div>
             </td>
           </tr>
@@ -2160,9 +2160,9 @@ with in-place division).</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="npblender.Vertex.compute_attribute_on_corners"><code>compute_attribute_on_corners</code></a> :
+  <p><a class="autorefs autorefs-internal" title="compute_attribute_on_corners" href="#npblender.Vertex.compute_attribute_on_corners"><code>compute_attribute_on_corners</code></a> :
     Scatter vertex attributes to corners.
-<a href="npblender.Vertex.compute_attribute_on_edges"><code>compute_attribute_on_edges</code></a> :
+<a class="autorefs autorefs-internal" title="compute_attribute_on_edges" href="#npblender.Vertex.compute_attribute_on_edges"><code>compute_attribute_on_edges</code></a> :
     Average vertex attributes on edges.</p>
 </details>
 
@@ -4798,7 +4798,7 @@ translations that broadcast over buckets of equal size.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> If a provided batch cannot be aligned with the domain,
 a <code>ValueError</code> is raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>.</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation].</p>
 </blockquote>
 
 

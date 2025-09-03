@@ -2279,7 +2279,7 @@
 It supports referencing existing vertices through corners or adding new vertices.</p>
 <blockquote>
 <p><strong><em>Note:</em></strong>
-To add independent geometry with new vertices, use <a href="npblender.Mesh.joint_geometry"><code>Mesh.join_geometry</code></a> instead.</p>
+To add independent geometry with new vertices, use [<code>Mesh.join_geometry</code>][npblender.Mesh.joint_geometry] instead.</p>
 </blockquote>
 
 
@@ -4770,13 +4770,13 @@ returns <code>attr</code> unchanged.</p>
 <details class="note" open>
   <summary>Notes</summary>
   <p>Implemented mappings include:
-- points → faces: <a href="npblender.Point.compute_attribute_on_faces"><code>Point.compute_attribute_on_faces</code></a>
-- points → edges: <a href="npblender.Point.compute_attribute_on_edges"><code>Point.compute_attribute_on_edges</code></a>
-- points → corners: <a href="npblender.Point.compute_attribute_on_corners"><code>Point.compute_attribute_on_corners</code></a>
-- points → splines: <a href="npblender.Point.compute_attribute_on_splines"><code>Point.compute_attribute_on_splines</code></a>
-- faces → points: <a href="npblender.Face.compute_attribute_on_points"><code>Face.compute_attribute_on_points</code></a>
-- edges → points: <a href="npblender.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
-- corners → points: <a href="npblender.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
+- points → faces: [<code>Point.compute_attribute_on_faces</code>][npblender.Point.compute_attribute_on_faces]
+- points → edges: [<code>Point.compute_attribute_on_edges</code>][npblender.Point.compute_attribute_on_edges]
+- points → corners: [<code>Point.compute_attribute_on_corners</code>][npblender.Point.compute_attribute_on_corners]
+- points → splines: [<code>Point.compute_attribute_on_splines</code>][npblender.Point.compute_attribute_on_splines]
+- faces → points: <a class="autorefs autorefs-internal" title="compute_attribute_on_points" href="../face/#npblender.Face.compute_attribute_on_points"><code>Face.compute_attribute_on_points</code></a>
+- edges → points: <a class="autorefs autorefs-internal" title="compute_attribute_on_points" href="../edge/#npblender.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
+- corners → points: <a class="autorefs autorefs-internal" title="compute_attribute_on_points" href="../corner/#npblender.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
 </details>
 
     </div>
@@ -7401,7 +7401,12 @@ Default is False.</p>
 
         <p>Return a cube mesh that encloses the geometry’s bounding box.</p>
 <p>Uses the bounding box dimensions to build a cube via
-<a href="npblender.Mesh.cube"><code>Mesh.cube</code></a>, forwarding this geometry’s
+<a class="autorefs autorefs-internal" title="cube
+
+
+  
+      classmethod
+  " href="#npblender.Mesh.cube"><code>Mesh.cube</code></a>, forwarding this geometry’s
 <code>materials</code> if present.</p>
 
 
@@ -8309,7 +8314,7 @@ domains by name (e.g., <code>faces=False</code>).</p>
 <p>This method creates a new independent mesh from the provided geometry components
 (points, corners, faces, edges) which do not refer to existing vertices. The new mesh
 is then joined to the current mesh instance.</p>
-<p>To add geometry using existing vertices, see <a href="npblender.Mesh.add_geometry"><code>Mesh.add_geometry</code></a>.</p>
+<p>To add geometry using existing vertices, see <a class="autorefs autorefs-internal" title="add_geometry" href="#npblender.Mesh.add_geometry"><code>Mesh.add_geometry</code></a>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -8791,7 +8796,7 @@ matching geometry by calling the subclass' <code>from_object</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A <a class="autorefs autorefs-internal" title="Mesh" href="#npblender.Mesh"><code>Mesh</code></a> or a Curve,
+                <p>A <a class="autorefs autorefs-internal" title="Mesh" href="#npblender.Mesh"><code>Mesh</code></a> or a <a class="autorefs autorefs-internal" title="Curve" href="../curve/#npblender.Curve"><code>Curve</code></a>,
 or <code>None</code> if the object is not found.</p>
               </div>
             </td>
@@ -10800,7 +10805,7 @@ Blender's default torus orientation.</p>
 <p>Operates in-place on <code>points.position</code> and, when present, Bezier handles
 (<code>points.handle_left</code>, <code>points.handle_right</code>). Shapes can represent packets
 of points: broadcasting rules are handled by
-<a href="npblender.Point._get_shape_for_operation"><code>Point._get_shape_for_operation</code></a>.</p>
+[<code>Point._get_shape_for_operation</code>][npblender.Point._get_shape_for_operation].</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

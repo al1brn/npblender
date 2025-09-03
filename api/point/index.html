@@ -1385,9 +1385,14 @@ structure without copying values.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="npblender.Point.rotation"><code>rotation</code></a> :
+  <p><a class="autorefs autorefs-internal" title="rotation
+
+
+  
+      property
+  " href="#npblender.Point.rotation"><code>rotation</code></a> :
     Access the per-point rotation object.
-<a href="npblender.Point.get_rotation"><code>get_rotation</code></a> :
+<a class="autorefs autorefs-internal" title="get_rotation" href="#npblender.Point.get_rotation"><code>get_rotation</code></a> :
     Safe accessor that can return a default.</p>
 </details>
     </div>
@@ -1443,9 +1448,14 @@ identity rotation with shape <code>(len(position),)</code>.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="npblender.Point.has_rotation"><code>has_rotation</code></a> :
+  <p><a class="autorefs autorefs-internal" title="has_rotation
+
+
+  
+      property
+  " href="#npblender.Point.has_rotation"><code>has_rotation</code></a> :
     Check if a rotation is available.
-<a href="npblender.Point.get_rotation"><code>get_rotation</code></a> :
+<a class="autorefs autorefs-internal" title="get_rotation" href="#npblender.Point.get_rotation"><code>get_rotation</code></a> :
     Return a default when no rotation is stored.</p>
 </details>
 
@@ -1840,7 +1850,7 @@ dictionary. The values of the fields are copied to the new records.</p>
 
         <p>Apply per-axis scales to positions and multiply the <code>scale</code> attribute.</p>
 <p>Calls the base point scaling
-(<a href="npblender.PointDomain.apply_scale"><code>apply_scale</code></a>) to update
+([<code>apply_scale</code>][npblender.PointDomain.apply_scale]) to update
 <code>position</code> (optionally about <code>pivot</code>), then multiplies the per-point
 <code>scale</code> attribute when present.</p>
 
@@ -1931,7 +1941,7 @@ dictionary. The values of the fields are copied to the new records.</p>
             <td>
               <div class="doc-md-description">
                 <p>If broadcasting cannot align inputs with the domain (raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>).</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation]).</p>
               </div>
             </td>
           </tr>
@@ -3035,7 +3045,12 @@ returns <code>None</code> when no rotation is available.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p><a href="npblender.Point.rotation"><code>rotation</code></a> if available; otherwise
+                <p><a class="autorefs autorefs-internal" title="rotation
+
+
+  
+      property
+  " href="#npblender.Point.rotation"><code>rotation</code></a> if available; otherwise
 <code>default</code>.</p>
               </div>
             </td>
@@ -3046,8 +3061,18 @@ returns <code>None</code> when no rotation is available.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="npblender.Point.has_rotation"><code>has_rotation</code></a>
-<a href="npblender.Point.rotation"><code>rotation</code></a></p>
+  <p><a class="autorefs autorefs-internal" title="has_rotation
+
+
+  
+      property
+  " href="#npblender.Point.has_rotation"><code>has_rotation</code></a>
+<a class="autorefs autorefs-internal" title="rotation
+
+
+  
+      property
+  " href="#npblender.Point.rotation"><code>rotation</code></a></p>
 </details>
 
     </div>
@@ -4726,8 +4751,8 @@ across compatible domains.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="npblender.Point.speed_along"><code>speed_along</code></a>
-<a href="npblender.Point.disk_speed"><code>disk_speed</code></a></p>
+  <p><a class="autorefs autorefs-internal" title="speed_along" href="#npblender.Point.speed_along"><code>speed_along</code></a>
+<a class="autorefs autorefs-internal" title="disk_speed" href="#npblender.Point.disk_speed"><code>disk_speed</code></a></p>
 </details>
 
     </div>
@@ -5293,7 +5318,7 @@ assignments.</p>
 
         <p>Transform positions and compose stored orientation.</p>
 <p>First applies the linear transform to <code>position</code> via the base implementation
-(<a href="npblender.PointDomain.transform"><code>transform</code></a>). Then, if a rotation
+([<code>transform</code>][npblender.PointDomain.transform]). Then, if a rotation
 field exists (<code>euler</code> or <code>quat</code>), composes it with <code>transfo</code>’s rotation
 component and writes back to the same representation.</p>
 
@@ -5386,7 +5411,7 @@ implement <code>@</code> with vectors and expose a <code>.rotation</code> compon
             <td>
               <div class="doc-md-description">
                 <p>If broadcasting cannot align inputs with the domain (raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>).</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation]).</p>
               </div>
             </td>
           </tr>
@@ -5495,7 +5520,7 @@ translations that broadcast over buckets of equal size.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> If a provided batch cannot be aligned with the domain,
 a <code>ValueError</code> is raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>.</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation].</p>
 </blockquote>
 
 

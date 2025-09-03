@@ -1563,7 +1563,7 @@ dictionary. The values of the fields are copied to the new records.</p>
 
         <p>Apply per-axis scales to control points, and scale handles as well.</p>
 <p>First applies per-axis scaling to <code>position</code> via
-<a href="npblender.PointDomain.apply_scale"><code>apply_scale</code></a>, then, if Bezier
+[<code>apply_scale</code>][npblender.PointDomain.apply_scale], then, if Bezier
 handles are present, scales <code>handle_left</code> and <code>handle_right</code> by the
 same <code>scale</code>.</p>
 
@@ -1655,7 +1655,7 @@ about the origin.</p>
             <td>
               <div class="doc-md-description">
                 <p>If the operand cannot be aligned with the domain size (raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>).</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation]).</p>
               </div>
             </td>
           </tr>
@@ -1891,7 +1891,7 @@ the dtype follows the input attribute.</p>
               <div class="doc-md-description">
                 <p>If <code>attr</code> is scalar or its first dimension does not match <code>len(self)</code>
 (raised by
-<a href="npblender._check_attribute_to_compute"><code>_check_attribute_to_compute</code></a>).</p>
+[<code>_check_attribute_to_compute</code>][npblender._check_attribute_to_compute]).</p>
               </div>
             </td>
           </tr>
@@ -4372,7 +4372,7 @@ assignments.</p>
 
         <p>Apply a linear transform to control points; rotate handles consistently.</p>
 <p>Applies the transform to <code>position</code> via
-<a href="npblender.PointDomain.transform"><code>transform</code></a>. If Bezier handles
+[<code>transform</code>][npblender.PointDomain.transform]. If Bezier handles
 are present, applies <strong>only the rotation part</strong> to <code>handle_left</code> and
 <code>handle_right</code> (i.e., scales are not applied to handles). Broadcasting is
 resolved with</p>
@@ -4464,7 +4464,7 @@ resolved with</p>
             <td>
               <div class="doc-md-description">
                 <p>If the operand cannot be aligned with the domain size (raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>).</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation]).</p>
               </div>
             </td>
           </tr>
@@ -4583,7 +4583,7 @@ translations that broadcast over buckets of equal size.</p>
 <blockquote>
 <p><strong><em>Caution:</em></strong> If a provided batch cannot be aligned with the domain,
 a <code>ValueError</code> is raised by
-<a href="npblender._get_shape_for_operation"><code>_get_shape_for_operation</code></a>.</p>
+[<code>_get_shape_for_operation</code>][npblender._get_shape_for_operation].</p>
 </blockquote>
 
 

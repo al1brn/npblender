@@ -1544,10 +1544,10 @@
         <p>Construct a curve geometry.</p>
 <p>Initializes empty domains by default, or builds a curve from provided
 control points and spline sizes/types. If both <code>points</code> and <code>splines</code> are
-already instances of <a href="npblender.ControlPoint"><code>ControlPoint</code></a> and
-<a href="npblender.Spline"><code>Spline</code></a>, the curve is created as a <strong>view</strong>
+already instances of <a class="autorefs autorefs-internal" title="ControlPoint" href="../controlpoint/#npblender.ControlPoint"><code>ControlPoint</code></a> and
+<a class="autorefs autorefs-internal" title="Spline" href="../spline/#npblender.Spline"><code>Spline</code></a>, the curve is created as a <strong>view</strong>
 on these domains (no data copy). Otherwise, domains are allocated and
-populated via <a href="npblender.Curve.add_splines"><code>add_splines</code></a>.</p>
+populated via <a class="autorefs autorefs-internal" title="add_splines" href="#npblender.Curve.add_splines"><code>add_splines</code></a>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1566,7 +1566,7 @@ populated via <a href="npblender.Curve.add_splines"><code>add_splines</code></a>
                 <code>points</code>
             </td>
             <td>
-                  <code>array-like or [`ControlPoint`](npblender.ControlPoint)</code>
+                  <code>array-like or [`ControlPoint`][npblender.ControlPoint]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1584,7 +1584,7 @@ with a <code>Spline</code> domain, the curve becomes a view on them.</p>
                 <code>splines</code>
             </td>
             <td>
-                  <code>array-like or [`Spline`](npblender.Spline)</code>
+                  <code>array-like or [`Spline`][npblender.Spline]</code>
             </td>
             <td>
               <div class="doc-md-description">
@@ -1606,9 +1606,9 @@ with a <code>Spline</code> domain, the curve becomes a view on them.</p>
             <td>
               <div class="doc-md-description">
                 <p>Default spline type for construction. One of
-<a href="npblender.BEZIER"><code>BEZIER</code></a>,
-<a href="npblender.POLY"><code>POLY</code></a>,
-<a href="npblender.NURBS"><code>NURBS</code></a>.
+[<code>BEZIER</code>][npblender.BEZIER],
+[<code>POLY</code>][npblender.POLY],
+[<code>NURBS</code>][npblender.NURBS].
 Ignored when <code>points</code>/<code>splines</code> are full domains.</p>
               </div>
             </td>
@@ -1643,7 +1643,7 @@ promoted to a one-element list.</p>
             <td>
               <div class="doc-md-description">
                 <p>Source whose transferable attributes are joined into this geometry
-(see <a href="npblender.Geometry.join_attributes"><code>join_attributes</code></a>).</p>
+(see <a class="autorefs autorefs-internal" title="join_attributes" href="../geometry/#npblender.Geometry.join_attributes"><code>join_attributes</code></a>).</p>
               </div>
             </td>
             <td>
@@ -1659,7 +1659,7 @@ promoted to a one-element list.</p>
             <td>
               <div class="doc-md-description">
                 <p>Additional geometry attributes to forward to
-<a href="npblender.Curve.add_splines"><code>add_splines</code></a> during construction.</p>
+<a class="autorefs autorefs-internal" title="add_splines" href="#npblender.Curve.add_splines"><code>add_splines</code></a> during construction.</p>
               </div>
             </td>
             <td>
@@ -1676,13 +1676,13 @@ promoted to a one-element list.</p>
 <li>When <code>points</code> and <code>splines</code> are provided as domains, the instance is a
 <strong>view</strong>: <code>self.is_view</code> is <code>True</code> if the sum of <code>splines.loop_total</code>
 differs from <code>len(points)</code>. Use
-<a href="npblender.Curve.no_view"><code>no_view</code></a> to materialize a
+<a class="autorefs autorefs-internal" title="no_view" href="#npblender.Curve.no_view"><code>no_view</code></a> to materialize a
 standalone copy. :contentReference[oaicite:0]{index=0}</li>
 <li>Otherwise, the constructor allocates empty
 <a href="npblende.ControlPoint"><code>ControlPoint</code></a> and
-<a href="npblender.Spline"><code>Spline</code></a> domains, joins attributes from
+<a class="autorefs autorefs-internal" title="Spline" href="../spline/#npblender.Spline"><code>Spline</code></a> domains, joins attributes from
 <code>attr_from</code> if any, then calls
-<a href="npblender.Curve.add_splines"><code>add_splines</code></a>. :contentReference[oaicite:1]{index=1}</li>
+<a class="autorefs autorefs-internal" title="add_splines" href="#npblender.Curve.add_splines"><code>add_splines</code></a>. :contentReference[oaicite:1]{index=1}</li>
 </ul>
 </details>
 
@@ -1701,7 +1701,7 @@ standalone copy. :contentReference[oaicite:0]{index=0}</li>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Propagated from <a href="npblender.Curve.add_splines"><code>add_splines</code></a>
+                <p>Propagated from <a class="autorefs autorefs-internal" title="add_splines" href="#npblender.Curve.add_splines"><code>add_splines</code></a>
 when <code>curve_type</code> is not a single value (e.g., a list). :contentReference[oaicite:2]{index=2}</p>
               </div>
             </td>
@@ -2759,8 +2759,18 @@ form a pie slice.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="npblender.Curve.circle">Curve.circle</a>,
-<a href="npblender.Curve.bezier_circle">Curve.bezier_circle</a></p>
+  <p><a class="autorefs autorefs-internal" title="circle
+
+
+  
+      classmethod
+  " href="#npblender.Curve.circle">Curve.circle</a>,
+<a class="autorefs autorefs-internal" title="bezier_circle
+
+
+  
+      classmethod
+  " href="#npblender.Curve.bezier_circle">Curve.bezier_circle</a></p>
 </details>
 
     </div>
@@ -3521,13 +3531,13 @@ returns <code>attr</code> unchanged.</p>
 <details class="note" open>
   <summary>Notes</summary>
   <p>Implemented mappings include:
-- points → faces: <a href="npblender.Point.compute_attribute_on_faces"><code>Point.compute_attribute_on_faces</code></a>
-- points → edges: <a href="npblender.Point.compute_attribute_on_edges"><code>Point.compute_attribute_on_edges</code></a>
-- points → corners: <a href="npblender.Point.compute_attribute_on_corners"><code>Point.compute_attribute_on_corners</code></a>
-- points → splines: <a href="npblender.Point.compute_attribute_on_splines"><code>Point.compute_attribute_on_splines</code></a>
-- faces → points: <a href="npblender.Face.compute_attribute_on_points"><code>Face.compute_attribute_on_points</code></a>
-- edges → points: <a href="npblender.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
-- corners → points: <a href="npblender.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
+- points → faces: [<code>Point.compute_attribute_on_faces</code>][npblender.Point.compute_attribute_on_faces]
+- points → edges: [<code>Point.compute_attribute_on_edges</code>][npblender.Point.compute_attribute_on_edges]
+- points → corners: [<code>Point.compute_attribute_on_corners</code>][npblender.Point.compute_attribute_on_corners]
+- points → splines: [<code>Point.compute_attribute_on_splines</code>][npblender.Point.compute_attribute_on_splines]
+- faces → points: <a class="autorefs autorefs-internal" title="compute_attribute_on_points" href="../face/#npblender.Face.compute_attribute_on_points"><code>Face.compute_attribute_on_points</code></a>
+- edges → points: <a class="autorefs autorefs-internal" title="compute_attribute_on_points" href="../edge/#npblender.Edge.compute_attribute_on_points"><code>Edge.compute_attribute_on_points</code></a>
+- corners → points: <a class="autorefs autorefs-internal" title="compute_attribute_on_points" href="../corner/#npblender.Corner.compute_attribute_on_points"><code>Corner.compute_attribute_on_points</code></a></p>
 </details>
 
     </div>
@@ -4337,7 +4347,12 @@ see code for details).</p>
 
         <p>Return a cube mesh that encloses the geometry’s bounding box.</p>
 <p>Uses the bounding box dimensions to build a cube via
-<a href="npblender.Mesh.cube"><code>Mesh.cube</code></a>, forwarding this geometry’s
+<a class="autorefs autorefs-internal" title="cube
+
+
+  
+      classmethod
+  " href="../mesh/#npblender.Mesh.cube"><code>Mesh.cube</code></a>, forwarding this geometry’s
 <code>materials</code> if present.</p>
 
 
@@ -4957,7 +4972,7 @@ matching geometry by calling the subclass' <code>from_object</code>.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>A <a class="autorefs autorefs-internal" title="Mesh" href="../mesh/#npblender.Mesh"><code>Mesh</code></a> or a Curve,
+                <p>A <a class="autorefs autorefs-internal" title="Mesh" href="../mesh/#npblender.Mesh"><code>Mesh</code></a> or a <a class="autorefs autorefs-internal" title="Curve" href="#npblender.Curve"><code>Curve</code></a>,
 or <code>None</code> if the object is not found.</p>
               </div>
             </td>
@@ -6082,8 +6097,18 @@ by <code>π / points + twist</code> to control the star lobes' alignment.</p>
 
 <details class="see-also" open>
   <summary>See Also</summary>
-  <p><a href="npblender.Curve.circle">Curve.circle</a>,
-<a href="npblender.Curve.arc">Curve.arc</a></p>
+  <p><a class="autorefs autorefs-internal" title="circle
+
+
+  
+      classmethod
+  " href="#npblender.Curve.circle">Curve.circle</a>,
+<a class="autorefs autorefs-internal" title="arc
+
+
+  
+      classmethod
+  " href="#npblender.Curve.arc">Curve.arc</a></p>
 </details>
 
     </div>
@@ -6750,7 +6775,7 @@ to that resolution (cyclic splines have no duplicate endpoint).</p>
 <p>Operates in-place on <code>points.position</code> and, when present, Bezier handles
 (<code>points.handle_left</code>, <code>points.handle_right</code>). Shapes can represent packets
 of points: broadcasting rules are handled by
-<a href="npblender.Point._get_shape_for_operation"><code>Point._get_shape_for_operation</code></a>.</p>
+[<code>Point._get_shape_for_operation</code>][npblender.Point._get_shape_for_operation].</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
