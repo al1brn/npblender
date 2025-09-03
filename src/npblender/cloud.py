@@ -70,7 +70,7 @@ class Cloud(Geometry):
     Notes
     -----
     - This class focuses on **point-only** data. For topological data
-      (faces/edges), use [`Mesh`](npblender.Mesh).
+      (faces/edges), use [`Mesh`][npblender.Mesh].
     - Blender interoperability accepts both `bpy.types.Mesh` and
       `bpy.types.PointCloud` when reading, but writing currently targets a
       Mesh data block (see [`to_data`](npblender.Cloud.to_data)).

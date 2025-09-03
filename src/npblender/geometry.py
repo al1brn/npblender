@@ -299,7 +299,7 @@ class Geometry:
         Returns
         -------
         Mesh or Curve or None
-            A [`Mesh`](npblender.Mesh) or a [`Curve`](npblender.geometry.curve.Curve),
+            A [`Mesh`][npblender.Mesh] or a Curve,
             or `None` if the object is not found.
 
         Raises
