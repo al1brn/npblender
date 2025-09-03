@@ -39,11 +39,6 @@ plugins:
       handlers:
         python:
           paths: ["src"]
-          setup_commands:
-            - import sys, types
-            - sys.modules.setdefault("bpy", types.ModuleType("bpy"))
-            - sys.modules.setdefault("bmesh", types.ModuleType("bmesh"))
-            - sys.modules.setdefault("mathutils", types.ModuleType("mathutils"))          
           options:
             allow_inspection: false          
             docstring_style: numpy             
