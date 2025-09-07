@@ -639,6 +639,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.Face.flip" class="md-nav__link">
+    <span class="md-ellipsis">
+      flip
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.Face.from_bl_attributes" class="md-nav__link">
     <span class="md-ellipsis">
       from_bl_attributes
@@ -1011,14 +1020,6 @@ extraction, attribute transfers, and topology-aware deletions.</p>
               <td>
                 <div class="doc-md-description">
                   <p>Delete faces and their incident corners; returns removed vertex indices.</p>
-                </div>
-              </td>
-            </tr>
-            <tr class="doc-section-item">
-              <td><code><span title="npblender.Face.get_face_edges">get_face_edges</span></code></td>
-              <td>
-                <div class="doc-md-description">
-                  <p>Edge list per face as ordered vertex-index pairs.</p>
                 </div>
               </td>
             </tr>
@@ -2879,6 +2880,80 @@ inheriting the current field‑infos.</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="npblender.Face.flip" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">flip</span>
+
+
+<a href="#npblender.Face.flip" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">flip</span><span class="p">(</span><span class="n">corners</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Flip faces by inverting the order of the corners.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>corners</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Corner (npblender.domain.Corner)" href="../corner/#npblender.Corner">Corner</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Corner domain (provides <code>vertex_index</code>).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="numpy.ndarray">ndarray</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>New corners.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="npblender.Face.from_bl_attributes" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">from_bl_attributes</span>
 
@@ -3075,7 +3150,7 @@ at least <code>.domain</code>, <code>.is_internal</code>, <code>.data_type</code
 
 
 <a href="#npblender.Face.get" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">broadcast_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

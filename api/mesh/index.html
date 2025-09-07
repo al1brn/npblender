@@ -949,6 +949,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.Mesh.symmetrical" class="md-nav__link">
+    <span class="md-ellipsis">
+      symmetrical
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.Mesh.to_curve_REVIEW" class="md-nav__link">
     <span class="md-ellipsis">
       to_curve_REVIEW
@@ -1761,6 +1770,15 @@
   <a href="#npblender.Mesh.split_edges" class="md-nav__link">
     <span class="md-ellipsis">
       split_edges
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Mesh.symmetrical" class="md-nav__link">
+    <span class="md-ellipsis">
+      symmetrical
     </span>
   </a>
   
@@ -10379,6 +10397,132 @@ Depending on topology, additional n-gons or triangles may be introduced.</p>
 equivalent when matching edges.</p>
 </blockquote>
 </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Mesh.symmetrical" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">symmetrical</span>
+
+
+<a href="#npblender.Mesh.symmetrical" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">symmetrical</span><span class="p">(</span><span class="n">x</span><span class="o">=-</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">flip</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Construct the symmetrical mesh, flip the faces if requested.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>x</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>x multiplicator. 
+Default is -1.0.</p>
+              </div>
+            </td>
+            <td>
+                  <code>-1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>y</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>y multiplicator. 
+Default is 1.0.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>z</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>z multiplicator. 
+Default is 1.0.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>flip</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>flip the faces (invert the normals).
+Default is <code>'median'</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="#npblender.Mesh">Mesh</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The symmetrical mesh.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 

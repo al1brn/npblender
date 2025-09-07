@@ -495,6 +495,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.maths.set_spline2d_thickness" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_spline2d_thickness
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       See also
@@ -1419,6 +1428,336 @@ broadcasted shape of the inputs.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.maths.set_spline2d_thickness" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_spline2d_thickness</span>
+
+
+<a href="#npblender.maths.set_spline2d_thickness" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">set_spline2d_thickness</span><span class="p">(</span><span class="n">points</span><span class="p">,</span> <span class="n">thickness</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">factor</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">cuts</span><span class="o">=</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span> <span class="n">inner_mode</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inner_factor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">inner_cuts</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">start_thickness</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">end_thickness</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a 2D stroke outline from the polyline with per-corner miters/fillets.</p>
+<p>This method constructs a single polygonal outline from the current polyline by:
+(1) offsetting a copy to the "inner" side and resolving its corners,
+(2) offsetting a copy to the "outer" side and resolving its corners,
+then (3) reversing the outer side and concatenating both sides into one path.
+Corner geometry is produced by <a href="npblender.maths.geo2d.Poly.miter_corners"><code>miter_corners</code></a>;
+the effective corner radius is computed per vertex as <code>radius = thickness * factor</code>.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>thickness</code>
+            </td>
+            <td>
+                  <code>float or array-like of shape (n,)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target stroke width per vertex. Scalars are broadcast to all vertices.
+The distance between the two resulting offset sides is <code>thickness[i]</code> at vertex <em>i</em>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mode</code>
+            </td>
+            <td>
+                  <code>int or array-like of shape (n,)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Corner style for the <strong>outer</strong> side:</p>
+<ul>
+<li><code>0</code> → <em>nothing</em> corner is not changed</li>
+<li><code>1</code> → <em>flat</em>  (bevel: straight segment between the two trimmed points)</li>
+<li><code>2</code> → <em>round</em> (fillet: arc sampled between the two trimmed points)</li>
+<li><code>3</code> → <em>cut</em> (cut the corner at distance and given angle)</li>
+</ul>
+              </div>
+            </td>
+            <td>
+                  <code>0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>factor</code>
+            </td>
+            <td>
+                  <code>float or array-like of shape (n,)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Per-corner effect factor.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cuts</code>
+            </td>
+            <td>
+                  <code>couple of floats or array-like of couples of floats</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>First value is the distance of the cut measured along the first segment.
+Second value is the angle (in radians) of the cut line. If second value is
+<code>np.nan</code>, the cut is perpendicular to the first segment.</p>
+              </div>
+            </td>
+            <td>
+                  <code>(.1, np.nan)</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>inner_mode</code>
+            </td>
+            <td>
+                  <code>None, int or array-like of shape (n,)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Corner style for the <strong>inner</strong> side. If <code>None</code>, falls back to <code>mode</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>inner_factor</code>
+            </td>
+            <td>
+                  <code>float or array-like of shape (n,)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Same as <code>factor</code> for <strong>inner</strong> side.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>inner_cuts</code>
+            </td>
+            <td>
+                  <code>float or couple of floats or array-like of such values</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Same as <code>cuts</code> for inner line. If <code>None</code>, cuts is taken.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>resolution</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Number of samples used for each rounded corner (when the corresponding mode is <code>0</code>).
+Must be ≥ 2 to produce a visible arc.</p>
+              </div>
+            </td>
+            <td>
+                  <code>12</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>offset</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Centerline bias in the range <code>[-1, 1]</code> that determines how the stroke is split
+between the two sides. Internally mapped to side offsets as:</p>
+<ul>
+<li><code>-1</code> → <code>[-thickness, 0]</code>  (all thickness on the inner/left side)</li>
+<li><code>0</code> → <code>[-thickness/2, +thickness/2]</code> (centered stroke)</li>
+<li><code>+1</code> → <code>[0, +thickness]</code>  (all thickness on the outer/right side)</li>
+</ul>
+<p>Values are clipped to <code>[-1, 1]</code>.</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>cyclic</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If <code>True</code>, treat the polyline as closed; no end caps are applied and the outline
+is generated in closed form.</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>start_thickness</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Start-cap scaling when <code>cyclic=False</code>. A value of <code>0</code> collapses the start cap
+onto the first vertex; values <code>&gt; 0</code> scale the first outline points radially
+around the first vertex.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>end_thickness</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>End-cap scaling when <code>cyclic=False</code>. A value of <code>0</code> collapses the end cap
+onto the last vertex; values <code>&gt; 0</code> scale the last outline points radially
+around the last vertex.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>pts</code></td>            <td>
+                  <code>ndarray of shape (m, 2)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The outline polygon: inner side (resolved with <code>inner_mode</code>) followed by the
+<strong>reversed</strong> outer side (resolved with <code>mode</code>). For <code>cyclic=True</code>, the outline is
+generated in closed form; otherwise, the path is open and not explicitly closed.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <ul>
+<li>Side offsets are computed via
+<a href="npblender.maths.geo2d.Poly.perp_translated"><code>perp_translated</code></a> using the two
+per-vertex offset amounts derived from <code>thickness</code> and <code>offset</code>.</li>
+<li>Corners on each side are replaced by either a <em>bevel</em> (<code>mode==1</code>) or a <em>fillet arc</em>
+(<code>mode==0</code>) computed by
+<a href="npblender.maths.geo2d.Poly.miter_corners"><code>miter_corners</code></a> with
+<code>radius = thickness * factor</code>.</li>
+<li>When <code>cyclic=False</code>, start/end caps are optionally tapered using <code>start_thickness</code>
+and <code>end_thickness</code>.</li>
+</ul>
+<blockquote>
+<p><strong><em>Caution:</em></strong> If a local segment is too short for the requested trim/fillet,
+internal clamping ensures the trim does not exceed half the adjacent segment length.</p>
+</blockquote>
+</details>
+
+<p><span class="doc-section-title">Examples:</span></p>
+    <p>Centered round stroke:</p>
+<div class="highlight"><pre><span></span><code><span class="n">outline</span> <span class="o">=</span> <span class="n">poly</span><span class="o">.</span><span class="n">set_thickness</span><span class="p">(</span>
+    <span class="n">thickness</span><span class="o">=</span><span class="mf">0.12</span><span class="p">,</span>
+    <span class="n">offset</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>            <span class="c1"># centered</span>
+    <span class="n">mode</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>                <span class="c1"># round outer</span>
+    <span class="n">inner_mode</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>          <span class="c1"># round inner</span>
+    <span class="n">resolution</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
+    <span class="n">cyclic</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Asymmetric stroke with flat outer corners and rounded inner corners:</p>
+<div class="highlight"><pre><span></span><code><span class="n">outline</span> <span class="o">=</span> <span class="n">poly</span><span class="o">.</span><span class="n">set_thickness</span><span class="p">(</span>
+    <span class="n">thickness</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+    <span class="n">offset</span><span class="o">=+</span><span class="mi">1</span><span class="p">,</span>             <span class="c1"># all thickness on outer/right side</span>
+    <span class="n">mode</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>                <span class="c1"># flat outer</span>
+    <span class="n">inner_mode</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>          <span class="c1"># round inner</span>
+    <span class="n">factor</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">resolution</span><span class="o">=</span><span class="mi">12</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Tapered open stroke (fade-in/out caps):</p>
+<div class="highlight"><pre><span></span><code><span class="n">outline</span> <span class="o">=</span> <span class="n">poly</span><span class="o">.</span><span class="n">set_thickness</span><span class="p">(</span>
+    <span class="n">thickness</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.15</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">poly</span><span class="o">.</span><span class="n">points</span><span class="p">)),</span>
+    <span class="n">mode</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+    <span class="n">start_thickness</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>   <span class="c1"># collapse start cap</span>
+    <span class="n">end_thickness</span><span class="o">=</span><span class="mf">0.4</span>      <span class="c1"># shrink end cap</span>
+<span class="p">)</span>
+</code></pre></div>
 
 
     </div>
