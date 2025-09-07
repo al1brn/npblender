@@ -38,10 +38,15 @@ Notes:
     - Splines math relies upon the splinemaths module.
 """
 
+__all__ = ["Curve", "MITER_NONE", "MITER_FLAT", "MITER_ROUND", "MITER_CUT"]
+
 from contextlib import contextmanager
 import numpy as np
 
 import bpy
+
+from .maths import MITER_NONE, MITER_FLAT, MITER_ROUND, MITER_CUT
+
 
 from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 from . constants import bfloat, bint, bbool
@@ -145,11 +150,29 @@ class Curve(Geometry):
         self.join_attributes(attr_from)
 
         # ----- Add geometry
+        curve_type = self.get_curve_type(curve_type)
         self.add_splines(points, splines, curve_type=curve_type, **attrs)
 
     # ----------------------------------------------------------------------------------------------------
     # Utilities
     # ----------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def get_curve_type(curve_type):
+        if isinstance(curve_type, str):
+            if curve_type.upper() == 'POLY':
+                return POLY
+            elif curve_type.upper() == 'BEZIER':
+                return BEZIER
+            elif curve_type.upper() == 'NURBS':
+                return NURBS
+            else:
+                raise ValueError(f"Unknown curve type: '{curve_type}'")
+        else:
+            curve_type = int(curve_type)
+            if curve_type not in [BEZIER, POLY, NURBS]:
+                raise ValueError(f"Curve type must be in [0, 1, 2], not {curve_type}")
+            return curve_type
 
     def get_points_selection(self):
         """
@@ -717,14 +740,14 @@ class Curve(Geometry):
 
             if count == 0:
                 raise AttributeError(f"Unknown curve attribute '{k}'."
-                                     "- points:  {self.points.all_names}\n"
-                                     "- splines: {self.splines.all_names}\n"
+                                     f"- points:  {self.points.all_names}\n"
+                                     f"- splines: {self.splines.all_names}\n"
                                      )
 
             if count > 1:
                 raise AttributeError(f"Curve attribute '{k}' is ambigous, it belongs to more than one domain (count)."
-                                     "- points:  {self.points.all_names}\n"
-                                     "- splines: {self.splines.all_names}\n"
+                                     f"- points:  {self.points.all_names}\n"
+                                     f"- splines: {self.splines.all_names}\n"
                                      )
         return dispatched
     
@@ -1048,6 +1071,7 @@ class Curve(Geometry):
                 )
             
             # Add the splines (splines argument is an int)
+            curve_type = self.get_curve_type(curve_type)
             added['splines'] = self.splines.append_sizes([splines]*len(points), curve_type=curve_type, cyclic=cyclic, **disp_attrs['splines'])
             
         # ----- A series of splines
@@ -1104,6 +1128,7 @@ class Curve(Geometry):
             If `curve_type` is not a single scalar value.
         """
         self.no_view()
+        curve_type = self.get_curve_type(curve_type)
 
         if hasattr(curve_type, '__len__'):
             raise ValueError("Curve add_splines> curve_type must be a single value in (BEZIER, POLY, NURBS), not a list.\ncurve_type: {curve_type}")
@@ -1853,6 +1878,177 @@ class Curve(Geometry):
 
         return mesh    
     
+    # ====================================================================================================
+    # To flat mesh
+    # ====================================================================================================
+
+    def solidify_flat(self, width=.1):
+
+        from .mesh import Mesh
+
+        mesh = Mesh()
+        for loop_start, loop_total in zip(self.splines.loop_start, self.splines.loop_total):
+            verts = self.points.position[loop_start:loop_start+loop_total]
+
+            segms = verts[1:] - verts[:-1] # (n-1, 3)
+            ags = np.unwrap(np.arctan2(segms[:, 1], segms[:, 0])) # (n-1,)
+            diffs = ags[1:] - ags[:-1] # (n-2,)
+
+            perps = np.empty(loop_total) # (n,)
+
+            perps[0] = ags[0] + np.pi/2
+            perps[1:-1] = ags[:-1]  + (np.pi + diffs)/2
+            perps[-1] = ags[-1] + np.pi/2
+
+            bot = np.array(verts)
+            top = np.array(verts)
+
+            cag = np.cos(perps)
+            sag = np.sin(perps)
+
+            scale = np.ones(loop_total)
+            scale[1:-1] = np.minimum(10, 1/np.abs(np.cos(diffs/2)))
+
+            w = width*scale
+            cag *= w
+            sag *= w
+
+            bot[:, 0] += cag
+            top[:, 0] -= cag
+            bot[:, 1] += sag
+            top[:, 1] -= sag
+
+            pts = np.append(bot, np.flip(top, axis=0), axis=0)
+
+            mesh.join(Mesh(points=pts, corners=np.arange(len(pts))))
+
+        return mesh
+        
+    def set_spline2d_thickness(self,
+            thickness = .1,
+            mode = 0,      
+            factor = 1.0,
+            cuts = (.1, np.nan),
+            inner_mode = None,
+            inner_factor = None,
+            inner_cuts = None,
+            resolution = 12,
+            offset = 0.0,
+            start_thickness = 1,
+            end_thickness = 1,
+        ):
+        """
+        Transform the splines into flat 2D mesh..
+
+        This method constructs a single polygonal outline from the current polyline by:
+        (1) offsetting a copy to the "inner" side and resolving its corners,
+        (2) offsetting a copy to the "outer" side and resolving its corners,
+        then (3) reversing the outer side and concatenating both sides into one path.
+
+        Parameters
+        ----------
+        thickness : float or array-like of shape (n,), default=0.1
+            Target stroke width per vertex. Scalars are broadcast to all vertices.
+            The distance between the two resulting offset sides is `thickness[i]` at vertex *i*.
+        mode : int or array-like of shape (n,), default=0
+            Corner style for the **outer** side:
+            
+            - `0` → *nothing* corner is not changed
+            - `1` → *flat*  (bevel: straight segment between the two trimmed points)
+            - `2` → *round* (fillet: arc sampled between the two trimmed points)
+            - `3` → *cut* (cut the corner at distance and given angle) 
+        factor : float or array-like of shape (n,), default=1.0
+            Per-corner effect factor.
+        cuts : couple of floats or array-like of couples of floats, default=(.1, np.nan)
+            First value is the distance of the cut measured along the first segment.
+            Second value is the angle (in radians) of the cut line. If second value is
+            `np.nan`, the cut is perpendicular to the first segment.
+        inner_mode : {None, int or array-like of shape (n,)}, default=None
+            Corner style for the **inner** side. If `None`, falls back to `mode`.
+        inner_factor : float or array-like of shape (n,), default=None
+            Same as `factor` for **inner** side.
+        inner_cuts : float or couple of floats or array-like of such values, default=None
+            Same as `cuts` for inner line. If `None`, cuts is taken.
+        resolution : int, default=12
+            Number of samples used for each rounded corner (when the corresponding mode is `0`).
+            Must be ≥ 2 to produce a visible arc.
+        offset : float, default=0.0
+            Centerline bias in the range `[-1, 1]` that determines how the stroke is split
+            between the two sides. Internally mapped to side offsets as:
+            
+            - `-1` → `[-thickness, 0]`  (all thickness on the inner/left side)
+            - ` 0` → `[-thickness/2, +thickness/2]` (centered stroke)
+            - `+1` → `[0, +thickness]`  (all thickness on the outer/right side)
+
+            Values are clipped to `[-1, 1]`.
+        start_thickness : float, default=1
+            Start-cap scaling when `cyclic=False`. A value of `0` collapses the start cap
+            onto the first vertex; values `> 0` scale the first outline points radially
+            around the first vertex.
+        end_thickness : float, default=1
+            End-cap scaling when `cyclic=False`. A value of `0` collapses the end cap
+            onto the last vertex; values `> 0` scale the last outline points radially
+            around the last vertex.
+
+        Returns
+        -------
+        Mesh : splines transformed into faces
+        """        
+
+        from .maths import set_spline2d_thickness
+        from .mesh import Mesh
+
+        # ----------------------------------------------------------------------------------------------------
+        # Normalize arguments
+        # All arguments but cuts are broacasted
+        # ----------------------------------------------------------------------------------------------------
+
+        thickness = self.points.get(thickness, broadcast_shape=())
+
+        mode = self.points.get(mode, broadcast_shape=())
+        factor = self.points.get(factor, broadcast_shape=())
+        cuts = self.points.get(cuts, broadcast_shape=None)
+
+        inner_mode = mode if inner_mode is None else self.points.get(inner_mode, broadcast_shape=())
+        inner_factor = factor if inner_factor is None else self.points.get(inner_factor, broadcast_shape=())
+        inner_cuts = cuts if inner_cuts is None else self.points.get(inner_cuts, broadcast_shape=None)
+
+        start_thickness = self.splines.get(start_thickness, broadcast_shape=())
+        end_thickness = self.splines.get(end_thickness, broadcast_shape=())
+
+        # ----------------------------------------------------------------------------------------------------
+        # Loop on the splines
+        # ----------------------------------------------------------------------------------------------------
+
+        mesh = Mesh()
+        for i_spline, (loop_start, loop_total) in enumerate(zip(self.splines.loop_start, self.splines.loop_total)):
+
+            slc = slice(loop_start, loop_start + loop_total)
+
+            points = self.points.position[slc]
+
+            pts = set_spline2d_thickness(points,
+                thickness = thickness[slc], 
+
+                mode = mode[slc], 
+                factor = factor[slc], 
+                cuts = cuts,
+
+                inner_mode = inner_mode[slc], 
+                inner_factor = inner_factor[slc], 
+                inner_cuts = inner_cuts,
+
+                resolution = resolution,
+                offset = offset, 
+                cyclic = self.splines.cyclic[i_spline], 
+                start_thickness = start_thickness[i_spline], 
+                end_thickness = end_thickness[i_spline],
+                )
+            
+            mesh.join(Mesh(points=pts, corners=np.arange(len(pts))))
+
+        return mesh
+
     # ====================================================================================================
     # Primitives
     # ====================================================================================================

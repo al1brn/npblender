@@ -103,6 +103,7 @@ class Geometry:
         from .curve import Curve
         from .cloud import Cloud
         from .instances import Instances, Meshes
+        from .text import Text
 
         if d['geometry'] == 'Mesh':
             return Mesh.from_dict(d)
@@ -114,6 +115,8 @@ class Geometry:
             return Instances.from_dict(d)
         elif d['geometry'] == 'Meshes':
             return Meshes.from_dict(d)
+        elif d['geometry'] == 'Text':
+            return Text.from_dict(d)
         else:
             raise ValueError(f"Unknown geometry {d['geometry']}")
 
@@ -320,6 +323,7 @@ class Geometry:
 
         from .mesh import Mesh
         from .curve import Curve
+        from .text import Text
 
         obj = blender.getobject(name)
         if obj is None:
@@ -330,6 +334,9 @@ class Geometry:
 
         elif isinstance(obj.data, bpy.types.Curve):
             return Curve.from_object(obj)
+
+        elif isinstance(obj.data, bpy.types.TextCurve):
+            return Text.from_object(obj)
 
         else:
             raise Exception(f"Geometry.load_object error: impossible to load the objet '{obj.name}' of type '{type(obj.data).__name__}'")
@@ -849,7 +856,22 @@ class Geometry:
 
         size = self.bounding_box_dims
         return Mesh.cube(size=size, materials=getattr(self, "materials", None))
+    
+    def duplicate(self, count=5, offset=(2, 0, 0), relative=True):
+
+        geo = self*count
+
+        v = np.asarray(offset, dtype=np.float32)
+        if relative:
+            v *= self.bounding_box_dims
+
+        v = np.resize(v, (count, 3)) * np.arange(count)[:, None]
+        geo.points.translate(v)
         
+        return geo
+
+
+
 
 
 

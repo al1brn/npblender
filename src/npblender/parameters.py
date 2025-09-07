@@ -16,13 +16,17 @@ Custom properties used as parameters.
 import numpy as np
 import bpy
 import idprop
-from npblender.core import blender
+from . import blender
+
+
+__all__ = ["Parameters", "Custom"]
 
 PROP_SUBTYPES = ['NONE', 'FILE_PATH', 'DIR_PATH', 'FILE_NAME', 'BYTE_STRING', 'PASSWORD', 'PIXEL',
                  'UNSIGNED', 'PERCENTAGE', 'FACTOR', 'ANGLE', 'TIME', 'TIME_ABSOLUTE', 'DISTANCE',
                  'DISTANCE_CAMERA', 'POWER', 'TEMPERATURE', 'COLOR', 'TRANSLATION', 'DIRECTION',
                  'VELOCITY', 'ACCELERATION', 'MATRIX', 'EULER', 'QUATERNION', 'AXISANGLE', 'XYZ',
                  'XYZ_LENGTH', 'COLOR_GAMMA', 'COORDINATES', 'LAYER', 'LAYER_MEMBER']
+
 
 # ====================================================================================================
 # Parameters
@@ -47,10 +51,7 @@ class Parameters(dict):
         if self[name].get('subtype', None) is None:
             self[name]['subtype'] = 'NONE'
 
-        #self.name        = name
-        #self.value       = value
-        #self.tip = tip
-        #self.attrs       = attrs
+        return self[name]
 
     # ====================================================================================================
     # Basic types

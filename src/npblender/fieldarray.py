@@ -400,7 +400,7 @@ class FieldArray(object):
     # Items
     # ====================================================================================================
 
-    def get(self, name, default=None):
+    def get(self, name, default=None, broadcast_shape=None):
         """ Get attribute by name.
 
         If name is not an actual field, return default value.
@@ -410,19 +410,28 @@ class FieldArray(object):
         pos = field_array.get([[0, 0, 1], [0, 0, 0]])
         ```
         """
-        if isinstance(name, str):
+        ret_array = None
+        
+        if name is None:
+            return None
+        
+        elif isinstance(name, str):
             if name in self._data.dtype.names:
                 return self[name]
+
             else:
                 if default is None:
                     return None
                 else:
-                    return np.asarray(default)
+                    ret_array = default
         else:
-            if name is None:
-                return None
-            else:
-                return np.asarray(name)
+            ret_array = name
+
+        if broadcast_shape is None:
+            return np.asarray(ret_array)
+        else:
+            return np.broadcast_to(ret_array, self.shape + broadcast_shape)
+
 
     def __getitem__(self, index):
 

@@ -4583,6 +4583,46 @@ class Mesh(Geometry):
 
         # We can build the dual mesh
         return Mesh(points=verts, corners=corners, faces=faces, materials=self.materials)
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Symatric
+    # ----------------------------------------------------------------------------------------------------
+
+    def symmetrical(self, x=-1., y=1., z=1., flip=True):
+        """
+        Construct the symmetrical mesh, flip the faces if requested.
+
+        Parameters
+        ----------
+        x : float, optional
+            x multiplicator. 
+            Default is -1.0.
+        y : float, optional
+            y multiplicator. 
+            Default is 1.0.
+        z : float, optional
+            z multiplicator. 
+            Default is 1.0.
+
+        flip : bool, optional
+            flip the faces (invert the normals).
+            Default is `'median'`.
+
+        Returns
+        -------
+        Mesh
+            The symmetrical mesh.
+        """ 
+        mesh = Mesh.from_mesh(self)
+        center = np.mean(self.points.position, axis=0)
+        mesh.points.position -= center
+        mesh.points.position *= (x, y, z)
+        mesh.points.position += center
+
+        if flip:
+            mesh.faces.flip(mesh.corners)
+            
+        return mesh
 
     # ----------------------------------------------------------------------------------------------------
     # Faces neighbors
@@ -4721,7 +4761,7 @@ class Mesh(Geometry):
                                 q.append(nb)
 
         return islands
-
+    
     # ====================================================================================================
     # BVHTree
     # ====================================================================================================

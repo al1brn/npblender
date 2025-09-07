@@ -994,7 +994,6 @@ class Meshes(Geometry):
 
             scale = self.points.get("scale")
             if scale is not None:
-                print("DEBUG", self.points.shape, scale.shape, self.points.scale.shape)
                 scale = scale[sl]
 
             transfo = Transformation.from_components(

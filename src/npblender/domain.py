@@ -3063,8 +3063,6 @@ class Face(FaceSplineDomain):
     -------
     delete_loops(selection, corners)
         Delete faces and their incident corners; returns removed vertex indices.
-    get_face_edges(corners)
-        Edge list per face as ordered vertex-index pairs.
     get_edges(corners)
         Unique undirected edges present in the mesh faces.
     get_position(corners, points)
@@ -3520,7 +3518,31 @@ class Face(FaceSplineDomain):
         
         attr, item_shape = self._check_attribute_to_compute(attr)
         res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
-        return _to_points(self.loop_start, self.loop_total, corners.vertex_index, attr, res)                
+        return _to_points(self.loop_start, self.loop_total, corners.vertex_index, attr, res)    
+
+    # ----------------------------------------------------------------------------------------------------
+    # Flip faces
+    # ----------------------------------------------------------------------------------------------------
+
+    def flip(self, corners):
+        """
+        Flip faces by inverting the order of the corners.
+
+        Parameters
+        ----------
+        corners : Corner
+            Corner domain (provides ``vertex_index``).
+
+        Returns
+        -------
+        numpy.ndarray
+            New corners.
+        """
+
+        for loop_start, loop_total in zip(self.loop_start, self.loop_total):
+            corners[loop_start:loop_start + loop_total] = np.flip(corners[loop_start:loop_start + loop_total])
+
+        return corners
 
 # ====================================================================================================
 # Edge Domain
@@ -3696,8 +3718,7 @@ class Edge(Domain):
         Parameters
         ----------
         face_edges : ndarray of shape ``(M, 2)`` and dtype int
-            Vertex-index pairs representing edges built from faces (e.g., via
-            [`get_face_edges`][npblender.Face.get_face_edges]).
+            Vertex-index pairs representing edges.
 
         Returns
         -------
@@ -4179,6 +4200,10 @@ class Spline(FaceSplineDomain):
 
         attr, item_shape = self._check_attribute_to_compute(attr)
         res = np.zeros((len(points),) + item_shape, dtype=attr.dtype)
-        return _to_points(self.loop_start, self.loop_total, attr, res)                
+        return _to_points(self.loop_start, self.loop_total, attr, res)    
+
+
+
+
 
 

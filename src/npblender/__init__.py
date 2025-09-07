@@ -5,18 +5,21 @@ from .enginemod import engine, Animation, Engine
 from .fieldarray import FieldArray
 from .domain import Domain, Point, Vertex, ControlPoint, Corner, Face, Edge, Spline
 from .shapekeys import ShapeKeys
+from .parameters import Parameters
 
 from .geometry import Geometry
 from .cloud import Cloud
 from .mesh import Mesh
 from .curve import Curve
 from .instances import Instances, Meshes
+from .text import Text, Composition, Font
 from .multiresgrid import MultiResGrid
 
 from .simulation import Simulation
 
 from . import constants
 from . import blender
+from . import textutils
 
 from .maths import Rotation, Quaternion, Transformation
 
@@ -34,12 +37,14 @@ __all__ = [
     "FieldArray",
     "Domain", "Point", "Vertex", "ControlPoint", "Corner", "Face", "Edge", "Spline",
     "ShapeKeys",
-    "Geometry", "Cloud", "Mesh", "Curve",
+    "Parameters",
+    "Geometry", "Cloud", "Mesh", "Curve", "Text", "Composition", "Font",
     "Instances", "Meshes",
     "MultiResGrid",
     "Simulation",
     "constants",
     "blender",
+    "textutils",
     "Rotation", "Quaternion", "Transformation",
 ]
 
