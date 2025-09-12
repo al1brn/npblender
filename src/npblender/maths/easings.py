@@ -86,15 +86,11 @@ Dependencies
 __all__ = ["maprange"]
 
 import numpy as np
+from .constants import PI, TAU, HALF_PI, ZERO
 
 # ====================================================================================================
 # Constants
 # ====================================================================================================
-
-ZERO    = 1e-6
-PI      = np.pi
-TAU     = np.pi*2
-HALF_PI = np.pi/2
 
 LINEAR, CONSTANT = 0, 1
 QUAD, CUBIC, QUART, QUINT, EXPO, SINE, CIRC = 2, 3, 4, 5, 6, 7, 8

@@ -46,8 +46,8 @@ from .curve import Curve
 from .mesh import Mesh
 from .domain import Point
 
-from .textutils.treenode import TreeNode
-from .maths import Transformation, Rotation, Quaternion, maprange
+from .textutils import EnrichedText, parse_latex
+from .maths import Color, Transformation, Rotation, Quaternion, maprange
 
 # ====================================================================================================
 # Font
@@ -62,10 +62,10 @@ class Font:
         self.filepath = filepath
         self.extension = extension
 
-        self._regular = self.load_font(name, regular, filepath, halt=True)
-        self._bold = self.load_font(name, bold, filepath, halt=False)
-        self._italic = self.load_font(name, italic, filepath, halt=False)
-        self._bold_italic = self.load_font(name, bold_italic, filepath, halt=False)
+        self._regular = self.load_font(name, regular, filepath, default=None)
+        self._bold = self.load_font(name, bold, filepath, default=self._regular)
+        self._italic = self.load_font(name, italic, filepath, default=self._regular)
+        self._bold_italic = self.load_font(name, bold_italic, filepath, default=self._bold)
 
     @staticmethod
     def _get_full_name(name, variant):
@@ -81,7 +81,17 @@ class Font:
     # ====================================================================================================
 
     @classmethod
-    def load_font(cls, name=BFONT, variant="Regular", filepath=None, extension="ttf", halt=True):
+    def load_font(cls, name=BFONT, variant="Regular", filepath=None, extension="ttf", default=None):
+
+        # Name is a font
+        if isinstance(name, bpy.types.VectorFont):
+            return name
+
+        # Variant is a font
+        if isinstance(variant, bpy.types.VectorFont):
+            return variant
+        
+        # Let's try to load the font
 
         full_name = cls._get_full_name(name, variant)
         
@@ -105,15 +115,32 @@ class Font:
         except:
             pass
 
-        # ----- Oops
+        # ----- Default if any
 
-        msg = f"Impossible to load font '{full_name}' with path '{file_path}'"
+        if default is None:
+            raise Exception(f"Impossible to load font '{full_name}' with path '{file_path}'")
+        else:
+            return default
+    
+    # ====================================================================================================
+    # From blender
+    # ====================================================================================================
 
-        if halt:
-            raise Exception(msg)
-        
-        print("Warning:", msg)
-        return None
+    @classmethod
+    def from_data(cls, data):
+        return cls(
+            regular = data.font,
+            bold = data.font_bold,
+            italic = data.font_italic,
+            bold_italic = data.font_bold_italic,
+        )
+    
+    def to_data(self, data):
+        data.font = self.regular
+        data.font_bold = self.bold
+        data.font_italic = self.italic
+        data.font_bold_italic = self.bold_italic
+
     
     # ====================================================================================================
     # Aspect
@@ -187,6 +214,27 @@ class Font:
             bold_italic=d['bold_italic'],
             extension=d['extension'],
             )
+    
+    # ====================================================================================================
+    # Get dimenions
+    # ====================================================================================================
+
+    def get_dimensions(self, italic=False, bold=False):
+
+        mesh = Text("aAp> <", font=self).to_mesh(transform=False, char_index=True)
+
+        def _dims(char_index):
+            cis = mesh.faces[mesh.faces.char_index==char_index].loop_index
+            pts = mesh.points.position[mesh.corners[cis].vertex_index]
+            return np.min(pts[:, 0]), np.min(pts[:, 1]), np.max(pts[:, 0]), np.max(pts[:, 1])
+        
+        d = {
+            'y_body'   : _dims(0)[3],
+            'y_ascen'  : _dims(1)[3],
+            'y_descen' : _dims(2)[1],
+            'x_space'  : _dims(5)[0] - _dims(3)[2]
+        }
+        return d
 
 # ====================================================================================================
 # Text class
@@ -194,7 +242,7 @@ class Font:
 
 class Text(Geometry):
 
-    FONT_STYLE = ('BOLD', 'ITALIC', 'SMAL_CAPS', 'UNDERLINE')
+    FONT_STYLE = ('BOLD', 'ITALIC', 'SMALL_CAPS', 'UNDERLINE')
     X_ALIGN = ('LEFT', 'CENTER', 'RIGHT', 'JUSTIFY', 'FLUSH')
     Y_ALIGN = ('TOP', 'TOP_BASELINE', 'CENTER', 'BOTTOM_BASELINE', 'BOTTOM')
     BEVEL_MODE = ('ROUND', 'OBJECT', 'PROFILE')
@@ -203,7 +251,7 @@ class Text(Geometry):
         'align_x' : 'LEFT',
         'align_y' : 'TOP_BASELINE',
         'shear' : 0., 
-        'size' : 1., 
+        #'size' : 1., 
         'small_caps_scale' : 0.75, 
         'space_character' : 1., 
         'space_line' : 1., 
@@ -223,7 +271,7 @@ class Text(Geometry):
         
     domain_names = ["points"]
     
-    def __init__(self, text="Text", font=None, materials=None, bold=False, italic=False, **kwargs):
+    def __init__(self, text="Text", font=None, materials=None, **kwargs):
         
         # One single point : location of the text
         self.points = Point(position=(0, 0, 0))
@@ -234,22 +282,172 @@ class Text(Geometry):
         else:
             self.materials = list(materials)
 
-        # Text ad font
-        self.text = text
+        # Font
         self.font = Font() if font is None else font
-        self.bold = bold
-        self.italic = italic
-        
+
+        # Enriched text
+        self.text = text
+
         # Properties
-        self.props = {k: kwargs.get(k, vdef) for k, vdef in Text.PROPERTIES.items()}
-        
-        # Make sure all properties are correct
-        for k in kwargs:
-            if k not in Text.PROPERTIES:
-                raise Exception(f"Text.init: unknown Text properties: '{k}'")
+        self.props = {}
+        for k, vdef in kwargs.items():
+            if k in self._etext.attributes:
+                self._etext[k] = vdef
+
+            elif k in Text.PROPERTIES:
+                self.props[k] = vdef
+
+            else:
+                raise Exception(f"Text.init: unknown Text property: '{k}'")
+            
+    def clone(self):
+        txt = Text(font=self.font, materials=self.materials, **{k:getattr(self, k) for k in Text.PROPERTIES})
+        txt._etext = self._text.clone()
+        return txt
 
     def __str__(self):
         return f"<Text '{self.text}', font: {self.font.name} >"
+
+    # ----------------------------------------------------------------------------------------------------
+    # Text
+    # ----------------------------------------------------------------------------------------------------
+
+    @property
+    def text(self):
+        return str(self._etext)
+
+    @text.setter
+    def text(self, value):
+        self._etext = EnrichedText(value)
+
+    @property
+    def etext(self):
+        return self._etext
+
+    @etext.setter
+    def etext(self, value):
+        self._etext = EnrichedText(value)
+
+    @property
+    def latex(self):
+        raise ValueError("Text.latex is write only")
+    
+    @latex.setter
+    def latex(self, value):
+
+        from pprint import pprint
+
+        # ---------------------------------------------------------------------------
+        # Parse the LateX string in mode text (not math mode)
+        # ---------------------------------------------------------------------------
+
+        parsed = parse_latex(value, math_mode=False, ignore_comments=True)
+
+        # ---------------------------------------------------------------------------
+        # Prepare list of string parts with attributes
+        # ---------------------------------------------------------------------------
+
+        switches = ['bold', 'italic', 'small_caps', 'underline']
+        str_parts = []
+        str_attr = []
+
+        def _add(block, attributes):
+
+            # ---------------------------------------------------------------------------
+            # Non content are managed by owner
+
+            assert('content' in block)
+
+            # ---------------------------------------------------------------------------
+            # Inherits params from owner
+            # Enrich with proper attributes
+
+            new_attrs = dict(attributes)
+            for k, v in block.items():
+                if k not in ['type', 'content']:
+                    new_attrs[k] = v
+
+            # User params
+            params = {}
+
+            # ---------------------------------------------------------------------------
+            # Loop on the content
+
+            for cnt in block['content']:
+
+                # ----- Content is a string
+                #if isinstance(cnt, str):
+                #    flow.append({"string": cnt, **new_attrs, **params})
+                #    continue
+
+                # ----- Otherwise it is a dict
+                
+                # Switch current parameters
+                if cnt['type'] == 'STRING':
+                    str_parts.append(cnt['string'])
+                    str_attr.append({**new_attrs, **params})
+
+                elif cnt['type'] == 'SWITCH':
+                    for k, v in cnt.items():
+                        if k not in ['type']:
+                            new_attrs[k] = v
+
+                # Python parameter
+                elif cnt['type'] == 'PARAM':
+                    msg = None
+                    try:
+                        val = eval(cnt['value'])
+                    except Exception as e:
+                        msg = str(e)
+
+                    if msg is not None:
+                        raise Exception(f"Erreur when evaluating {block['key']}={block['value']}: {msg}")
+                    
+                    if cnt['key'] in new_attrs.keys():
+                        new_attrs[cnt['key']] = val
+                    else:
+                        params[cnt['key']] = val
+                    
+                elif 'content' in cnt:
+                    _add(cnt, new_attrs)
+
+                else:
+                    print("-"*10)
+                    pprint(block)
+                    assert(False)
+
+        _add(parsed, {k: False for k in switches})
+
+        # ---------------------------------------------------------------------------
+        # Prepare list of string parts with attributes
+        # ---------------------------------------------------------------------------
+
+        self._etext = EnrichedText("".join(str_parts))
+        index = 0
+        for part, attr in zip(str_parts, str_attr):
+            n = len(part)
+            for k, v in attr.items():
+                if k in self._etext.attributes:
+                    if k == 'color':
+                        self._etext[k][index:index + n] = Color(v).rgba
+                    else:
+                        self._etext[k][index:index + n] = v
+
+            index += n
+
+
+
+
+
+            
+
+
+            
+
+
+
+
+
 
     # ----------------------------------------------------------------------------------------------------
     # Conveniance
@@ -290,6 +488,46 @@ class Text(Geometry):
         return dims
     
     # ====================================================================================================
+    # To and from Text Data (TextCurve)
+    # ====================================================================================================
+
+    @classmethod
+    def from_data(cls, data):
+
+        # Initialize Text
+        txt = cls(
+            data.body, 
+            font = Font.from_data(data),
+            materials = cls.materials_from_data(data), 
+            **{k: getattr(data, k) for k in Text.PROPERTIES}) 
+
+        # Char properties
+        txt._etext.from_body_format(data.body_format)
+
+        return txt
+  
+    def to_data(self, data):
+
+        # Fonts
+        self.font.to_data(data)
+
+        # Global Properties
+        for k, v in self.props.items():
+            setattr(data, k, v)
+
+        # Materials
+        # CAUTION : before etext.to_body_format to make sure materials exist
+        # when setting material_index
+        self.materials_to_data(data)
+
+        # Char properties
+        # CAUTION: make sure materials is up to date
+        data.body = self._etext.text
+        self._etext.to_body_format(data.body_format)
+
+        return data
+  
+    # ====================================================================================================
     # To and from Text object
     # ====================================================================================================
 
@@ -299,16 +537,16 @@ class Text(Geometry):
     
     @classmethod
     def from_object(cls, spec):
+
+        # Load the object
         txt_obj = blender.get_object(spec)
         if not isinstance(txt_obj.data, bpy.types.TextCurve):
             raise Exception(f"Impossible de load Text. Object '{spec}' is not a Blender Text object")
-            
-        bl_text = txt_obj.data
         
-        materials = [None if mat is None else mat.name for mat in bl_text.materials]
-        
-        txt = cls(bl_text.body, font=bl_text.font, materials=materials, **{k: getattr(bl_text, k) for k in Text.PROPERTIES}) 
+        # Create the Text
+        txt = cls.from_data(txt_obj.data)
 
+        # Position, Scale, Rotation
         txt.points.position = txt_obj.location
 
         scale = np.array(txt_obj.scale)
@@ -327,22 +565,15 @@ class Text(Geometry):
 
     def to_object(self, spec, collection=None, **kwargs):
 
+        # Create a new Text object
         obj = blender.create_text_object(spec, text=self.text, collection=collection)
-        obj.data.font = self.font(bold=self.bold, italic=self.italic)
 
-        bl_text = obj.data
+        # Set data (TextCurve)
+        self.to_data(obj.data)
 
-        for k, v in self.props.items():
-            setattr(bl_text, k, v)
-            
-        # Materials   
-        bl_text.materials.clear()
-        for mat_name in self.materials:
-            if mat_name is not None:
-                bl_text.materials.append(bpy.data.materials.get(mat_name))
-
-        # Transformation
+        # Position, Scale, Rotation
         obj.location = self.points.position[0]
+
         if self.points.has_rotation:
             obj.rotation_euler = self.points.rotation[0].as_euler()
 
@@ -383,13 +614,32 @@ class Text(Geometry):
     # To Mesh
     # ----------------------------------------------------------------------------------------------------
 
-    def to_mesh(self, transform=True):
-        
+    def to_mesh(self, transform=True, char_index=True):
+
+        # Char index
+        if char_index:
+            mats = self.materials
+            matind = np.array(self._etext.material_index)
+            self.materials = [None] * len(matind)
+            self._etext.material_index = np.arange(len(matind), dtype=bint)
+
+        # Create the mesh
         with self.object(readonly=True) as obj:
             bl_mesh = bpy.data.meshes.new_from_object(obj)
             mesh = Mesh.from_mesh_data(bl_mesh)
 
-        mesh.materials = list(self.materials)
+        # Char index
+        if char_index:
+            mesh.faces.new_int("char_index")
+            mesh.faces.char_index = mesh.faces.material_index
+            mesh.faces.material_index = matind[mesh.faces.char_index]
+            mesh.materials = list(mats)
+
+            self._etext.material_index = matind
+
+            # Color property
+            mesh.faces.new_color("color")
+            mesh.faces.color = self._etext.color[mesh.faces.char_index]
 
         # ----- Transformation
 
@@ -408,13 +658,32 @@ class Text(Geometry):
     # To Mesh
     # ----------------------------------------------------------------------------------------------------
     
-    def to_curve(self, transform=True):
-        
+    def to_curve(self, transform=True, char_index=True):
+
+        # Char index
+        if char_index:
+            mats = self.materials
+            matind = np.array(self._etext.material_index)
+            self.materials = [None] * len(matind)
+            self._etext.material_index = np.arange(len(matind), dtype=bint)
+
+        # Create the curve
         with self.object(readonly=True) as obj:
             bpy.ops.object.convert(target='CURVE', keep_original=False)
             curve = Curve.from_curve_data(obj.data)
 
-        curve.materials = list(self.materials)
+        # Char index
+        if char_index:
+            curve.splines.new_int("char_index")
+            curve.splines.char_index = curve.splines.material_index
+            curve.splines.material_index = matind[curve.splines.char_index]
+            self.materials = list(mats)
+
+            self._etext.material_index = matind
+
+            # Color property
+            curve.splines.new_color("color")
+            curve.splines.color = self._etext.color[curve.splines.char_index]
 
         # ----- Transformation
 
@@ -429,715 +698,3 @@ class Text(Geometry):
 
         return curve   
 
-# ====================================================================================================
-# Composition
-# ====================================================================================================
-
-class Composition():
-    """ A composition encapsulates geometries organized in a composition
-    """
-
-    HRZ_SEPA = .1 # Separation between contiguous compos
-    HRZ_SPACE = .4 # Space char
-
-    def __init__(self, *compos, block_type='CONTENT', name="Content", factor=1., **options):
-
-        self.block_type = block_type
-        self.name = name
-        for k, v in options.items():
-            self.set_prop(k, v)
-
-        # Animation
-        self.factor = 1.
-
-        # Owner / content
-        self.owner = None 
-        self.content = []
-        self.add_content(*compos)
-
-    def __str__(self):
-        return f"<Composition {self.name} ({self.block_type})>"
-    
-    # ====================================================================================================
-    # Root initialisation
-    # ====================================================================================================
-
-    @classmethod
-    def new(cls, font=None, italic=True, bold=False, color=(0, 0, 0), **options):
-
-        root = cls(block_type='CONTENT', name="Root",
-                font = Font() if font is None else font,
-                italic=italic, bold=bold, color=color,
-                **options)
-
-        # ----- Font dimensions
-
-        txt = Text("a", font=root.font)
-        x0, y0, x1, y1 = root.bbox(txt.to_mesh())
-        root._x_space = x1 - x0
-        root._x_sepa = root._x_space*0.3
-        root._y_a = y1
-
-        txt = Text("Ap", font=root.font)
-        x0, y0, x1, y1 = root.bbox(txt.to_mesh())
-        root._y_height = y1
-        root._y_depth = -y0
-
-        # ----- Done
-
-        return root
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Add a sub content
-    # ----------------------------------------------------------------------------------------------------
-
-    def add_child(self, child, to_content=False):
-        if child is None:
-            return None
-        elif isinstance(child, str):
-            child = Composition.new_string(child)
-        elif isinstance(child, Mesh):
-            child = Composition.new_mesh(child)
-        
-        child.owner = self
-        if to_content:
-            self.content.append(child)
-        return child
-    
-    def add_content(self, *compos):
-        for compo in compos:
-            self.add_child(compo, to_content=True)
-
-    # ----------------------------------------------------------------------------------------------------
-    # Get / set a property
-    # ----------------------------------------------------------------------------------------------------
-
-    def get_prop(self, name, default=None):
-        _name = f"_{name}"
-        if _name in self.__dict__:
-            return self.__dict__[_name]
-        
-        if self.owner is None:
-            return default
-        else:
-            return self.owner.get_prop(name, default)
-
-    def set_prop(self, name, value):
-        setattr(self, f"_{name}", value)
-
-    def __getattr__(self, name):
-        val = self.get_prop(name, "NO WAY")
-        if val == "NO WAY":
-            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-        else:
-            return val
-
-    # ====================================================================================================
-    # Initialization
-    # ====================================================================================================
-
-    def append(self, *compos):
-        if self.block_type == 'CONTENT':
-            self.add_content(*compos)
-            return self
-        else:
-            return Composition(self, *compos)
-
-    @classmethod
-    def new_mesh(cls, mesh, name="Mesh", **options):
-        compo = cls(block_type='MESH', name=name, **options)
-        compo.mesh = mesh
-        return compo
-
-    @classmethod
-    def new_string(cls, string, name="Text", **options):
-        compo = cls(block_type='STRING', name=name, **options)
-        compo.string = string
-        return compo
-
-    @classmethod
-    def new_decorator(cls, content, decorator, name=None, **options):
-        if name is None:
-            name = decorator.title()
-
-        compo = cls(content, block_type='DECORATOR', name=name, **options)
-        compo.deco = decorator
-        
-        return compo
-    
-    @classmethod
-    def new_sqrt(cls, *compos, name="Sqrt", **options):
-        compo = cls(*compos, block_type='SQRT', name=name, **options)
-        return compo
-    
-    @classmethod
-    def new_script(cls, content, script, location='SUB', name=None, merge=True, **options):
-
-        if merge and content.block_type == 'SCRIPT':
-            if content.scripts.get(location) is None:
-                content.scripts[location] = content.add_child(script)
-                return content
-
-        compo = cls(content, block_type='SCRIPT', name=name, **options)
-        compo.scripts = {location.upper(): compo.add_child(script)}
-        return compo
-    
-    @classmethod
-    def new_ind_exp(cls, content, subscript, superscript, name="Ind exp", **options):
-        compo = cls(content, block_type='SCRIPT', name=name, **options)
-        compo.scripts = {}
-        if subscript is not None:
-            compo.scripts['SUB'] = compo.add_child(subscript)
-        if superscript is not None:
-            compo.scripts['SUP'] = compo.add_child(superscript)
-        return compo
-    
-    @classmethod
-    def new_integral(cls, content, subscript=None, superscript=None, sigma=False, name=None, **options):
-        if name is None:
-            name = "Sigma" if sigma else "Integral"
-            
-        compo = cls(content, block_type='INTEGRAL', name=name, **options)
-        compo.is_sigma = sigma
-        compo.scripts = {}
-
-        if subscript is not None:
-            subscript = compo.add_child(subscript)
-            if sigma:
-                compo.scripts['BOT'] = subscript
-            else:
-                compo.scripts['SUB'] = subscript
-
-        if superscript is not None:
-            superscript = compo.add_child(superscript)
-            if sigma:
-                compo.scripts['TOP'] = superscript
-            else:
-                compo.scripts['SUP'] = superscript
-
-        return compo
-    
-    @classmethod
-    def new_fraction(cls, numerator, denominator, name="Fraction", **options):
-        compo = cls(numerator, block_type='FRACTION', name=name, **options)
-        compo.denominator = compo.add_child(denominator)
-        return compo
-    
-    # ====================================================================================================
-    # Utility
-    # ====================================================================================================
-
-    @staticmethod
-    def bbox(mesh):
-        if mesh is None or len(mesh.points) == 0:
-            return (0.0, 0.0, 0.0, 0.0)
-
-        vmin, vmax = np.min(mesh.points.position, axis=0), np.max(mesh.points.position, axis=0)
-
-        x0, y0 = vmin[:2]
-        x1, y1 = vmax[:2]
-
-        return (x0, y0, x1, y1)
-
-    # ====================================================================================================
-    # Decorators
-    # ====================================================================================================
-
-    @staticmethod
-    def bar_mesh(x0, y0, x1, y1, width=.1):
-        prof = Curve.line((width/2, 0, 0), (-width/2, 0, 0))
-        return Curve.line((x0, y0, 0), (x1, y1, 0)).to_mesh(profile=prof)
-    
-    @staticmethod
-    def arrow_mesh(x0, y0, x1, y1, width=.1, invert=False):
-        dx0, dx1 = 4*width, 7*width
-        dy = 2*width
-        
-        xs = x0 - width
-        xm = x1 + 2*width
-
-        dw = width/2
-
-        points = [
-            [xs, y0-dw, 0], [xm - dx0, y0-dw, 0], [xm - dx1, y0 - dy, 0],
-            [xm, y0, 0],
-            [xm - dx1, y0 + dy, 0], [xm - dx0, y0 + dw, 0], [xs, y0 + dw, 0],
-            ]
-        if invert:
-            points = np.array(points)
-            points[:, 0] = x0 + x1 - points[:, 0]
-            points = np.flip(points, axis=0)
-
-        return Mesh(points=points, corners=np.arange(len(points)))
-    
-    @staticmethod
-    def point_mesh(x0, x1, y, radius=.1, count=1):
-
-        mesh = Mesh.disk(radius=radius, segments=16)*count
-
-        x = (x0 + x1)/2
-        if count <= 1:
-            mesh.points.position += (x, y, 0)
-            
-        else: 
-            tr = np.zeros((count, 3), dtype=bfloat)
-            dx = radius*(count-1)*1.2
-            tr[:, 0] = np.linspace(x - dx, x + dx, count)
-            tr[:, 1] = y
-
-            mesh.points.translate(tr)
-
-        return mesh
-    
-    @staticmethod
-    def block_mesh(deco, y0, y1, margin, width=.1):
-
-        y0 -= margin
-        y1 += margin
-
-        # ---------------------------------------------------------------------------
-
-        if deco == '||':
-            return Mesh(points=[
-                [-width/2, y0, 0], [width/2, y0, 0], [width/2, y1, 0], [-width/2, y1, 0],
-                ], corners=[0, 1, 2, 3])
-
-        # ---------------------------------------------------------------------------
-
-        elif deco == '‖‖':
-            mesh = Mesh(points=[
-                [-width/2, y0, 0], [width/2, y0, 0], [width/2, y1, 0], [-width/2, y1, 0],
-                ], corners=[0, 1, 2, 3])*2
-            mesh.points.translate([[0, 0, 0], [width*1.8, 0, 0]])
-            return mesh
-
-        # ---------------------------------------------------------------------------
-
-        elif deco == '[]':
-            w = width
-            cr = w*3
-            pts = [
-                [0, y0, 0], [cr, y0, 0], [cr, y0+w, 0], [w, y0+w, 0],
-                [w, y1-w, 0], [cr, y1-w, 0], [cr, y1, 0], [0, y1, 0],
-                ]
-            return Mesh(points=pts, corners=np.arange(len(pts)))
-
-        # ---------------------------------------------------------------------------
-
-        elif deco == '()':
-            w = width*3.5
-            y = (y0 + y1)/2
-
-            h = (y1 - y0)/6
-            tx, ty = w*.6, y*.2
-
-            pts = np.array([[w, y0, 0], [0, y, 0], [w, y1, 0]])
-
-            lhs = np.array(pts)
-            lhs[0] += (tx, -ty, 0)
-            lhs[1] += (0, -h, 0)
-            lhs[2] += (-tx, -ty, 0)
-
-            rhs = np.array(pts)
-            rhs[0] += (-tx, ty, 0)
-            rhs[1] += (0, h, 0)
-            rhs[2] += (tx, ty, 0)
-
-            curve = Curve(
-                points=pts, 
-                curve_type='BEZIER', 
-                radius=[1, 2.5, 1],
-                handle_left = lhs,
-                handle_right = rhs,
-                )
-            prof = Curve.line((width/4, 0, 0), (-width/4, 0, 0))
-            return curve.to_mesh(profile=prof)
-
-        # ---------------------------------------------------------------------------
-
-        elif deco == '{}':
-            # Used for thickness
-            dx, dy = width*1., width*1.3
-
-            # y mid
-            y = (y0 + y1)/2
-
-            # Height
-            h = (y1 - y0)/2
-
-            # Shape thickness
-            w = width*3
-
-            # Handles
-            tx = w*.5
-            mx = tx*2
-
-            # Bottom half
-            curve = Curve(
-                points = [[  w, -h, 0], [ 0, 0, 0]], 
-                curve_type='BEZIER', 
-                radius=[1, 2.5],
-                handle_left = [[ tx, -h, 0], [mx, 0, 0]],
-                handle_right = [[-tx, -h, 0], [mx, 0, 0]],
-                )
-            
-            # Make thick
-            curve = curve.to_poly(resolution=20)
-            pts = curve.points.position
-            xpts = pts + (dx, 0, 0)
-            ypts = pts + (0, dy, 0)
-            n = len(pts)
-            p = maprange(np.arange(n), 0, n-1, 0, 1, mode='LINEAR')[:, None]
-
-            other_pts = p*xpts + (1 - p)*ypts
-            pts = np.append(np.flip(pts, axis=0), other_pts, axis=0)
-            pts = np.append(pts, np.flip(pts*(1, -1, 1), axis=0)[1:-1], axis=0)
-
-            pts[:, 1] += y
-
-            mesh = Mesh(points=pts, corners=np.arange(len(pts)))
-
-            return mesh
-
-        # ---------------------------------------------------------------------------
-
-        elif deco == 'INTEGRAL':
-
-            width *= 2
-            y0 -= 4*width
-            y1 += 4*width
-
-            # y mid
-            y = (y0 + y1)/2
-
-            # Height
-            h = (y1 - y0)/2
-
-            ix, iy = width*3, h
-            tx0, ty0 = width/5, width
-            tx1, ty1 = 3*width, 0 #width*.2
-
-            w = width*.7
-            ixd = ix + width
-            tx1d = tx1 + width
-
-            curve = Curve(
-                points = [[  -ix, -iy, 0], [ 0, 0, 0], [ixd, iy, 0]], 
-                curve_type='BEZIER', 
-                handle_left = [[ -ix - tx1, -iy - ty1, 0], [-tx0, -ty0, 0], [ixd - tx1d, iy - ty1, 0]],
-                handle_right = [[-ix + tx1, -iy + ty1, 0], [tx0, ty0, 0], [ixd + tx1d, iy + ty1, 0]],
-                )
-
-            curve = curve.to_poly()
-            pts = curve.points.position
-            pts1 = pts*(-1, -1, 0) + (w, -w, 0)
-            pts = np.flip(np.append(pts, pts1, axis=0), axis=0)
-            pts[:, 1] += y
-
-            mesh = Mesh(points=pts, corners=np.arange(len(pts)))
-
-            return mesh
-
-        # ---------------------------------------------------------------------------
-
-        elif deco == 'SIGMA':
-
-            w = width
-
-            # Length and height
-            l, h = .6, y1 - y0
-            d = 1.5*w
-
-            # Points
-            px0, py0 = l, 0
-            px1, py1 = 0, 0
-            px2, py2 = l/2, h/2
-            px3, py3 = 0, h
-            px4, py4 = l, h
-
-            pts = [[px0, py0 + 2*d, 0], [px0, py0, 0], [px1, py1, 0], [px2, py2, 0], [px3, py3, 0], [px4, py4, 0], [px4, py4 - 1.5*d, 0]]
-            sigma = Curve(pts).set_spline2d_thickness(
-                thickness = [w, 2*w, w, 2*w, w, w, w],
-                offset = -1,
-                mode = [0, 0, 3, 0, 3, 0, 0], 
-                inner_mode = [0, 0, 0, 0, 0, 0, 0], 
-                factor = 1.,
-                cuts = [(-w*.5, np.pi/2), (w*.5, np.pi/2)],
-                start_thickness=.3,
-                end_thickness=.3)
-            
-            return sigma
-
-        # ---------------------------------------------------------------------------
-
-        else:
-            raise ValueError(f"Invalid block code: '{deco}'.")
-        
-        # ---------------------------------------------------------------------------
-        
-    # ====================================================================================================
-    # Place scritps
-    # ====================================================================================================
-
-    def add_scripts(self, mesh, **scripts):
-
-        scale = self.get_prop('ssscript_scale', .35)
-        x_margin = self.get_prop('x_margin', .1)
-        y_margin = self.get_prop('y_margin', .15)
-        y_ssscript = self.get_prop('y_ssscript', .1)
-
-        x0, y0, x1, y1 = self.bbox(mesh)
-
-        pos = mesh.points.position
-
-        for location, script in scripts.items():
-
-            # script to mesh
-            smesh = script.get_mesh()
-
-            smesh.points.position *= scale
-            sx0, sy0, sx1, sy1 = self.bbox(smesh)
-            sl, ml = sx1 - sx0, x1 - x0
-
-            # Depending on the location
-
-            if location in ['BOT', 'BOTTOM', 'BELOW']:
-                smesh.points.x += x0 - sx0 + (ml - sl)/2
-                smesh.points.y += y0 - sy1 - y_margin/2
-
-            elif location in ['TOP', 'ABOVE']:
-                smesh.points.x += x0 - sx0 + (ml - sl)/2
-                smesh.points.y += y1 - sy0 + y_margin/2
-
-            elif location in ['SUB', 'SUBSCRIPT']:
-                y = y0 - y_ssscript
-                pts = pos[pos[:, 1] < y + sy1 - sy0 + 2*y_margin]
-
-                xm = np.max(pts[:, 0])
-
-                smesh.points.x += xm - sx0 + x_margin
-                smesh.points.y += y - sy0
-
-            elif location in ['SUP', 'SUPERSCRIPT']:
-                y = y1 - y_ssscript
-                pts = pos[pos[:, 1] > y - 2*y_margin]
-
-                xm = np.max(pts[:, 0])
-
-                smesh.points.x += xm - sx0 + x_margin
-                smesh.points.y += y - sy0
-
-            else:
-                raise ValueError(f"Invalid location code: '{location}'.")
-
-            mesh.join(smesh)
-
-        return mesh
-
-    # ====================================================================================================
-    # Get the geometry
-    # ====================================================================================================
-
-    def get_mesh(self):
-
-        # ---------------------------------------------------------------------------
-        # Most common values
-        # ---------------------------------------------------------------------------
-
-        bar_thick = self.get_prop('bar_thick', .05)
-        x_margin = self.get_prop('x_margin', .1)
-        y_margin = self.get_prop('y_margin', .15)
-        x_sepa = self.get_prop('x_sepa', .04)
-
-        # ---------------------------------------------------------------------------
-        # Join the compos in content
-        # ---------------------------------------------------------------------------
-
-        mesh = Mesh()
-        x = 0.
-        for compo in self.content:
-            msh = compo.get_mesh()
-            mx = np.max(msh.points.x)
-            msh.points.x += x
-            x += mx + x_sepa
-            mesh.join(msh)
-
-        x0, y0, x1, y1 = self.bbox(mesh)
-
-        # ---------------------------------------------------------------------------
-        # Content
-        # ---------------------------------------------------------------------------
-
-        if self.block_type == 'CONTENT':
-            pass
-
-        # ---------------------------------------------------------------------------
-        # A Mesh
-        # ---------------------------------------------------------------------------
-
-        elif self.block_type == 'MESH':
-            mesh = Mesh.from_mesh(self.mesh)
-
-        # ---------------------------------------------------------------------------
-        # A String
-        # ---------------------------------------------------------------------------
-
-        elif self.block_type == 'STRING':
-            txt = Text(self.string, font=self.get_prop('font'), italic=self.italic, bold=self.bold)
-            mesh = txt.to_mesh(transform=False)
-
-        # ---------------------------------------------------------------------------
-        # Decorated block
-        # ---------------------------------------------------------------------------
-
-        elif self.block_type == 'DECORATOR':
-
-            if self.deco in ['BAR', 'ARROW', 'POINT']:
-                y = y0 - y_margin if self.get_prop('bottom', False) else y1 + y_margin
-                invert = self.get_prop('invert', False)
-                count = self.get_prop('count', 1)
-
-                if self.deco == 'BAR':
-                    deco = self.bar_mesh(x0, y, x1, y, width=bar_thick)
-                elif self.deco == 'ARROW':
-                    deco = self.arrow_mesh(x0, y, x1, y, width=bar_thick, invert=invert)
-                elif self.deco == 'POINT':
-                    deco = self.point_mesh(x0, x1, y, radius=bar_thick, count=count)
-
-            elif self.deco in ['||', '()', '[]', '{}', '‖‖']:
-
-                left_deco = self.block_mesh(self.deco, y0, y1, margin=y_margin, width=bar_thick)
-                left_only = self.get_prop('left_only', False)
-                right_only = self.get_prop('right_only', False)
-
-                right_deco = left_deco.symmetrical(x=-1)
-                deco = None
-
-                if not right_only:
-                    dx0, _, dx1, _ = self.bbox(left_deco)
-                    dw = dx1 - dx0
-                    mesh.points.x += dw + x_margin
-                    x0, y0, x1, y1 = self.bbox(mesh)
-
-                    left_deco.points.x -= dx0
-                    deco = left_deco
-
-                if not left_only:
-                    dx0, _, dx1, _ = self.bbox(right_deco)
-                    right_deco.points.x += x1 + x_margin - dx0
-                    if deco is None:
-                        deco = right_deco
-                    else:
-                        deco.join(right_deco)
-
-            else:
-                raise Exception(f"Unknown decorator: '{self.deco}'.")
-
-            mesh.join(deco)
-
-        # ---------------------------------------------------------------------------
-        # Square Root
-        # ---------------------------------------------------------------------------
-
-        elif self.block_type == 'SQRT':
-
-            w = bar_thick
-            dx, dy = w, 2.1*w
-            # Length and height
-            l, h = x1 - x0 + x_margin, y1 - y0 + y_margin
-
-            # Points
-            px0, py0 = -(dy + 6*dx + x_margin), 2*dy
-            px1, py1 = px0 + dy, py0 + dx
-            px2, py2 = px1 + 3*dx, py1 - 3*dy
-            px3, py3 = px2 + 3*dx, h
-            px4, py4 = l, h
-            px5, py5 = l, h - 2*w
-
-            pts = [[px0, py0, 0], [px1, py1, 0], [px2, py2, 0], [px3, py3, 0], [px4, py4, 0], [px5, py5, 0]]
-            sqrt_mesh = Curve(pts).set_spline2d_thickness(
-                thickness=[.8*w, 1.8*w, .9*w, w, w, w/2], 
-                mode=0, 
-                inner_mode=[0, 0, 1, 0, 0, 0], 
-                factor=.8,
-                end_thickness=0)
-            
-            sqrt_mesh.points.y += y0
-            mesh.points.x -= x0
-            mesh.join(sqrt_mesh)
-            mesh.points.x -= px0
-
-        # ---------------------------------------------------------------------------
-        # Subsscript / superscript
-        # ---------------------------------------------------------------------------
-
-        elif self.block_type == 'SCRIPT':
-            mesh = self.add_scripts(mesh, **self.scripts)
-
-        # ---------------------------------------------------------------------------
-        # Integral / sigma
-        # ---------------------------------------------------------------------------
-
-        elif self.block_type == 'INTEGRAL':
-            count = self.get_prop('count', 1)
-
-            if self.is_sigma:
-                symb = self.block_mesh('SIGMA', y0, y1, margin=y_margin, width=bar_thick)
-            else:
-                symb = self.block_mesh('INTEGRAL', y0, y1, margin=y_margin, width=bar_thick)
-                symb = symb.duplicate(count=count, offset=(.25, 0, 0), relative=False)
-
-            sx0, sy0, sx1, sy1 = self.bbox(symb)
-            sl = sy1 - sy0
-            symb.points.y += -sl/2 - sy0 + y1/2 
-
-            symb = self.add_scripts(symb, **self.scripts)
-            sx0, sy0, sx1, sy1 = self.bbox(symb)
-
-            symb.points.x -=  sx0
-            mesh.points.x += sx1 - sx0 + x_margin - x0
-            
-            mesh.join(symb)
-
-        # ---------------------------------------------------------------------------
-        # Fraction
-        # ---------------------------------------------------------------------------
-
-        elif self.block_type == 'FRACTION':
-            num_mesh = mesh
-            nx0, ny0, nx1, ny1 = x0, y0, x1, y1
-            nl = nx1 - nx0
-
-            den_mesh = self.denominator.get_mesh()
-            dx0, dy0, dx1, dy1 = self.bbox(den_mesh)
-            dl = dx1 - dx0
-
-            l = max(nl, dl) + 2*x_margin
-
-            mesh = self.bar_mesh(0, 0, l, 0, width=1.5*bar_thick)
-
-            num_mesh.points.y += y_margin + bar_thick - ny0
-            den_mesh.points.y -= y_margin + bar_thick + dy1
-
-            num_mesh.points.x += (l - nl)/2 - nx0
-            den_mesh.points.x += (l - dl)/2 - dx0
-
-            mesh.join(num_mesh, den_mesh)
-
-        # ---------------------------------------------------------------------------
-        # Error
-        # ---------------------------------------------------------------------------
-
-        else:
-            raise Exception(f"Unknown block type: '{self.block_type}'.")
-
-        return mesh
-
-
-
-    
-    
-    
-
-
-    

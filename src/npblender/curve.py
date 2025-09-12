@@ -51,8 +51,7 @@ from .maths import MITER_NONE, MITER_FLAT, MITER_ROUND, MITER_CUT
 from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 from . constants import bfloat, bint, bbool
 from . import blender
-from . maths import Rotation
-from . maths import splinemaths
+from . maths import Rotation, splinemaths, maprange
 
 from . geometry import Geometry
 from . domain import ControlPoint, Spline
@@ -372,6 +371,9 @@ class Curve(Geometry):
     # ====================================================================================================
     # From another Curve
     # ====================================================================================================
+
+    def clone(self):
+        return Curve.from_curve(self)
 
     # ----------------------------------------------------------------------------------------------------
     # Copy

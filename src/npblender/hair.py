@@ -1,8 +1,6 @@
 import numpy as np
 
-EPS = 1e-8
-
-import numpy as np
+from .constants import EPS
 
 # ====================================================================================================
 # Rigid curve
@@ -783,7 +781,6 @@ def project_distance_constraints_xpbd(pos, inv_mass, rest_len, lambdas, dt,
     compliance: α (>=0). 0 => PBD “incompressible”, >0 => plus stable mais un peu extensible
     max_corr: float|None, limite la correction par itération (sécurité)
     """
-    EPS = 1e-8
     delta = pos[:, 1:] - pos[:, :-1]                          # (S,N-1,D)
     dist  = np.sqrt((delta*delta).sum(axis=-1, keepdims=True) + EPS)  # (S,N-1,1)
     n     = delta / dist                                       # (S,N-1,D)

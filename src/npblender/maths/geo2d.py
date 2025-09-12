@@ -5,9 +5,8 @@ __all__ = [
     "Line", "Poly", 
     "set_spline2d_thickness"]
 
-bfloat = np.float32
-bint = np.int32
-EPS = 1e-6
+from .constants import bfloat, bint, EPS
+
 D_MIN = 1e-4
 
 MITER_NONE = 0

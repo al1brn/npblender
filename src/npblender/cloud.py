@@ -210,6 +210,9 @@ class Cloud(Geometry):
     # Synonym
     # ----------------------------------------------------------------------------------------------------
 
+    def clone(self):
+        return Cloud.from_cloud(self)
+
     @classmethod
     def from_cloud(cls, other, selection=None):
         """

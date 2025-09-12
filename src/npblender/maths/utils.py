@@ -36,7 +36,7 @@ __all__ = ['get_axis', 'get_perp', 'get_angled', 'flat_top_gaussian', 'vonmises_
 
 import numpy as np
 
-bfloat = np.float32
+from .constants import *
 
 # ====================================================================================================
 # Normalize axis

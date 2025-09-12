@@ -71,6 +71,18 @@ class Geometry:
     domain_names = ["points"]
 
     # ====================================================================================================
+    # Clone
+    # ====================================================================================================
+
+    def clone(self):
+        # Default cloning
+        return type(self).from_dict(self.to_dict())
+    
+    @property
+    def geo_type(self):
+        return type(self).__name__
+
+    # ====================================================================================================
     # From a dict
     # ====================================================================================================
 
@@ -549,6 +561,23 @@ class Geometry:
             self.materials.append(materials)
         else:
             self.materials.extend(materials)
+
+    def materials_to_data(self, data):
+
+        import bpy
+
+        data.materials.clear()
+        for mat_name in self.materials:
+            if mat_name is None:
+                data.materials.append(None)
+            elif isinstance(mat_name, bpy.types.Material):
+                data.materials.append(mat_name)
+            else:
+                data.materials.append(bpy.data.materials.get(str(mat_name)))
+
+    @staticmethod
+    def materials_from_data(data):
+        return [None if mat is None else mat.name for mat in data.materials]
 
     # ====================================================================================================
     # Transformation

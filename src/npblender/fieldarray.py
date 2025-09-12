@@ -451,8 +451,11 @@ class FieldArray(object):
         # ---------------------------------------------------------------------------
 
         else:
-            arr = self._data_view[index]
-            return type(self)(arr, mode='CAPTURE')
+            fa = type(self)()
+            fa._infos = dict(self._infos)
+            fa._data = self._data_view[index]
+            fa._length = len(fa._data)
+            return fa
 
     def __setitem__(self, index, value):
 

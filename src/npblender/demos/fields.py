@@ -1,6 +1,6 @@
 import numpy as np
 
-EPS = 1e-6
+from npblender import EPS
 
 # ====================================================================================================
 # Electric field

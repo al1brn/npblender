@@ -258,6 +258,9 @@ class Mesh(Geometry):
     # From another Mesh
     # =============================================================================================================================
 
+    def clone(self):
+        return Mesh.from_mesh(self)
+
     # -----------------------------------------------------------------------------------------------------------------------------
     # Copy
     # -----------------------------------------------------------------------------------------------------------------------------
@@ -950,6 +953,48 @@ class Mesh(Geometry):
 
     def __imul__(self, count):
         return self.multiply(count, in_place=True)
+    
+    # =============================================================================================================================
+    # Extracting from faces
+    # =============================================================================================================================
+
+    def extract_from_faces(self, selection=True):
+        """
+        Extract a Mesh from a selection of faces.
+
+        Parameters
+        ----------
+        selection : array_like, optional
+            A valide selection on face (default is True).
+
+        Returns
+        -------
+        Mesh
+            The extracted mesh.
+        """
+        # Faces and corner indices
+        faces = self.faces[selection]
+        cinds = faces.loop_index
+
+        # Corners and vertices to extract
+        corners = self.corners.vertex_index[cinds]
+        iverts, new_corners = np.unique(corners, return_inverse=True)
+
+        # Create an empty mesh
+        mesh = Mesh()
+
+        # Points
+        mesh.points.extend(self.points[iverts])
+
+        # Corners
+        mesh.corners.extend(self.corners[cinds])
+        mesh.corners.vertex_index = new_corners
+
+        # Faces
+        mesh.faces.extend(faces)
+        mesh.faces.update_loop_start()
+
+        return mesh
 
     # =============================================================================================================================
     # Editing
@@ -4391,7 +4436,7 @@ class Mesh(Geometry):
             faces = self.faces[ugroups[rev_index] == group]
             attrs = {name: faces[name] for name in attr_names}
 
-            corners = self.corners[faces.get_corner_indices()]
+            corners = self.corners[faces.loop_index]
             uniques, new_corners = np.unique(corners.vertex_index, return_inverse=True)
             mesh.join(Mesh(attr_from=self).join_geometry(
                 points = self.points.position[uniques],

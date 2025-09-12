@@ -89,7 +89,7 @@ USE_JIT = True
 # ----------------------------------------------------------------------------------------------------
 
 @njit(cache=True)
-def get_corner_indices(loop_start, loop_total):
+def get_loop_index(loop_start, loop_total):
 
     total_len = 0
     n = len(loop_start)
@@ -1178,29 +1178,8 @@ class PointDomain(Domain):
     # Internal methods using attribute name, 'position' is default
     # ----------------------------------------------------------------------------------------------------
 
-    def _pivot(self, pivot, shape_pv=None):
-        """Temporarily shift points to/from a local pivot frame.
+    def _pivot(self, pivot, attr_name, shape_pv=None):
 
-        When a pivot is provided, this helper subtracts the pivot from
-        `position` (global → local) before an operation, and when called again
-        with the returned tuple, it restores the original frame (local → global).
-
-        Parameters
-        ----------
-        pivot : array-like of shape ``(..., 3)`` or None
-            Pivot location(s). If `None`, no-op and returns `None`.
-        shape_pv : tuple or None, optional
-            Tuple returned by a previous call, used to restore the frame.
-
-        Returns
-        -------
-        tuple or None
-            When entering local space: ``(shape_out, pivot_broadcasted)`` where
-            ``shape_out`` is the output shape from
-            [`_get_shape_for_operation`][npblender._get_shape_for_operation]
-            and ``pivot_broadcasted`` has shape ``(..., 3)``.
-            When restoring: returns `None`.
-        """
         if pivot is None:
             return None
 
@@ -1208,14 +1187,16 @@ class PointDomain(Domain):
         if shape_pv is None:
             pv = np.asarray(pivot)
             shape, op_shape = self._get_shape_for_operation(pv.shape[:-1], title="Scale pivot")
-            pos = self.position.reshape(shape)
+            pos = self[attr_name].reshape(shape)
             pv = pv.reshape(op_shape + (3,))
             pos -= pv
+
             return shape, pv
         
         else:
-            pos = self.position.reshape(shape_pv[0] + (3,))
+            pos = self[attr_name].reshape(shape_pv[0] + (3,))
             pos += shape_pv[1]
+
 
     def _translate(self, translation, attr_name='position'):
         tr = np.asarray(translation)
@@ -1226,25 +1207,26 @@ class PointDomain(Domain):
         return self
     
     def _apply_scale(self, scale, pivot=None, attr_name='position'):
-        shape_pv = self._pivot(pivot)
+
+        shape_pv = self._pivot(pivot, attr_name)
 
         sc = np.asarray(scale)
         shape, op_shape = self._get_shape_for_operation(sc.shape[:-1], title="Scale")
         pos = self[attr_name].reshape(shape)
         pos *= sc.reshape(op_shape + (3,))
 
-        self._pivot(pivot, shape_pv)
+        self._pivot(pivot, attr_name, shape_pv)
 
         return self
     
     def _transform(self, transfo, pivot=None, attr_name='position'):
-        shape_pv = self._pivot(pivot)
+        shape_pv = self._pivot(pivot, attr_name)
 
         shape, op_shape = self._get_shape_for_operation(transfo.shape, title="Scale")
         pos = self[attr_name].reshape(shape)
         pos[:] = transfo.reshape(op_shape) @ pos
 
-        self._pivot(pivot, shape_pv)
+        self._pivot(pivot, attr_name, shape_pv)
 
         return self
     
@@ -1286,14 +1268,14 @@ class PointDomain(Domain):
         a `ValueError` is raised by
         [`_get_shape_for_operation`][npblender._get_shape_for_operation].
         """
-        return self._translate(translation)
+        self._translate(translation)
 
-        tr = np.asarray(translation)
-        shape, op_shape = self._get_shape_for_operation(tr.shape[:-1], title="Translation")
-        pos = self.position.reshape(shape)
-        pos += tr.reshape(op_shape + (3,))
-
+        if 'handle_left' in self.actual_names:
+            self._translate(translation, attr_name='handle_left')
+            self._translate(translation, attr_name='handle_right')
+            
         return self
+
     
 
     
@@ -1331,18 +1313,7 @@ class PointDomain(Domain):
         [`_get_shape_for_operation`][npblender._get_shape_for_operation].
         """
         return self._apply_scale(scale, pivot=pivot)
-    
 
-        shape_pv = self._pivot(pivot)
-
-        sc = np.asarray(scale)
-        shape, op_shape = self._get_shape_for_operation(sc.shape[:-1], title="Scale")
-        pos = self.position.reshape(shape)
-        pos *= sc.reshape(op_shape + (3,))
-
-        self._pivot(pivot, shape_pv)
-
-        return self
 
     def transform(self, transfo, pivot=None):
         """Apply a linear transform (e.g., rotation or transformation) to points.
@@ -1389,19 +1360,6 @@ class PointDomain(Domain):
         """
         return self._transform(transfo, pivot=pivot)
 
-
-        shape_pv = self._pivot(pivot)
-
-        shape, op_shape = self._get_shape_for_operation(transfo.shape, title="Scale")
-        pos = self.position.reshape(shape)
-        pos[:] = transfo.reshape(op_shape) @ pos
-
-        #self.position = transfo @ self.position
-        
-        self._pivot(pivot, shape_pv)
-
-        return self
-    
 # ----------------------------------------------------------------------------------------------------
 # Vertex (Mesh)
 # ----------------------------------------------------------------------------------------------------
@@ -1817,12 +1775,8 @@ class ControlPoint(PointDomain):
         super().apply_scale(scale, pivot=pivot)
 
         if "handle_left" in self.actual_names:
-            if True:
-                self._apply_scale(scale, attr_name='handle_left')
-                self._apply_scale(scale, attr_name='handle_right')
-            else:
-                self.handle_left  *= scale
-                self.handle_right *= scale
+            self._apply_scale(scale, pivot=pivot, attr_name='handle_left')
+            self._apply_scale(scale, pivot=pivot, attr_name='handle_right')
 
         return self
 
@@ -1870,13 +1824,9 @@ class ControlPoint(PointDomain):
         super().transform(transfo, pivot=pivot)
 
         if "handle_left" in self.actual_names:
-            rot = transfo.rotation if isinstance(transfo, Transformation) else transfo
-            if True:
-                self._transform(rot, attr_name='handle_left')
-                self._transform(rot, attr_name='handle_right')
-            else:
-                self.handle_left  = rot @ self.handle_left
-                self.handle_right = rot @ self.handle_right
+            #rot = transfo.rotation if isinstance(transfo, Transformation) else transfo
+            self._transform(transfo, pivot=pivot, attr_name='handle_left')
+            self._transform(transfo, pivot=pivot, attr_name='handle_right')
 
         return self
     
@@ -2167,10 +2117,7 @@ class Point(PointDomain):
         super().apply_scale(scale, pivot=pivot)
 
         if "scale" in self.actual_names:
-            if True:
-                super()._apply_scale(scale, attr_name='scale')
-            else:
-                self.scale  *= scale
+            super()._apply_scale(scale, attr_name='scale')
 
         return self
 
@@ -2933,7 +2880,8 @@ class FaceSplineDomain(Domain):
 
         return res
 
-    def get_corner_indices(self):
+    @property
+    def loop_index(self):
         """Return the contiguous range of corner/control-point indices.
 
         For each item, expands its ``[loop_start, loop_start + loop_total)`` range
@@ -2953,7 +2901,7 @@ class FaceSplineDomain(Domain):
             return np.arange(self.loop_total) + self.loop_start
         
         # njit function
-        return get_corner_indices(self.loop_start, self.loop_total)
+        return get_loop_index(self.loop_start, self.loop_total)
     
     # ----------------------------------------------------------------------------------------------------
     # Delete faces
@@ -3148,7 +3096,7 @@ class Face(FaceSplineDomain):
             If ``selection`` is out of bounds or if corner indices are inconsistent
             with the provided ``corners`` domain.
         """
-        corner_indices = self[selection].get_corner_indices()
+        corner_indices = self[selection].loop_index
         self.delete(selection)
         vert_indices = np.array(corners.vertex_index[corner_indices])
         corners.delete(corner_indices)
@@ -3985,7 +3933,7 @@ class Spline(FaceSplineDomain):
         splines.delete_splines([0], cpoints)
         ```
         """
-        corner_indices = self[selection].get_corner_indices()
+        corner_indices = self[selection].loop_index
         self.delete(selection)
         cpoints.delete(corner_indices)
     

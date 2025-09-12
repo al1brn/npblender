@@ -1,39 +1,145 @@
-class StrParser:
+from .latex_codes import SYMBOLS
+
+__all__ = ["Parser", "Lexer", 'parse_latex']
+
+
+TEXT_SWITCHES = {
+    'tiny': {'font_size': .3}, 
+    'small': {'font_size': .6}, 
+    'normalsize': {'font_size': 1.}, 
+    'large': {'font_size': 1.25}, 
+    'Large': {'font_size': 1.5}, 
+    'LARGE': {'font_size': 2.}, 
+    'huge': {'font_size': 3.}, 
+    'Huge': {'font_size': 4.},
+
+    'itshape': {'italic': True},
+    'bfseries': {'bold': True},
+    'scshape' : {'small_caps': True},
+    'ttfamily' : {'family': 'courrier'},
+    'sffamily' : {'family': 'sans serif'},
+    'rmfamily' : {'family': 'serif'},
+}
+
+TEXT_BLOCKS = {
+    'text': {},
+    'textit': {'italic': True},
+    'textbf': {'bold': True},
+    'emph': {'bold': 'invert', 'italic': 'invert'},
+    'textrm': {'family': 'serif'},
+    'textsf': {'family': 'sans serif'}, 
+    'texttt': {'family': 'courrier'},
+    'underline': {'underline': True},
+    'textnormal': {'bold': None, 'italic': None, 'family': None, 'underline': None},
+}
+
+MATH_PATTERNS = {
+  "FRAC_PAT":    {"tokens": 2},
+  "SQRT_PAT":    {"tokens": 1, "brackets": True},  
+  "ACCENT_PAT":  {"tokens": 1},
+  "INT_PAT":     {"required": 1, "scripts": True}
+}
+
+MATH_PATTERN_COMMANDS = {
+  "\\frac":   "FRAC_PAT",
+  "\\dfrac":  "FRAC_PAT",   
+  "\\tfrac":  "FRAC_PAT",
+  "\\sqrt":   "SQRT_PAT",
+  "\\binom":  "FRAC_PAT",
+  "\\boxed":  "ACCENT_PAT",
+
+  "\\hat":        "ACCENT_PAT",
+  "\\widehat":    "ACCENT_PAT",
+  "\\tilde":      "ACCENT_PAT",
+  "\\widetilde":  "ACCENT_PAT",
+  "\\bar":        "ACCENT_PAT",
+  "\\vec":        "ACCENT_PAT",
+  "\\dot":        "ACCENT_PAT",
+  "\\ddot":       "ACCENT_PAT",
+  "\\overline":   "ACCENT_PAT",
+  "\\underline":  "ACCENT_PAT",
+  "\\overbrace":  "ACCENT_PAT",
+  "\\underbrace": "ACCENT_PAT",
+
+  "\\int":    "INT_PAT",
+  "\\iint":   "INT_PAT",
+  "\\iiint":  "INT_PAT",
+  "\\oint":   "INT_PAT",
+  "\\sum":    "INT_PAT",
+  "\\prod":   "INT_PAT",
+  "\\lim":    "INT_PAT",
+  "\\limsup": "INT_PAT",
+  "\\liminf": "INT_PAT",
+
+  "\\operatorname":  "OPNAME_PAT",
+  "\\operatorname*": "OPNAME_STAR_PAT",
+}
+
+
+
+# ====================================================================================================
+# Simplest UI
+# ====================================================================================================
+
+def parse_latex(text, math_mode=False, ignore_comments=True):
+    return Lexer(text, math_mode=math_mode, ignore_comments=ignore_comments).read_block()
+
+# ====================================================================================================
+# String parser
+# ====================================================================================================
+
+class Parser:
     """
     Level-1 LaTeX lexer (character stream → flat tokens).
 
     Rules:
-      - WORD: consecutive alphabetic characters (unicode letters).
-      - NUMBER: digits with optional single decimal separator ('.' or ',' configurable),
+      - token:
+        - word: consecutive alphabetic characters (unicode letters).
+        - number: digits with optional single decimal separator ('.' or ',' configurable),
                 optional exponent (e/E[+/-]digits), accepts leading sep: .5, ,5.
-      - COMMAND: LaTeX control sequence starting with '\' (either letters or single char).
-      - SPECIAL: single-character operators/delims: {}()[]&#^_~+-=*/<>|,:;=
-      - DOLLAR: "$" or "$$"
-      - SPACE: emitted only for runs of >= 2 spaces/tabs/newlines, collapsed to a single " ".
-      - COMMENT: '%' to end-of-line (content returned without the newline)
+        - char: single char such as =, ( or escaped \{
+      - command: LaTeX control sequence starting with '\' (either letters or single char).
+      - special: single-character in MATH_SPECIALS : {}#&^_~
+      - dollar: "$" or "$$"
+      - space: emitted only for runs of >= 2 spaces/tabs/newlines, collapsed to a single " ".
+      - comment: '%' to end-of-line (content returned without the newline)
 
     Single spaces are *not emitted* (they just separate words).
     """
 
-    _SPECIAL_SINGLE = set("{}()[]&#^_~+-=*/<>|,:;=")
+    MATH_SPECIALS = set("{}~#&^_") # %, $ and \ are hard coded
+    TEXT_SPECIALS = set("{}~$\\") # Strict set of escape chars, _ ^ will be accepted without error, 
+                                  # % is not escaped if ignore_comments
 
-    # Commands that must read a raw *text* braced argument
-    TEXT_ARG_COMMANDS = {
-        "\\text", "\\textrm", "\\textit", "\\textbf",
-        "\\mathrm", "\\mathbf", "\\mathit", "\\emph",
-        "\\texttt", "\\textsf", "\\small"  # kept for convenience
-    }
-
-
-    def __init__(self, latex_string: str, *, decimal_separators=(".", ","), allow_exponent=True):
+    def __init__(self, latex_string: str, *, math_mode=True, ignore_comments=True):
+        
         if not isinstance(latex_string, str):
-            raise TypeError("StrParser expects a string.")
+            raise TypeError(f"Parser expects a string, not {type(latex_string)}.")
+        
         self.s = latex_string
         self.n = len(latex_string)
         self.i = 0
-        # number parsing config
-        self.decimal_separators = set(decimal_separators)
-        self.allow_exponent = bool(allow_exponent)
+
+        self.math_mode = bool(math_mode)
+
+        # Parsing config integers are grouped but not float 
+        self.decimal_separators = () # ('.', ',') 
+        self.allow_exponent = False 
+
+        # Spaces and comments (MATH mode)
+        self.ignore_comments = ignore_comments
+        self.return_spaces = False
+        self.return_comments = False
+
+        if self.ignore_comments:
+            self.text_specials = self.TEXT_SPECIALS
+        else:
+            self.text_specials = self.TEXT_SPECIALS.union('%')
+
+
+    @property
+    def error_str(self):
+        return '\n ' + self.s + "\n" + (' '*self.i) + '^'
 
     # ---- core utils ----
     def _eof(self) -> bool:
@@ -48,12 +154,26 @@ class StrParser:
 
     # ---- scanners ----
     def _read_command(self):
-        """Read a LaTeX control sequence starting at '\\'."""
+        """Read a LaTeX control sequence starting at '\\'.
+
+        Read '\code'.
+        - if code is an alphabetic word:
+          if code is a know character code in SYMBOLS -> ('token', SYMBOLS[code])
+          otherwise return ('command', \code)
+        - if code is a single non alphabetic char:
+          return ('token', code)
+
+        Returns
+            str, value
+                ('command', value) or ('token', value)
+        """
         assert self._peek() == "\\"
         self._advance(1)
+
         c = self._peek()
         if c is None:
             return ("command", "\\")
+        
         if c.isalpha():
             j = self.i
             while True:
@@ -63,10 +183,19 @@ class StrParser:
                 j += 1
             name = self.s[self.i:j]
             self.i = j
-            return ("command", "\\" + name)
-        # single-char control symbol
+
+            # name is a symbol code
+            if name in SYMBOLS:
+                return ("token", SYMBOLS[name])
+            else:
+                return ("command", "\\" + name)
+        
+        # Escaped control character
         self._advance(1)
-        return ("command", "\\" + c)
+        if c in '[]()':
+            return ("command", "\\" + c)
+        else:
+            return ("text", c)
 
     def _read_word(self):
         """Read consecutive alphabetic letters as a WORD."""
@@ -76,7 +205,7 @@ class StrParser:
             if ch is None or not ch.isalpha():
                 break
             self._advance(1)
-        return ("word", self.s[start:self.i])
+        return ("token", self.s[start:self.i])
 
     def _read_number(self):
         """
@@ -84,6 +213,8 @@ class StrParser:
         and optional exponent part (e/E[+/-]digits). The decimal separator is consumed
         only if followed by a digit. Accepts leading sep: '.5', ',5'.
         Examples: '12', '12.3', '12,3', '.5', ',5', '1.2e-3', '1,2E+6'
+
+        Returns None if not found
         """
         start = self.i
         seen_digit = False
@@ -121,15 +252,16 @@ class StrParser:
                         self._advance(1)
 
         if not seen_digit:
+            return None
             # Nothing numeric actually read; treat leading char as a single 'word'
             # (This path is rare given the entry condition.)
             ch0 = self._peek()
             if ch0 is not None:
                 self._advance(1)
-                return ("word", ch0)
-            return ("word", "")
+                return ("token", ch0)
+            return ("token", "")
 
-        return ("number", self.s[start:self.i])
+        return ("token", self.s[start:self.i])
 
     def _read_comment(self):
         """Read from '%' to end-of-line (without consuming the newline)."""
@@ -159,105 +291,123 @@ class StrParser:
         if count >= 2:
             return ("space", " ")
         return None
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Next token in TEXT mode
+    # ----------------------------------------------------------------------------------------------------
 
-    def _read_inline_text(self, cmd: str) -> dict:
-        """
-        Read a *text-mode* braced argument right after a command like \\text.
-        Contract:
-          - skip whitespace after the command
-          - require '{' (error if missing)
-          - read raw characters until the matching '}' (balanced)
-          - '\\{' -> literal '{' ; '\\}' -> literal '}'
-        Returns a dict: {"command": cmd, "text": <raw_text>, "closed": bool}
-        """
-        # 1) skip whitespace before '{'
-        while not self._eof() and self._peek().isspace():
-            self._advance(1)
-
-        # 2) require '{'
-        if self._peek() != "{":
-            return {"command": cmd, "text": "", "closed": False, "error": f"expected '{{' after {cmd}"}
-
-        # consume '{'
-        self._advance(1)
-        depth = 1
-        out = []
-
-        # 3) read until matching '}'
-        while not self._eof():
-            c = self._peek()
-
-            # escaped braces \{ or \}
-            if c == "\\":
-                c2 = self._peek(1)
-                if c2 in ("{", "}"):
-                    out.append(c2)
-                    self._advance(2)
-                    continue
-                # keep backslash and next char verbatim (if any)
-                out.append(c)
-                self._advance(1)
-                if not self._eof():
-                    out.append(self._peek())
-                    self._advance(1)
-                continue
-
-            if c == "{":
-                depth += 1
-                out.append("{")
-                self._advance(1)
-                continue
-
-            if c == "}":
-                depth -= 1
-                self._advance(1)
-                if depth == 0:
-                    return {"command": cmd, "text": "".join(out), "closed": True}
-                out.append("}")
-                continue
-
-            # regular char
-            out.append(c)
-            self._advance(1)
-
-        # EOF reached without closing
-        return {"command": cmd, "text": "".join(out), "closed": False, "error": "unclosed { ... }"}    
-
-
-    # ---- public API ----
-    def next_token(self):
+    def next_text_token(self):
         """
         Return the next level-1 token:
-          ("word", str)
-          ("number", str)
-          ("command", "\\alpha", "\\%", "\\\\", ...)
+          ("special", ch)                # Text special chars: $ { } ~
+          ("command", "\\text", \(", "\tiny", ...)
+          ("text", str)
+          ("dollar", "$" or "$$")
+          ("comment", str)               # '%' to end-of-line (no newline)
+          None                           # end of input
+        """
+
+        text = []
+        while not self._eof():
+
+            ch = self._peek()
+
+            if ch in self.text_specials:
+
+                # ----- In text mode, escaped special are returned as text
+
+                if ch == "\\":
+                    i = self.i
+                    kind, value = self._read_command() # command or text
+                    if kind == "text":
+                        text.append(value)
+                        continue
+
+                    if len(text):
+                        self.i = i
+                    else:
+                        return kind, value
+
+                # ----- Return text if any
+
+                if len(text):
+                    return "text", "".join(text)
+
+                # ----- Dollar
+
+                if ch == "$":
+                    kind = 'special'
+                    if self._peek(1) == "$":
+                        self._advance(2)
+                        return (kind, "$$")
+                    self._advance(1)
+                    return (kind, "$")
+
+                # ----- Block
+
+                if ch in ['{', '}', '~']:
+                    self._advance(1)
+                    return ("special", ch)
+
+                # ----- Comment
+
+                if ch == "%":
+                    comment = self._read_comment()
+                    if self.return_comments:
+                        return comment
+                    
+                # Shouldn't happen
+                assert(False)
+                
+            # Not special : let's start a new text string
+
+            self._advance(1)
+            text.append(ch)
+
+        # ----- Return what we have
+
+        if len(text):
+            return 'text', "".join(text)
+        else:
+            return None
+
+    # ----------------------------------------------------------------------------------------------------
+    # Next token in MATH mode
+    # ----------------------------------------------------------------------------------------------------
+
+    def next_math_token(self):
+        """
+        Return the next level-1 token:
           ("special", ch)                # from _SPECIAL_SINGLE
+          ("command", "\\alpha", "\\%", "\\\\", ...)
+          ("token", str)
           ("dollar", "$" or "$$")
           ("space", " ")                 # only for runs of >= 2 spaces/tabs/newlines
           ("comment", str)               # '%' to end-of-line (no newline)
           None                           # end of input
         """
         while not self._eof():
+
             ch = self._peek()
 
             # comment
-            if ch == "%":
-                return self._read_comment()
+            if not self.ignore_commants and (ch == "%"):
+                comment = self._read_comment()
+                if self.return_comments:
+                    return comment
 
             # command
             if ch == "\\":
-                kind, val = self._read_command()  # kind == "command", val like "\\text"
-                if val in self.TEXT_ARG_COMMANDS:
-                    return "text", self._read_inline_text(val)
-                return (kind, val)
+                return self._read_command() # command or token
 
             # dollar / $$
             if ch == "$":
+                kind = 'special'
                 if self._peek(1) == "$":
                     self._advance(2)
-                    return ("dollar", "$$")
+                    return (kind, "$$")
                 self._advance(1)
-                return ("dollar", "$")
+                return (kind, "$")
 
             # --- NUMBER must be checked BEFORE SPECIALS ---
             if (ch and ch.isdigit()) or (
@@ -266,14 +416,14 @@ class StrParser:
                 return self._read_number()
 
             # specials
-            if ch in self._SPECIAL_SINGLE:
+            if ch in self.MATH_SPECIALS:
                 self._advance(1)
                 return ("special", ch)
 
             # whitespace (collapse runs)
             if ch.isspace():
                 tok = self._read_spaces()
-                if tok is not None:
+                if self.return_spaces and tok is not None:
                     return tok
                 # single-space → skip
                 continue
@@ -288,311 +438,380 @@ class StrParser:
 
         return None
 
-class Level2:
-    """
-    Level-2 lexer that:
-      - categorizes level-1 tokens,
-      - in next_token(), if a *non-structural* base is immediately followed by '^'/'_',
-        it builds and returns a NUCLEUS block: {"type":"NUCLEUS","base":..., "sup":..., "sub":...}.
-      - otherwise returns a single ATOM (no grouping here).
-    """
-
-    # Structural commands (consume arguments later; not treated as simple bases here)
-    STRUCT_COMMANDS = {
-        "\\frac", "\\sqrt", "\\int", "\\sum", "\\prod", "\\lim",
-        "\\left", "\\right", "\\begin", "\\end"
-    }
-
-    # Known left/right delimiter commands
-    LEFT_RIGHT_DELIM_COMMANDS = {
-        "\\langle","\\rangle","\\lvert","\\rvert","\\lVert","\\rVert",
-        "\\lfloor","\\rfloor","\\lceil","\\rceil","\\vert","\\|"
-    }
-
-    def __init__(self, source, *, strparser_cls=None):
-        if strparser_cls is None:
-            strparser_cls = StrParser
-        
-        source = "{" + source + "}"
-        self.lex = strparser_cls(source)
-        self._buf_prim = None  # one-token buffer for *categorized* primitive tokens
-
-    def _read_script(self, d):
-        """
-        Try to read exactly ONE trailing script ('^' or '_') and attach it to node `d`.
-
-        Contract:
-          - Look ahead (skipping pure whitespace) for a SUP ('^') or SUB ('_').
-          - If none found: return (d, False).
-          - If found: consume the operator and read its argument via get_token_or_block():
-              * '{...}' or '\left...\right'  -> a BLOCK is returned
-              * otherwise exactly one primitive -> an ATOM
-          - If `d` is not already a NUCLEUS, wrap it:
-                d := {"type":"NUCLEUS","base": d, "sup": None, "sub": None}
-          - If the corresponding slot ('sup' for '^', 'sub' for '_') is empty, fill it.
-          - If it is already occupied, NEST by creating a new NUCLEUS whose base is `d`
-            and only the new script is set:
-                d := {"type":"NUCLEUS","base": d, "sup": <arg>, "sub": None}    # for a second '^'
-                d := {"type":"NUCLEUS","base": d, "sup": None, "sub": <arg>}    # for a second '_'
-
-        Returns:
-          (d, True)  if a script was consumed and attached/nested
-          (d, False) if no script was found
-        """
-        t = self._peek_prim_skipping_ws()
-        if t is None or t["kind"] not in ("SUP", "SUB"):
-            return d, False
-
-        op = t["kind"]                      # 'SUP' or 'SUB'
-        self._next_prim()                   # consume '^' or '_'
-        arg = self.get_token_or_block()     # one token or a full {...} / \left...\right block
-        if arg is None:
-            # gracefully create an error node as the argument
-            arg = {"type": "ERROR", "message": f"missing argument after {'^' if op=='SUP' else '_'}"}
-
-        # Ensure `d` is a NUCLEUS to attach to
-        if d.get("type") != "NUCLEUS":
-            d = {"type": "NUCLEUS", "base": d, "sup": None, "sub": None}
-
-        key = "sup" if op == "SUP" else "sub"
-        if d[key] is None:
-            # Slot free → attach directly
-            d[key] = arg
-        else:
-            # Slot already used → nest
-            if op == "SUP":
-                d = {"type": "NUCLEUS", "base": d, "sup": arg, "sub": None}
-            else:  # SUB
-                d = {"type": "NUCLEUS", "base": d, "sup": None, "sub": arg}
-
-        return d, True
+    # ===========================================================================
+    # Public UI
+    # ===========================================================================
 
     def next_token(self):
-        """
-        Return the next high-level token.
-
-        Behavior:
-          - Read one *primitive* (categorized) token.
-          - If it is a block opener ('{' or '\\left'), return it as a plain ATOM
-            (the caller should use get_block() to aggregate the whole block).
-          - Otherwise, wrap it as an ATOM and repeatedly call `_read_script(...)`
-            to attach any trailing '^'/'_' (this works for letters, numbers, and
-            structural commands like '\\int', '\\prod', '\\sum', ...).
-          - Nest if multiple same scripts are chained (e.g., x^2^3).
-        """
-        prim = self._next_prim()
-        if prim is None:
-            return None
-
-        # Do not attach scripts to brace-opener or \left here; get_block() handles those.
-        if prim["kind"] in ("BLOCK_OPEN",) or (prim["kind"] == "STRUCT" and prim["value"] == "\\left"):
-            return {"type": "ATOM", "value": prim}
-
-        # Start from a plain ATOM (works for TEXT/NUMBER/DELIM/SYMBOL and STRUCT like \int, \prod)
-        node = {"type": "ATOM", "value": prim}
-
-        # Attach scripts (one per _read_script call), nesting if needed
-        while True:
-            node, found = self._read_script(node)
-            if not found:
-                break
-
-        return node
-
-    def get_block(self):
-        """
-        Return the next LaTeX block:
-          - '{...}'  → {"type":"BLOCK","delimiter":"{","content":[...]}
-          - \left...\right → {"type":"BLOCK","delimiter":("left", <L>, <R>),"content":[...]}
-          - otherwise a single atom → {"type":"ATOM","value":<primitive>}
-        """
-        t = self._peek_prim()
-        if t is None:
-            return None
-
-        # 1) Brace block
-        if t["kind"] == "BLOCK_OPEN":
-            self._next_prim()  # consume '{'
-            content = []
-            while True:
-                nt = self._peek_prim()
-                if nt is None:
-                    break
-                if nt["kind"] == "BLOCK_CLOSE":
-                    self._next_prim()  # consume '}'
-                    break
-                content.append(self.get_block())
-            return {"type": "BLOCK", "delimiter": "{", "content": content}
-
-        # 2) \left ... \right block
-        if t["kind"] == "STRUCT" and t["value"] == "\\left":
-            left = self._next_prim()            # has 'delimiter'
-            left_delim = left.get("delimiter")
-            content = []
-            right_delim = None
-            while True:
-                nt = self._peek_prim()
-                if nt is None:
-                    break
-                if nt["kind"] == "STRUCT" and nt["value"] == "\\right":
-                    right = self._next_prim()  # consume \right (already includes delimiter)
-                    right_delim = right.get("delimiter")
-                    break
-                content.append(self.get_block())
-            return {"type": "BLOCK", "delimiter": ("left", left_delim, right_delim), "content": content}
-
-        # 3) Otherwise: a single atom
-        #return {"type": "ATOM", "value": self.next_token()}
-        return self.next_token()
-
-    def get_token_or_block(self):
-        """
-        Return the next LaTeX argument (generic: works for ^/_/\\frac/\\int/...):
-
-        - If next is a BLOCK_OPEN '{' → return the full brace BLOCK via get_block().
-        - If next is a STRUCT '\\left' → return the full \\left ... \\right BLOCK via get_block().
-        - Otherwise, consume exactly ONE primitive token and wrap it as:
-            {"type":"ATOM","value":<primitive>}
-        """
-        t = self._peek_prim_skipping_ws()
-        if t is None:
-            return None
-        if t["kind"] == "BLOCK_OPEN":
-            return self.get_block()
-        if t["kind"] == "STRUCT" and t["value"] == "\\left":
-            return self.get_block()
-        return {"type": "ATOM", "value": self._next_prim()}
-
-    # ---------------- Primitive (categorized) token layer ----------------
-
-    def _next_prim(self):
-        """Fetch next *categorized* primitive token (skips comments)."""
-        if self._buf_prim is not None:
-            t = self._buf_prim
-            self._buf_prim = None
-            return t
-
-        # Pull from level-1 lexer
-        raw = self.lex.next_token()
-        while raw is not None and raw[0] == "comment":
-            raw = self.lex.next_token()
-        if raw is None:
-            return None
-
-        kind, val = raw
-
-        # Map level-1 to primitive categories
-        if kind == "word":
-            return {"kind": "TEXT", "value": val}
-        if kind == "number":
-            return {"kind": "NUMBER", "value": val}
-        if kind == "space":
-            return {"kind": "TEXT", "value": " "}  # normalize to TEXT " "
-        if kind == "dollar":
-            return {"kind": "MATH_SHIFT", "value": val}
-        if kind == "special":
-            if val == "{":
-                return {"kind": "BLOCK_OPEN"}
-            if val == "}":
-                return {"kind": "BLOCK_CLOSE"}
-            if val == "^":
-                return {"kind": "SUP"}
-            if val == "_":
-                return {"kind": "SUB"}
-            return {"kind": "DELIM", "value": val}
-        if kind == "command":
-            # \left / \right: read exactly one delimiter immediately (as part of this token)
-            if val in ("\\left", "\\right"):
-                delim = self._read_left_right_delimiter_categorized()
-                return {"kind": "STRUCT", "value": val, "delimiter": delim}
-            # structural vs symbol
-            if val in self.STRUCT_COMMANDS:
-                return {"kind": "STRUCT", "value": val}
-            return {"kind": "SYMBOL", "value": val}
-        if kind == "text":
-            info = val if isinstance(val, dict) else {"command": None, "text": str(val), "closed": False}
-            return {
-                "kind": "TEXT_INLINE",
-                "command": info.get("command"),
-                "text": info.get("text", ""),
-                "closed": bool(info.get("closed", False)),
-            }
-
+        if self.math_mode:
+            return self.next_math_token()
+        else:
+            return self.next_text_token()
         
+    def read_char(self, *chars):
 
-        # Fallback
-        return {"kind": "TEXT", "value": str(val)}
+        while not self._eof():
+            ch = self._peek()
+            self._advance(1)
 
-    def _peek_prim(self):
-        t = self._next_prim()
-        if t is not None:
-            self._buf_prim = t
-        return t
+            if ch in [' ', '\n', '\t']:
+                continue
 
-    def _peek_prim_skipping_ws(self):
-        """Peek one primitive token, skipping pure whitespace TEXT."""
-        stash = []
-        t = self._next_prim()
-        while t is not None and t["kind"] == "TEXT" and t["value"].strip() == "":
-            stash.append(t)
-            t = self._next_prim()
-        if t is not None:
-            self._buf_prim = t
-        # restore skipped
-        for x in reversed(stash):
-            if self._buf_prim is None:
-                self._buf_prim = x
+            if not len(chars) or ch in chars:
+                return ch
             else:
-                # chain pushback of more than one: reinsert in front of current buffer
-                cur = self._buf_prim
-                self._buf_prim = x
-                # we only keep one lookahead buffer; whitespace skipping is idempotent
-        return t
+                raise RuntimeError(f"LaTeX parsing error: character {chars} expected, not '{ch}'." + self.parser.error_str)
 
-    def _read_left_right_delimiter_categorized(self):
+        raise RuntimeError(f"LaTeX parsing error: character {chars} expected before end of file." + self.parser.error_str)
+    
+    def read_simple_block(self, start_char='[', end_char=']', optional=True):
+
+        text = []
+        start = self.i
+
+        while not self._eof():
+
+            ch = self._peek()
+            self._advance(1)
+
+            if len(text):
+                text.append(ch)    
+                if ch == end_char:
+                    return "".join(text)
+                
+            else:
+                if ch in ' \n\t':
+                    continue
+
+                elif ch == start_char:
+                    text.append(start_char)
+
+                else:
+                    break
+
+        if not optional:
+            raise RuntimeError(f"LaTeX parsing error: missing '{end_char}' before end of file." + self.error_str)
+        else:
+            self.i = start
+            return None
+
+    
+# ====================================================================================================
+# Level 2 : Lexer
+# ====================================================================================================
+
+class Lexer:
+
+    def __init__(self, source, math_mode=True, ignore_comments=True):
+
+        self.parser = Parser(source, math_mode=math_mode, ignore_comments=ignore_comments)
+
+    @property
+    def math_mode(self):
+        return self.parser.math_mode
+    
+    @math_mode.setter
+    def math_mode(self, value):
+        self.parser.math_mode = bool(value)
+
+    # ====================================================================================================
+    # Read the next text item (Lexer level) - TEXT MODE
+    # ====================================================================================================
+
+    def _read_text_item(self, mandatory=False):
+
+        while True:
+
+            token = self.parser.next_token()
+
+            if token is None:
+                if mandatory:
+                    raise RuntimeError(f"LaTeX parsing error: token expected but end of line is reached.." + self.parser.error_str)
+
+                return None
+            
+            kind, value = token
+
+            # ---------------------------------------------------------------------------
+            # Special char control
+            # ---------------------------------------------------------------------------
+
+            if kind == 'special':
+                # value in : {}~
+            
+                if value == '{':
+                    return self.read_block('}', block_type='BLOCK')
+
+                elif value == '}':
+                    return {'type': 'close', 'value': value}
+                
+                elif value == '~':
+                    return {'type': 'CONTENT', 'content': ['~']}
+                
+                elif value in ['$', '$$']:
+                    self.read_block(value, to_mode='MATH', block_type='MATH')
+                
+                else:
+                    raise RuntimeError(f"LaTeX parsing error: sorry, special char '{value}' is not supported yet." + self.parser.error_str)
+            
+            # ---------------------------------------------------------------------------
+            # Command
+            # ---------------------------------------------------------------------------
+            
+            elif kind == 'command':
+
+                cmd = value[1:]
+
+                # ----- Special command
+
+                if cmd in ['(', '[']:
+                    end_token = '\\)' if cmd == '(' else '\\]'
+                    return self.read_block(end_token, to_mode='MATH', block_type='MATH')
+                
+                # ----- Text control
+
+                if cmd in TEXT_SWITCHES:
+                    return {'type': 'SWITCH', **TEXT_SWITCHES[cmd]}
+                
+                elif cmd in TEXT_BLOCKS:
+                    self.parser.read_char('{')
+                    return self.read_block('}', to_mode='TEXT', block_type='TEXT', **TEXT_BLOCKS[cmd])
+                
+                # ----- Parameter
+
+                elif cmd == 'param':
+                    param_str = self.parser.read_simple_block('{', '}', optional=False).strip()[1:-1]
+                    kv = param_str.split('=')
+                    if len(kv) != 2:
+                        raise RuntimeError(f"LaTeX parsing error: param 'python_name=python_expression' expected, not '{param_str}'".self.parser.error_str)
+                    
+                    return {'type': 'PARAM', 'key': kv[0].strip(), 'value': kv[1].strip()}
+                
+                else:
+                    raise RuntimeError(f"LaTeX parsing error: command '\\{cmd}' not valid in text mode." + self.parser.error_str)
+
+            # ---------------------------------------------------------------------------
+            # Text
+            # ---------------------------------------------------------------------------
+
+            elif kind == 'text':
+                return {'type': 'STRING', 'string': value}
+
+            # Shouldn't occur
+
+            print(f"WHAT: kind: '{kind}', value: '{value}'")
+
+            assert(False)
+
+    # ====================================================================================================
+    # Read the next text item (Lexer level) - MATH MODE
+    # ====================================================================================================
+
+    def _read_math_item(self, mandatory=False):
         """
-        Read exactly one delimiter after \\left/\\right.
-        Accepts:
-          - DELIM: '(', ')', '[', ']', '|', '.', ...
-          - SYMBOL: '\\langle', '\\rangle', ...
-          - TEXT '.' -> converted to DELIM '.'
-        Skips whitespace TEXT between command and delimiter.
+        An items can be:
+        - a simple parser token: x, \cos, ...
+        - a block (list of items) between {...}
+        - composed parser : ^2, \sum_{i=0}n{i^2}
         """
-        # skip ws
-        t = self._peek_prim_skipping_ws()
-        if t is None:
-            return {"kind": "ERROR", "message": "missing delimiter"}
-        if t["kind"] in ("DELIM", "MATH_SHIFT"):
-            self._next_prim()
-            return t
-        if t["kind"] == "SYMBOL" and t["value"] in self.LEFT_RIGHT_DELIM_COMMANDS:
-            self._next_prim()
-            return t
-        if t["kind"] == "TEXT" and t["value"] == ".":
-            self._next_prim()
-            return {"kind": "DELIM", "value": "."}
-        # not a valid delimiter; keep it for the outer logic but return an error payload
-        return {"kind": "ERROR", "message": "invalid delimiter", "got": t}
+
+        while True:
+
+            token = self.parser.next_token()
+
+            if token is None:
+                if mandatory:
+                    raise RuntimeError(f"LaTeX parsing error: token expected but end of line is reached.." + self.parser.error_str)
+
+                return None
+            
+            kind, value = token
+            
+            # ----------------------------------------------------------------------------------------------------
+            # Special char
+            # ----------------------------------------------------------------------------------------------------
+
+            if kind == 'special':
+                # value in : {}#&^_~
+            
+                if value == '{':
+                    return self.read_block('}', block_type='BLOCK')
+
+                elif value in ['}' '$', '$$']:
+                    return {'type': 'close', 'value': value}
+                
+                elif value in ['^', '_']:
+                    key = {'_': 'sub', '^': 'sup'}[value]
+                    return {'type': key, 'script': self.read_item(mandatory=True)}
+                
+                elif value == '~':
+                    return {'type': 'SPACE'}
+                
+                else:
+                    raise RuntimeError(f"LaTeX parsing error: sorry, special char '{value}' is not supported yet." + self.parser.error_str)
+                
+            # ----------------------------------------------------------------------------------------------------
+            # Command
+            # ----------------------------------------------------------------------------------------------------
+
+            elif kind == 'command':
+
+                cmd = value[1:]
+
+                # ---------------------------------------------------------------------------
+                # End block control
+                # ---------------------------------------------------------------------------
+
+                if cmd in [')', ']']:
+                    return {'type': 'close', 'value': value}
+                
+                elif cmd == 'left':
+
+                    BRS = {'(':')', '[':']', '|':'|', '<':'>', '‖':'‖', '⟨': '⟩', '.': '.'}
+                    
+                    c = self.parser.read_char()
+                    if c not in BRS:
+                        raise RuntimeError(f"LaTeX parsing error: sorry, left block '\\left{cmd}' is not supported yet." + self.parser.error_str)
+                    
+                    ends = ['\\right' + c for c in BRS.values()]
+
+                    return self.read_block(*ends, block_type='BLOCK', left_char=c)
+                
+                elif cmd == 'right':
+
+                    c = self.parser.read_char()
+                    return {'type': 'close', 'value': value + c}
+
+                # ---------------------------------------------------------------------------
+                # Inline text
+                # ---------------------------------------------------------------------------
+
+                if cmd in TEXT_BLOCKS:
+                    self.parser.read_char('{')
+                    return self.read_block('}', to_mode='TEXT', block_type='TEXT', **TEXT_BLOCKS[cmd])
+                
+                # ---------------------------------------------------------------------------
+                # Command with arguments
+                # ---------------------------------------------------------------------------
+
+                elif cmd == 'sqrt':
+                    option = self.parser.read_simple_block('[', ']', optional=True)
+                    if option is not None:
+                        option = option[1:-1]
+                    return {
+                        'type': 'CONTENT', 
+                        'code': 'sqrt', 
+                        'power': option, 
+                        'content': [self.read_item(mandatory=True)],
+                        }
+                
+                elif cmd in MATH_PATTERN_COMMANDS:
+                    
+                    pattern = MATH_PATTERNS[MATH_PATTERN_COMMANDS[cmd]]
+
+                    d = {'type': 'CONTENT', 'code': cmd, 'content': []}
+                    count = pattern.get('items', 1)
+                    while (item := self.read_math_item(mandatory)) is not None:
+                        if item['type'] in ['sub', 'sup']:
+                            d[item['type']] = item['script']
+                        else:
+                            d['content'].append(item)
+                            count -= 1
+                            if count == 0:
+                                return d
+
+                    raise RuntimeError(f"LaTeX parsing error: {count} item expected after command '\\{cmd}'." + self.parser.error_str)
+                
+                # Parameter
+
+                elif cmd == 'param':
+                    return {'type': 'PARAM', 'value': self.parser.read_simple_block('{', '}', optional=False).strip()[1:-1]}
+
+                # Directly a command
+
+                else:
+                    return {'type': 'command', 'command': cmd}
+
+            # ----------------------------------------------------------------------------------------------------
+            # Simple token
+            # ----------------------------------------------------------------------------------------------------
+
+            elif kind == 'token':
+                return {'type': 'STRING', 'string': value}
+
+    # ====================================================================================================
+    # Read the next item (Lexer level)
+    # ====================================================================================================
+
+    def read_item(self, mandatory=False):
+        if self.math_mode:
+            return self._read_math_item(mandatory=mandatory)
+        else:
+            return self._read_text_item(mandatory=mandatory)
+        
+    # ====================================================================================================
+    # Read a block
+    # ====================================================================================================
+
+    def read_block(self, *end_tokens, to_mode=None, block_type='BLOCK', **kwargs):
+
+        content = []
+
+        while token := self.read_item():
+
+            ttype = token['type']
+            if ttype in ['sub', 'sup']:
+                if not(len(content)):
+                    raise RuntimeError(f"LaTeX parsing error: impossible to add a {ttype}script '{token['script']}' after begining of block." + self.parser.error_str)
+                if ttype in content[-1].keys():
+                    content[-1] = {'type': 'BLOCK', ttype: token['script'], 'content': [content[-1]]}
+                else:
+                    content[-1][ttype] = token['script']
+
+            elif ttype in 'close':
+                if token['value'] in end_tokens:
+                    return {'type': block_type, 'content': content, 'right_char': token['value'][-1], **kwargs}
+                else:
+                    raise RuntimeError(f"LaTeX parsing error: unxpected end of block '{token['command']}', expected: {end_tokens}." + self.parser.error_str)
+            
+            else:
+                content.append(token)
+
+        if len(end_tokens):
+            raise RuntimeError(f"LaTeX parsing error: end of file reached before closing block, {end_tokens} expected." + self.parser.error_str)
+
+        return {'type': block_type, 'content': content, **kwargs}
 
 
+# ====================================================================================================
+# Tests
+# ====================================================================================================
 
-from pprint import pprint
-s = r" \cos(21\theta\phi) = \cos^2 \theta\phi - \sin^2 \theta\phi"
+if __name__ == "__main__":
 
-parser = StrParser(s)
+    from pprint import pprint
 
-tk = parser.next_token()
-while tk is not None:
-    #print(tk)
-    tk = parser.next_token()
+    # Text
 
+    texts = [
+        "The simplest test ever",
+        "Some \\tiny text \\normalsize follower by \\itshape italic \\ttfamily font tt",
+        "Text with {sub block} and \\text{sub text} and \\textbf {bold text}."
+    ]
 
+    maths = [
+        r" \cos(21\theta\phi) = \operatorname{cos}^2 \theta\phi - \sin^2 \theta\phi",
+        r"{a = x^2^3 + {toto} \left(1 - y\right)}",
+        r"I = \int_i^n f(x^2)dx",
+        r"50 \text{ apples} \times 100 \text{ apples} = \textbf{lots of apples}",
+        r" \operatorname{cos}(\theta)", 
+    ]
 
-s = r"{a = x^2^3 + {toto} \left(1 - y\right)}"
-s = r"I = \int_i^n f(x^2)dx"
-s = r"50 \text{ apples} \times 100 \text{ apples} = \textbf{lots of apples}"
+    for i in [2]:
+        s = texts[i]
+        lexer = Lexer(s, math_mode=False)
+        print("LaTeX:", s)
+        pprint(lexer.read_block())
+        print()
 
-lvl = Level2(s)
-b = lvl.get_block()
-pprint(b)
 

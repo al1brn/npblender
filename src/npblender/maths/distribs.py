@@ -45,14 +45,11 @@ __all__ = [
 
 import numpy as np
 
+from .constants import PI, TAU, HALF_PI, bfloat
 from .utils import get_axis, flat_top_gaussian, vonmises_angle_estimate
 from .transformation import Rotation, Quaternion
 
-PI  = np.pi
-HPI = np.pi/2
-TAU = 2*np.pi
-
-bfloat = np.float32
+HPI = HALF_PI
 
 # ====================================================================================================
 # Rotate and translate a distribution

@@ -5,7 +5,7 @@ from .enginemod import engine, Animation, Engine
 from .fieldarray import FieldArray
 from .domain import Domain, Point, Vertex, ControlPoint, Corner, Face, Edge, Spline
 from .shapekeys import ShapeKeys
-from .parameters import Parameters
+from .parameters import Custom
 
 from .geometry import Geometry
 from .cloud import Cloud
@@ -37,7 +37,7 @@ __all__ = [
     "FieldArray",
     "Domain", "Point", "Vertex", "ControlPoint", "Corner", "Face", "Edge", "Spline",
     "ShapeKeys",
-    "Parameters",
+    "Custom",
     "Geometry", "Cloud", "Mesh", "Curve", "Text", "Composition", "Font",
     "Instances", "Meshes",
     "MultiResGrid",

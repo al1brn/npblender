@@ -45,11 +45,11 @@ __all__ = ['Transformation']
 
 import numpy as np
 
-from . itemsarray import ItemsArray
-from . rotation import Rotation
-from . quaternion import Quaternion
+from .constants import ZERO
 
-ZERO = 1e-8
+from .itemsarray import ItemsArray
+from .rotation import Rotation
+from .quaternion import Quaternion
 
 class Transformation(ItemsArray):
 
