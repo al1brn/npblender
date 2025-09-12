@@ -610,6 +610,8 @@ class Geometry:
         of points: broadcasting rules are handled by
         [`Point._get_shape_for_operation`][npblender.Point._get_shape_for_operation].
 
+        > **note**: rotation can be a Transformation
+
         Parameters
         ----------
         rotation : ndarray or Rotation-like, optional
@@ -647,7 +649,6 @@ class Geometry:
         # Curve splines can be a subset of the points 
         pts_sel = self.get_points_selection()
         pos = self.points.position[pts_sel]
-        npoints = len(pos)
 
         # ---------------------------------------------------------------------------
         # The list of all attributes to transform
@@ -667,15 +668,10 @@ class Geometry:
 
         if pivot is not None:
             pivot = np.asarray(pivot)
-            if True:
-                pv_shape0, pv_shape1 = self.points._get_shape_for_operation(pivot.shape[:-1], title="Pivot")
-                pv = np.reshape(pivot, pv_shape1 + (3,))
-                for v in all_vecs:
-                    v.reshape(pv_shape0)[:] -= pv
-            else:
-                pivot_shape = self._check_transformation_shape(pivot.shape[:-1], npoints, label="Pivot")
-                for v in all_vecs:
-                    v.reshape(pivot_shape)[:] -= pivot
+            pv_shape0, pv_shape1 = self.points._get_shape_for_operation(pivot.shape[:-1], title="Pivot")
+            pv = np.reshape(pivot, pv_shape1 + (3,))
+            for v in all_vecs:
+                v.reshape(pv_shape0)[:] -= pv
 
         # ---------------------------------------------------------------------------
         # Scale and rotation
@@ -684,39 +680,25 @@ class Geometry:
         # Scale
         if scale is not None:
             scale = np.asarray(scale)
-            if True:
-                shape, op_shape = self.points._get_shape_for_operation(scale.shape[:-1], title="Scale")
-                sc = np.reshape(scale, op_shape + (3,))
-                for v in all_vecs:
-                    v.reshape(shape)[:] *= sc
-            else:
-                scale_shape = self._check_transformation_shape(scale.shape[:-1], npoints, label="Scale")
-                for v in all_vecs:
-                    v.reshape(scale_shape)[:] *= scale
+            shape, op_shape = self.points._get_shape_for_operation(scale.shape[:-1], title="Scale")
+            sc = np.reshape(scale, op_shape + (3,))
+            for v in all_vecs:
+                v.reshape(shape)[:] *= sc
                 
         # Rotation
         if rotation is not None:
-            if True:
-                shape, op_shape = self.points._get_shape_for_operation(rotation.shape, title="Rotation")
-                rot = rotation.reshape(op_shape)
-                for v in all_vecs:
-                    v.reshape(shape)[:] = rot @ v.reshape(shape)
-            else:
-                rot_shape = self._check_transformation_shape(rotation.shape, npoints, label="Rotation")
-                for v in all_vecs:
-                    v.reshape(rot_shape)[:] = rotation @ v.reshape(rot_shape)
+            shape, op_shape = self.points._get_shape_for_operation(rotation.shape, title="Rotation")
+            rot = rotation.reshape(op_shape)
+            for v in all_vecs:
+                v.reshape(shape)[:] = rot @ v.reshape(shape)
 
         # ---------------------------------------------------------------------------
         # Pivot back
         # ---------------------------------------------------------------------------
 
         if pivot is not None:
-            if True:
-                for v in all_vecs:
-                    v.reshape(pv_shape0)[:] += pv
-            else:
-                for v in all_vecs:
-                    v.reshape(pivot_shape)[:] += pivot
+            for v in all_vecs:
+                v.reshape(pv_shape0)[:] += pv
 
         # ---------------------------------------------------------------------------
         # Translation
@@ -724,15 +706,10 @@ class Geometry:
 
         if translation is not None:
             translation = np.asarray(translation)
-            if True:
-                shape, op_shape = self.points._get_shape_for_operation(translation.shape[:-1], title="Scale")
-                tr = np.reshape(translation, op_shape + (3,))
-                for v in all_vecs:
-                    v.reshape(shape)[:] += tr
-            else:
-                tr_shape = self._check_transformation_shape(translation.shape[:-1], npoints, label="Pivot")
-                for v in all_vecs:
-                    v.reshape(tr_shape)[:] += translation
+            shape, op_shape = self.points._get_shape_for_operation(translation.shape[:-1], title="Scale")
+            tr = np.reshape(translation, op_shape + (3,))
+            for v in all_vecs:
+                v.reshape(shape)[:] += tr
 
         # ---------------------------------------------------------------------------
         # Set the points with the result

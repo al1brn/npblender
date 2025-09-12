@@ -7,217 +7,69 @@ from .constants import bfloat
 from .mesh import Mesh
 from .curve import Curve
 from .textutils import parse_latex
-from .maths import Rotation, maprange
+from .maths import Rotation, maprange, Zone
 
 # ====================================================================================================
 # Formula item
 # ====================================================================================================
 
 class Item:
-    def __init__(self, geometry, loc=None, center=None, scale=None, rot=None, margins=None, *attrs):
+    def __init__(self, geometry, margins=None, *attrs):
+        """ An item encapsulates a geometry.
+
+        It maintains a zone around the geometry and margins
+        """
+
+        if geometry is None:
+            self.geometry = None
+            self.margins = None
+            self.zone = None
+            return
 
         self.geometry = geometry
+        self.zone = Zone.from_points(geometry.points.position)
 
-        self._loc = loc
-        self._center = center
-        self._scale = scale
-        self._margins = margins
-        self.rot = rot
-
-        self.update_bbox()
+        if margins is None:
+            self.margins = np.zero(4, dtype=float)
+        else:
+            self.margins = np.resize(margins, 4).astype(float)
 
         self.attrs = dict(attrs)
 
-    # ====================================================================================================
-    # Properties
-    # ====================================================================================================
+    # ---------------------------------------------------------------------------
+    # Clone
+    # ---------------------------------------------------------------------------
 
-    @property
-    def transformed(self):
-
-        geo = self.geometry.clone()
-        margins = self.margins
-        
-        if self._scale is not None or self._rot is not None:
-            if self._rot is None:
-                rot = None
-            else:
-                rot = Rotation.from_euler([0, 0, self._rot])
-
-            if self._scale is None:
-                scale = None
-            else:
-                scale = self.scale
-                margins = margins[0]*scale[0], margins[1]*scale[1], margins[2]*scale[0], margins[3]*scale[1]
-
-            geo.transformation(self, rotation=rot, scale=scale, translation=self.loc, pivot=self.center)
-
-        elif self._loc is not None:
-            geo.points.translate(self.loc)
-
-        # ----- Attributes
-
-        for k, v in self.attrs.items():
-            if 'faces' in geo.domain_names:
-                geo.faces[k] = v
-            elif 'splines' in geo.domaine_names:
-                geo.faces[k] = v
-            else:
-                geo.points[k] = v
-
-        # ----- Return as item for amrgin and true dims
-
-        return Item(geo, margins=margins)
+    def clone(self):
+        """Make a copy of the item.
+        """
+        item = Item()
+        item.geometry = self.geometry.clone()
+        item.zone = Zone(*self.zone.bbox)
+        item.margins = np.array(self.margins)
+        return item
     
-    # ====================================================================================================
-    # Update bbox
-    # ====================================================================================================
-
-    def update_bbox(self):
-        self.vmin, self.vmax = np.min(self.geometry.points.position, axis=0), np.max(self.geometry.points.position, axis=0)
-        self.true_center = (self.vmin + self.vmax)/2
-        self.true_box = self.vmax - self.vmax
-
-    # ====================================================================================================
-    # Properties
-    # ====================================================================================================
-
-    @staticmethod
-    def _get_vect(attr, default):
-        if attr is None:
-            return default
-        elif len(attr) == 2:
-            return np.array([attr[0], attr[1], 0.])
-        else:
-            assert(len(attr) == 3)
-            return np.array(attr)
+    # ---------------------------------------------------------------------------
+    # Transformed geometry
+    # ---------------------------------------------------------------------------
 
     @property
-    def loc(self):
-        return self._get_vect(self._loc, [0., 0., 0.])
-    
-    @property
-    def center(self):
-        return self._get_vect(self._center, self.true_center)
-    
-    @property
-    def scale(self):
-        return self._get_vect(self._scale, [1., 1., 1.])
-    
-    @property
-    def margins(self):
-        return self._get_vect(self._margins, [0., 0., 0., 0.])
+    def transformed_geometry(self):
+        """Apply the transformation to the geometry.
+        """
+        T = self.zone.transfo.transformation3d
+        self.geometry.transformation(T)
+        return self.geometry
 
-    @property
-    def x0(self):
-        return self.vmin[0] - self.margins[0]
+    # ---------------------------------------------------------------------------
+    # Merge
+    # ---------------------------------------------------------------------------
 
-    @property
-    def y0(self):
-        return self.vmin[1] - self.margins[1]
-
-    @property
-    def x1(self):
-        return self.vmax[0] + self.margins[2]
-
-    @property
-    def y1(self):
-        return self.vmax[1] + self.margins[3]
-    
-    @property
-    def width(self):
-        return self.vmax[0] - self.vmin[0]
-
-    @property
-    def height(self):
-        return self.vmax[1] - self.vmin[1]
-    
-    # ====================================================================================================
-    # Some useful operations
-    # ====================================================================================================
-
-    def x_align(self, x, align='left'):
-        align = align.lower()
-        delta = x - self.x0
-        if align == 'center':
-            delta -= self.width/2
-        elif align == 'right':
-            delta =- self.width
-        
-        self.geometry.points.x += delta
-        self.vmin[0] += delta
-        self.vmax[0] += delta
-
-
-        return self
-
-    def y_align(self, y, align='middle'):
-        align = align.lower()
-        delta = y - self.y0
-        if align in ['center', 'middle']:
-            delta -= self.height/2
-        elif align == 'top':
-            delta =- self.height
-        
-        self.geometry.points.y += delta
-        self.vmin[1] += delta
-        self.vmax[1] += delta
-
-        return self
-
-    def apply_scale(self, x_scale=1., y_scale=1.):
-        scale = (x_scale, y_scale, 1.0)
-        self.geometry.points.apply_scale(scale)
-        self.update_bbox
-
-        return self
-    
-    def set_height(self, height, mode='scale_y', down_scale=False):
-
-        if height <= self.height and not down_scale:
-            return self
-
-        mode = mode.lower()
-
-        if mode in ['scale', 'scale_y', 'scale_xy']:
-            scale = height/self.height
-            x_scale = scale if mode == 'scale_xy' else 1.
-            return self.geometry.apply_scale(x_scale, height/self.height)
-        
-        points = self.geometry.points
-        
-        y = points.y
-        y0, y1 = np.min(y), np.max(y)
-        h = y1 - y0
-        mrg = h*0.
-        cy = (y0 + y1)/2
-        
-        dh = height - h
-        dy = maprange(np.abs(y - cy), mrg, h/2 - mrg, 0, dh/2, mode='SMOOTH') * np.sign(y - cy)
-
-        points.y += dy
-
-        self.update_bbox()
-
-        return self
-    
-    def set_width(self, width, mode='scale_x', down_scale=False):
-
-        if width <= self.width and not down_scale:
-            return self
-
-        mode = mode.lower()
-
-        scale = width/self.width
-        y_scale = scale if mode == 'scale_xy' else 1.
-        return self.geometry.apply_scale(scale, y_scale)
-
-
-
-
-        
-
-
+    def merge(self, *items):
+        """Merge with other items.
+        """
+        self.geometry.join(*[item.transformed_geometry for item in items])
+        self.zone = self.zone.merge(*[item.zone for item in items])
 
 # ====================================================================================================
 # Formula
@@ -226,6 +78,8 @@ class Item:
 class Formula:
 
     def __init__(self, *compos, block_type='CONTENT', name="Content", factor=1., **options):
+        """ Formula
+        """
 
         self.block_type = block_type
         self.name = name
