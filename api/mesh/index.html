@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -619,6 +619,15 @@
   <a href="#npblender.Mesh.dual" class="md-nav__link">
     <span class="md-ellipsis">
       dual
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Mesh.extract_from_faces" class="md-nav__link">
+    <span class="md-ellipsis">
+      extract_from_faces
     </span>
   </a>
   
@@ -1446,6 +1455,15 @@
   <a href="#npblender.Mesh.dual" class="md-nav__link">
     <span class="md-ellipsis">
       dual
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.Mesh.extract_from_faces" class="md-nav__link">
+    <span class="md-ellipsis">
+      extract_from_faces
     </span>
   </a>
   
@@ -5985,6 +6003,80 @@ the dual of the dual is not guaranteed to reproduce the original mesh),
 especially in the presence of boundaries or irregular valences.</p>
 </blockquote>
 </details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="npblender.Mesh.extract_from_faces" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">extract_from_faces</span>
+
+
+<a href="#npblender.Mesh.extract_from_faces" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">extract_from_faces</span><span class="p">(</span><span class="n">selection</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Extract a Mesh from a selection of faces.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>selection</code>
+            </td>
+            <td>
+                  <code><span title="array_like">array_like</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>A valide selection on face (default is True).</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="Mesh (npblender.mesh.Mesh)" href="#npblender.Mesh">Mesh</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The extracted mesh.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
 
     </div>
 

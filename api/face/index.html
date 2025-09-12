@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -477,6 +477,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#npblender.Face.loop_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      loop_index
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#npblender.Face.next_loop_start" class="md-nav__link">
     <span class="md-ellipsis">
       next_loop_start
@@ -669,15 +678,6 @@
   <a href="#npblender.Face.get" class="md-nav__link">
     <span class="md-ellipsis">
       get
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#npblender.Face.get_corner_indices" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_corner_indices
     </span>
   </a>
   
@@ -1317,6 +1317,61 @@ structure without copying values.</p>
         <p>Array structured dtype</p>
 <p>Returns the dtype property of the structured array.</p>
 
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="npblender.Face.loop_index" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">loop_index</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#npblender.Face.loop_index" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">loop_index</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Return the contiguous range of corner/control-point indices.</p>
+<p>For each item, expands its <code>[loop_start, loop_start + loop_total)</code> range
+and concatenates the result for all items.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>ndarray of shape ``(sum(loop_total),)``</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Absolute indices into the corner/control-point array.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="note" open>
+  <summary>Notes</summary>
+  <p>A fast Numba kernel is used for vectorized cases; the scalar case is
+handled directly.</p>
+</details>
     </div>
 
 </div>
@@ -3162,57 +3217,6 @@ Name can be an array.
 <span class="n">pos</span> <span class="o">=</span> <span class="n">field_array</span><span class="o">.</span><span class="n">get</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]])</span>
 </code></pre></div></p>
 
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="npblender.Face.get_corner_indices" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_corner_indices</span>
-
-
-<a href="#npblender.Face.get_corner_indices" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_corner_indices</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Return the contiguous range of corner/control-point indices.</p>
-<p>For each item, expands its <code>[loop_start, loop_start + loop_total)</code> range
-and concatenates the result for all items.</p>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code>ndarray of shape ``(sum(loop_total),)``</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Absolute indices into the corner/control-point array.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<details class="note" open>
-  <summary>Notes</summary>
-  <p>A fast Numba kernel is used for vectorized cases; the scalar case is
-handled directly.</p>
-</details>
 
     </div>
 
