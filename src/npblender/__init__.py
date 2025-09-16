@@ -12,7 +12,7 @@ from .cloud import Cloud
 from .mesh import Mesh
 from .curve import Curve
 from .instances import Instances, Meshes
-from .text import Text, Composition, Font
+from .text import Font, Text, Formula, MeshTerm
 from .multiresgrid import MultiResGrid
 
 from .simulation import Simulation
@@ -30,15 +30,15 @@ __version__ = ".".join(map(str, VERSION))
 __blender_version__ = ".".join(map(str, BLENDER_VERSION))
 
 __all__ = [
-    "VERSION",
-    "BLENDER_VERSION",
+    "VERSION", "BLENDER_VERSION",
     "Camera",
     "engine", "Animation", "Engine",
     "FieldArray",
     "Domain", "Point", "Vertex", "ControlPoint", "Corner", "Face", "Edge", "Spline",
     "ShapeKeys",
     "Custom",
-    "Geometry", "Cloud", "Mesh", "Curve", "Text", "Composition", "Font",
+    "Geometry", "Mesh", "Curve", "Cloud",
+    "Text", "Formula", "Font", "MeshTerm",
     "Instances", "Meshes",
     "MultiResGrid",
     "Simulation",

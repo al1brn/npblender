@@ -1,6 +1,10 @@
-__all__ = ["latex_parser", "parse_latex", "EnrichedText"]
+__all__ = []
 
-from .etext import EnrichedText
-from .latex import latex_parser
-from .latex_parser import parse_latex
+from .etext import *
+from . import etext
+__all__.extend(etext.__all__)
+
+from .latex_parser import *
+from . import latex_parser
+__all__.extend(latex_parser.__all__)
 

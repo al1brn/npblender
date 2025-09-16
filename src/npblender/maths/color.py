@@ -12,7 +12,7 @@ CSS_HEX = {
     "violet":"#EE82EE","indigo":"#4B0082","pink":"#FFC0CB","beige":"#F5F5DC",
 }
 
-from . import bfloat
+from .constants import bfloat
 
 
 class Color:
@@ -59,10 +59,8 @@ class Color:
             
         self._clamp()
 
-
     def _clamp(self):
         np.clip(self._rgba, 0.0, 1.0, out=self._rgba)
-
 
     def __str__(self):
         return self.to_hex()
@@ -103,11 +101,11 @@ class Color:
         self._clamp()
 
     @property
-    def a(self):
+    def alpha(self):
         return self._rgba[3]
     
-    @a.setter
-    def a(self, value):
+    @alpha.setter
+    def alpha(self, value):
         self._rgba[3] = value
         self._clamp()
 
@@ -147,6 +145,26 @@ class Color:
         import mathutils
 
         return mathutils.Color(self._rgba[:3])
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Array of rgba
+    # ----------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def to_rgba(value):
+
+        try:
+            return Color(value).rgba
+        except:
+            pass
+
+        if hasattr(value, '__len__'):
+            try:
+                return np.array([Color(v).rgba for v in value], dtype=bfloat)
+            except:
+                pass
+
+        raise AttributeError(f"Impossible to get RGBA from {value}")
     
     # ----------------------------------------------------------------------------------------------------
     # Hexa

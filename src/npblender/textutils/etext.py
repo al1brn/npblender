@@ -12,6 +12,7 @@ ET_DTYPE = np.dtype([
             ('color',          'f4', (4,)),
         ])
 
+
 BL_ATTRS = {
     'bold': 'use_bold',
     'italic': 'use_italic',
@@ -21,131 +22,216 @@ BL_ATTRS = {
     'kerning': 'kerning',
 }
 
+__all__ = ["EText", "CharStyle"]
+
+# ====================================================================================================
+# Style
+# ====================================================================================================
+
+class CharStyle:
+            
+    STYLES = {
+        'bold'              : False,
+        'italic'            : False,
+        'small_caps'        : False,
+        'underline'         : False,
+        'material_index'    : 0,
+        'size'              : 1.0,
+        'kerning'           : 0.0,
+        'color'             : (1.0, 1.0, 1.0, 1.0),
+    }
+    
+    __slots__ = ["_styles"]
+
+    def __init__(self, **styles):
+        
+        object.__setattr__(self, "_styles", dict(self.STYLES))
+
+        for name, default in styles.items():
+            self[name] = default
+
+    def __getattr__(self, name):
+        if name in self._styles:
+            return self._styles[name]
+        raise AttributeError(f"No style named '{name}'. Valid styles are {list(self._styles.keys())}")
+    
+    def __setattr__(self, name, value):
+        
+        if name in self._styles:
+            if name == 'color':
+
+                OK = True
+                try:
+                    from ..maths import Color
+                except:
+                    OK = False
+
+                if OK:
+                    self._styles[name] = Color.to_rgba(value)
+                else:
+                    self._styles[name] = value
+
+            else:
+                self._styles[name] = value
+            return
+        
+        raise AttributeError(f"No style named '{name}'. Valid styles are {list(self._styles.keys())}")
+    
+    def __getitem__(self, index):
+        return self.__getattr__(index)
+    
+    def __setitem__(self, index, value):
+        self.__setattr__(index, value)
+    
+    def __iter__(self):
+        for k, v in self._styles.items():
+            yield k, v
+    
+    def as_dict(self, **styles):
+        return {k: styles[k] if k in styles else v for k, v in self._styles.items()}
+    
+    def set(self, **styles):
+        for k, v in styles.items():
+            self[k] = v
+
+
 # ====================================================================================================
 # Enriched text
 # ====================================================================================================
 
-class EnrichedText:
-    def __init__(self, text,
-            bold=False, 
-            italic=False, 
-            small_caps=False, 
-            material_index=0,
-            underline=False, 
-            kerning=0.0, 
-            size=1.0, 
-            color = (1, 1, 1, 1),
-    ):
-        self.text = text
+class EText:
 
-        self.bold = bold
-        self.italic = italic
-        self.small_caps = small_caps
-        self.material_index = material_index
-        self.underline = underline
-        self.kerning = kerning
-        self.size = size
-        self.color = color
+    __slots__ = ["_cstyle", "_data", "_len"]
+
+    def __init__(self, text=None, **styles):
+
+        self._len  = 0
+        self._cstyle = CharStyle(**styles)
+
+        if text is None:
+            self._data = np.zeros(100, dtype=ET_DTYPE).view(np.recarray)
+
+        else:
+            self._data = np.zeros(len(text), dtype=ET_DTYPE).view(np.recarray)
+
+            self.text = text
+            for k, v in styles.items():
+                setattr(self, k, v)
 
     def __str__(self):
-        return "".join(self._data.char)
+        return "".join(self._data.char[:self._len])
+    
+    def __repr__(self):
+        n = 60
+        return "\n".join([
+            "> " + "".join(self._data.char[:n]),
+            "B " + "".join(["X" if ok else "." for ok in self.bold[:n]]),
+            "I " + "".join(["X" if ok else "." for ok in self.italic[:n]]),
+            "U " + "".join(["X" if ok else "." for ok in self.underline[:n]]),
+            "S " + "".join(["X" if ok else "." for ok in self.small_caps[:n]]),
+        ])
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Buffer management
+    # ----------------------------------------------------------------------------------------------------
+
+    def _ensure_len(self, new_len):
+
+        if self._data is not None and len(self._data) >= new_len:
+            return
+
+        buf_len = (new_len // 100)*100 + 100
+        assert(buf_len >= new_len)
+
+        data = np.zeros(buf_len, dtype=ET_DTYPE).view(np.recarray)
+
+        # Default
+        for k, v in CharStyle.STYLES.items():
+            data[k] = v
+
+        # Existing chars
+        if self._data is not None:
+            data[:self._len] = self._data[:self._len]
+
+        self._data = data
     
     # ----------------------------------------------------------------------------------------------------
     # Clone
     # ----------------------------------------------------------------------------------------------------
 
     def clone(self):
-        txt = EnrichedText()
+        txt = EText()
         txt.text = self
+        txt.default.set(**self.default.as_dict())
         return txt
+    
+    def clear(self):
+        self._len = 0
 
     # ----------------------------------------------------------------------------------------------------
-    # Attribute names
+    # Styles
     # ----------------------------------------------------------------------------------------------------
 
     @property
     def attributes(self):
-        return list(self._data.dtype.names[1:])
+        return list(CharStyle.STYLES.keys())
+    
+    @property
+    def default(self):
+        return self._cstyle
 
     # ----------------------------------------------------------------------------------------------------
-    # Text properties
+    # Text as str
     # ----------------------------------------------------------------------------------------------------
+
+    def __len__(self):
+        return self._len
 
     @property
     def text(self):
-        return "".join(self._data.char)
+        return "".join(self._data.char[:self._len])
     
     @text.setter
     def text(self, value):
-        if isinstance(value, EnrichedText):
+        if isinstance(value, EText):
             self._data = np.array(value._data).view(np.recarray)
+            self._len = value._len
+
         else:
-            self._data = np.zeros(len(value), dtype=ET_DTYPE).view(np.recarray)
-            self._data.char = list(value)
+            self._ensure_len(len(value))
+            self._len = len(value)
+            self._data.char[:self._len] = list(value)
 
-    @property
-    def bold(self):
-        return self._data.bold
-    
-    @bold.setter
-    def bold(self, value):
-        self._data.bold = value
+            for k, v in self.default:
+                setattr(self, k, v)
 
-    @property
-    def italic(self):
-        return self._data.italic
-    
-    @italic.setter
-    def italic(self, value):
-        self._data.italic = value
+    # ----------------------------------------------------------------------------------------------------
+    # Styles
+    # ----------------------------------------------------------------------------------------------------
 
-    @property
-    def underline(self):
-        return self._data.underline
-    
-    @underline.setter
-    def underline(self, value):
-        self._data.underline = value
+    def __getattr__(self, name):
 
-    @property
-    def small_caps(self):
-        return self._data.small_caps
+        if name in CharStyle.STYLES:
+            return self._data[name][:self._len]
+        
+        raise AttributeError(f"No style named '{name}'. Valid styles are {list(CharStyle.STYLES.keys())}")
     
-    @small_caps.setter
-    def small_caps(self, value):
-        self._data.small_caps = value
+    def __setattr__(self, name, value):
 
-    @property
-    def size(self):
-        return self._data.size
-    
-    @size.setter
-    def size(self, value):
-        self._data.size = value
+        if name in ['_data', '_len', '_cstyle']:
+            object.__setattr__(self, name, value)
+            return
 
-    @property
-    def material_index(self):
-        return self._data.material_index
-    
-    @material_index.setter
-    def material_index(self, value):
-        self._data.material_index = value
+        elif name in CharStyle.STYLES:
+            self._data[name][:self._len] = value
+            return
+        
+        super().__setattr__(name, value)
 
-    @property
-    def kerning(self):
-        return self._data.kerning
-    
-    @kerning.setter
-    def kerning(self, value):
-        self._data.kerning = value
+        #raise AttributeError(f"No style named '{name}'. Valid styles are {list(CharStyle.STYLES.keys())}")
 
-    @property
-    def color(self):
-        return self._data.color
-    
-    @color.setter
-    def color(self, value):
-        self._data.color = value
+    def __getitem__(self, name):
+        return getattr(self, name)
 
     # ----------------------------------------------------------------------------------------------------
     # To Blender body_data
@@ -153,12 +239,12 @@ class EnrichedText:
 
     def to_body_format(self, body_format):
         for name, bl_name in BL_ATTRS.items():
-            a = np.array(self._data[name]).ravel()
+            a = np.array(self[name]).ravel()
             body_format.foreach_set(bl_name, a)
 
     def from_body_format(self, body_format):
         for name, bl_name in BL_ATTRS.items():
-            a = np.empty_like(self._data[name])
+            a = np.empty_like(self[name])
             body_format.foreach_get(bl_name, a.ravel())
             self._data[name] = a
 
@@ -166,142 +252,80 @@ class EnrichedText:
     # Dunder
     # ----------------------------------------------------------------------------------------------------
 
-    def __len__(self):
-        return self._data.shape[0]
-    
-    def _other_to_rec(self, other):
-        if isinstance(other, EnrichedText):
-            return other._data
-        elif isinstance(other, str):
-            return EnrichedText(other)._data
-        else:
-            return EnrichedText(str(other))._data
+    def append(self, text, **styles):
 
-    def __getitem__(self, index):
-
-        if isinstance(index, str):
-            return self._data[index]
+        new_len = self._len + len(text)
+        self._ensure_len(new_len)
         
-        sub = self._data[index]
-        out = object.__new__(type(self))
-        out.dtype = self.dtype
-
-        if isinstance(index, (int, np.integer)):
-            buf = np.zeros(1, dtype=ET_DTYPE).view(np.recarray)
-            buf[0] = sub
-            out._data = buf
-
+        if isinstance(text, EText):
+            self._data[self._len:new_len] = text._data[:text._len]
+        
         else:
-            out._data = sub.view(np.recarray)
+            text = str(text)
+            self._data['char'][self._len:new_len] = list(text)
 
-        return out
+            for k, v in self.default:
+                if k in styles:
+                    self._data[k][self._len:new_len] = styles[k]
+                else:
+                    self._data[k][self._len:new_len] = v
 
-    def __setitem__(self, index, value):
+        self._len = new_len
 
-        if isinstance(index, str):
-            self._data[index] = value
-            return
+    def extract(self, index0=0, index1=None):
 
-        rec = self._other_to_rec(value)
+        if index0 < 0:
+            index0 = self._len + index0
 
-        if isinstance(index, (int, np.integer)):
-            self._data[index] = rec[0]
+        if index1 is None:
+            index1 = self._len
+        elif index1 < 0:
+            index1 = self._len + index1
 
-        else:
-            target = self._data[index]
-            if rec.shape[0] == target.shape[0]:
-                self._data[index] = rec
-            elif rec.shape[0] == 1:
-                for name in self._data.dtype.names:
-                    target[name] = rec[name][0]
+        data = np.array(self._data[index0:index1]).view(np.recarray)
+
+        etext = EText()
+        etext._data = data
+        etext._len  = len(data)
+
+        return etext
 
     def __add__(self, other):
-        right = self._other_to_rec(other)
-        out = object.__new__(type(self))
-        out.dtype = ET_DTYPE
-        out._data = np.concatenate([self._data, right]).view(np.recarray)
-        return out
+        etext = self.clone()
+        etext.append(other)
+        return etext
 
     def __radd__(self, other):
-        right = self._other_to_rec(other)
-        out = object.__new__(type(self))
-        out.dtype = ET_DTYPE
-        out._data = np.concatenate([right, self._data]).view(np.recarray)
-        return out
+        etext = EText(other)
+        etext.append(self)
+        return etext
 
     def __iadd__(self, other):
-        right = self._other_to_rec(other)
-        self._data = np.concatenate([self._data, right]).view(np.recarray)
+        self.append(other)
         return self
     
-    # ====================================================================================================
-    # Flow
-    # ====================================================================================================
+if __name__ == '__main__':
 
-    def _flow_blocks(self):
+    cs = CharStyle()
+    cs.italic = True
+    cs.bold = False
+    print(cs.as_dict())
 
-        n = len(self._data)
-        if n == 0:
-            return []
-        
-        etxt = EnrichedText(" ")        
-        def_vals = {name: etxt._data[name][0] for name in ET_DTYPE.names[1:]}
+    txt = EText("Hello")
+    txt.default.small_caps = True
+    txt.append(" folk", italic=True)
+    print(txt)
+    txt.bold[1] = True
+    print(repr(txt))
 
-        blocks = {}
-        def _add_block(start, end, value):
-            if start is None:
-                return
-            cur = blocks.get(start, None)
-            if cur is None:
-                cur = []
-                blocks[start] = cur
+    print(txt.extract(2, 5))
 
-            cur.append((start, end, value))
-
-
-        for name in ET_DTYPE.names[1:]:
-
-            # Values to explore and default value
-            values = self._data[name]
-            def_val = def_vals[name]
-
-            # Block info
-            start = None
-            block_val = def_val
-
-            # Loop
-            for index, cur_val in enumerate(values):
-                if cur_val == block_val:
-                    continue
-
-                _add_block(start, index, block_val)
-
-                block_val = cur_val
-                # Block start if not default
-                start = None if block_val == def_val else index
-
-            _add_block(start, n, block_val)
-
-        # Sort the block lists
-        for k in blocks:
-            blocks[k] = sorted(blocks[k], key=lambda x: -x[1])
-
-        # Imbricated blocks
-        flow = {}
-
-        raw_text = "".join(self._data.char)
-        index = 0
-        for start, blist in blocks.items():
-            if start > index:
-                flow.append(raw_text[start:index])
-            flow.appen
-
-
-
-
-
-
-
-
+    txt = EText()
+    txt.append(">Hello")
+    print(txt)
+    txt.clear()
+    print(txt)
+    txt.append("abc")
+    print(txt)
 
 

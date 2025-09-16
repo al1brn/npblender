@@ -32,7 +32,7 @@ Summary:
 
 """
 
-__all__ = ["Font", "Text", "Composition"]
+__all__ = ["Font", "Text", "Formula", "MeshTerm"]
 
 import numpy as np
 from pathlib import Path
@@ -46,8 +46,9 @@ from .curve import Curve
 from .mesh import Mesh
 from .domain import Point
 
-from .textutils import EnrichedText, parse_latex
+from .textutils import EText, parse_latex
 from .maths import Color, Transformation, Rotation, Quaternion, maprange
+from .maths import Transfo2d, BBox, Term, TermBox
 
 # ====================================================================================================
 # Font
@@ -55,9 +56,7 @@ from .maths import Color, Transformation, Rotation, Quaternion, maprange
 
 class Font:
 
-    BFONT = "Bfont"
-
-    def __init__(self, name=BFONT, filepath=None, regular="", bold="Bold", italic="Italic", bold_italic="Bold Italic", extension="ttf"):
+    def __init__(self, name=None, filepath=None, regular="", bold="Bold", italic="Italic", bold_italic="Bold Italic", extension="ttf"):
 
         self.filepath = filepath
         self.extension = extension
@@ -69,19 +68,24 @@ class Font:
 
     @staticmethod
     def _get_full_name(name, variant):
-        if variant is None or variant == "":
-            return name
-        elif name is None or name == "":
-            return variant
+        if name is None:
+            if variant is None or variant == "":
+                return "Bfont"
+            else:
+                return variant
+            
         else:
-            return f"{name} {variant}"
+            if variant is None or variant == "":
+                return name
+            else:
+                return f"{name} {variant}"
     
     # ====================================================================================================
     # Load a font
     # ====================================================================================================
 
     @classmethod
-    def load_font(cls, name=BFONT, variant="Regular", filepath=None, extension="ttf", default=None):
+    def load_font(cls, name, variant="Regular", filepath=None, extension="ttf", default=None):
 
         # Name is a font
         if isinstance(name, bpy.types.VectorFont):
@@ -91,36 +95,36 @@ class Font:
         if isinstance(variant, bpy.types.VectorFont):
             return variant
         
-        # Let's try to load the font
+        # Let's try to load an existing font
 
         full_name = cls._get_full_name(name, variant)
-        
         font = bpy.data.fonts.get(full_name)
         if font is not None:
             return font
         
-        # ----- Load default if it is this one
-        
-        if name == cls.BFONT:
-            temp = blender.create_text_object("BPB Text Temp")
-            blender.delete_object(temp)
-            return bpy.data.fonts.get(full_name)
+        # If path is provided, we try to load the file
+        if filepath is not None:
 
-        # ----- Otherwise load from path
+            file_name = str(Path(filepath) / full_name) + f".{extension}"
 
-        file_path = str(Path(filepath) / full_name) + f".{extension}"
+            try:
+                return bpy.data.fonts.load(file_name)
+            except:
+                pass
 
-        try:
-            return bpy.data.fonts.load(file_path)
-        except:
-            pass
-
-        # ----- Default if any
-
+        # If default is not provided, we load the default fault
         if default is None:
-            raise Exception(f"Impossible to load font '{full_name}' with path '{file_path}'")
-        else:
-            return default
+            temp = blender.create_text_object("NPB Text Temp")
+            default = temp.data.font
+            blender.delete_object(temp)
+
+        font = default
+
+        # Warning message
+        if full_name != "Bfont" and (default is None):
+            print(f"WARNING Impossible to load font '{full_name}' with path '{filepath}'")
+
+        return font
     
     # ====================================================================================================
     # From blender
@@ -271,8 +275,8 @@ class Text(Geometry):
         
     domain_names = ["points"]
     
-    def __init__(self, text="Text", font=None, materials=None, **kwargs):
-        
+    def __init__(self, text="Text", font=None, materials=None, is_latex=False, **kwargs):
+
         # One single point : location of the text
         self.points = Point(position=(0, 0, 0))
         if materials is None:
@@ -286,7 +290,10 @@ class Text(Geometry):
         self.font = Font() if font is None else font
 
         # Enriched text
-        self.text = text
+        if is_latex:
+            self.etext = parse_latex(text, math_mode=False)
+        else:
+            self.text = text
 
         # Properties
         self.props = {}
@@ -318,7 +325,7 @@ class Text(Geometry):
 
     @text.setter
     def text(self, value):
-        self._etext = EnrichedText(value)
+        self._etext = EText(value)
 
     @property
     def etext(self):
@@ -326,128 +333,7 @@ class Text(Geometry):
 
     @etext.setter
     def etext(self, value):
-        self._etext = EnrichedText(value)
-
-    @property
-    def latex(self):
-        raise ValueError("Text.latex is write only")
-    
-    @latex.setter
-    def latex(self, value):
-
-        from pprint import pprint
-
-        # ---------------------------------------------------------------------------
-        # Parse the LateX string in mode text (not math mode)
-        # ---------------------------------------------------------------------------
-
-        parsed = parse_latex(value, math_mode=False, ignore_comments=True)
-
-        # ---------------------------------------------------------------------------
-        # Prepare list of string parts with attributes
-        # ---------------------------------------------------------------------------
-
-        switches = ['bold', 'italic', 'small_caps', 'underline']
-        str_parts = []
-        str_attr = []
-
-        def _add(block, attributes):
-
-            # ---------------------------------------------------------------------------
-            # Non content are managed by owner
-
-            assert('content' in block)
-
-            # ---------------------------------------------------------------------------
-            # Inherits params from owner
-            # Enrich with proper attributes
-
-            new_attrs = dict(attributes)
-            for k, v in block.items():
-                if k not in ['type', 'content']:
-                    new_attrs[k] = v
-
-            # User params
-            params = {}
-
-            # ---------------------------------------------------------------------------
-            # Loop on the content
-
-            for cnt in block['content']:
-
-                # ----- Content is a string
-                #if isinstance(cnt, str):
-                #    flow.append({"string": cnt, **new_attrs, **params})
-                #    continue
-
-                # ----- Otherwise it is a dict
-                
-                # Switch current parameters
-                if cnt['type'] == 'STRING':
-                    str_parts.append(cnt['string'])
-                    str_attr.append({**new_attrs, **params})
-
-                elif cnt['type'] == 'SWITCH':
-                    for k, v in cnt.items():
-                        if k not in ['type']:
-                            new_attrs[k] = v
-
-                # Python parameter
-                elif cnt['type'] == 'PARAM':
-                    msg = None
-                    try:
-                        val = eval(cnt['value'])
-                    except Exception as e:
-                        msg = str(e)
-
-                    if msg is not None:
-                        raise Exception(f"Erreur when evaluating {block['key']}={block['value']}: {msg}")
-                    
-                    if cnt['key'] in new_attrs.keys():
-                        new_attrs[cnt['key']] = val
-                    else:
-                        params[cnt['key']] = val
-                    
-                elif 'content' in cnt:
-                    _add(cnt, new_attrs)
-
-                else:
-                    print("-"*10)
-                    pprint(block)
-                    assert(False)
-
-        _add(parsed, {k: False for k in switches})
-
-        # ---------------------------------------------------------------------------
-        # Prepare list of string parts with attributes
-        # ---------------------------------------------------------------------------
-
-        self._etext = EnrichedText("".join(str_parts))
-        index = 0
-        for part, attr in zip(str_parts, str_attr):
-            n = len(part)
-            for k, v in attr.items():
-                if k in self._etext.attributes:
-                    if k == 'color':
-                        self._etext[k][index:index + n] = Color(v).rgba
-                    else:
-                        self._etext[k][index:index + n] = v
-
-            index += n
-
-
-
-
-
-            
-
-
-            
-
-
-
-
-
+        self._etext = EText(value)
 
     # ----------------------------------------------------------------------------------------------------
     # Conveniance
@@ -697,4 +583,310 @@ class Text(Geometry):
             curve.points.position += self.points.position[0]
 
         return curve   
+
+# ====================================================================================================
+# Formula
+# ====================================================================================================
+
+# ----------------------------------------------------------------------------------------------------
+# A formula term which encapsulate a mesh
+# ----------------------------------------------------------------------------------------------------
+
+class MeshTerm(TermBox):
+
+    def __init__(self, mesh, **kwargs):
+
+        super().__init__(**kwargs)
+        if 'italic' not in kwargs:
+            self.italic = False
+
+        self._string = None # To build mesh once font is avaiablable
+        self._mesh = None
+        self._bbox = None
+
+        if isinstance(mesh, Mesh):
+            self._mesh = mesh
+
+        elif isinstance(mesh, str):
+            self._string = mesh
+
+        elif isinstance(mesh, (float, int, np.integer, np.float64, np.float32)):
+            self._string = str(mesh)
+
+        elif isinstance(mesh, Geometry):
+            self._mesh = mesh.to_mesh()
+
+        else:
+            raise ValueError(f"MeshTerm(): mesh argument must be Geometry or a string, not '{type(mesh).__name__}'")
+
+    def __str__(self):
+        s = "" if self._string is None else f"[{self._string}]" 
+        return f"<MeshTerm{s}: {self._mesh}, {self.transfo}>"
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Return bbox and mesh
+    # ----------------------------------------------------------------------------------------------------
+
+    @property
+    def adjustable(self):
+        return self._adjust_bbox is not None and hasattr(self, 'child_index')
+
+    def get_bbox(self):
+        if self.adjustable or self._mesh is None:
+            return BBox.from_points(self.mesh.points.position)
+        else:
+            return BBox.from_points(self._mesh.points.position)
+
+    @property
+    def mesh(self):
+
+        if self._mesh is None:
+            if self._string is None:
+                return Mesh()
+            
+            text = Text(self._string, font=self.font, is_latex=False, italic=self.italic)
+            self._mesh = text.to_mesh()
+        
+        mesh = Mesh.from_mesh(self._mesh)
+
+        if not self.adjustable:
+            return mesh
+        
+        # ----- Adjust size to the bbox
+
+        assert hasattr(self, 'child_index')
+
+        # Vertical adjustment
+        if self.child_index in ('left','right'):
+            mesh.elongation(
+                axis   = 'Y',
+                size   = self._adjust_bbox.height + 2*self.oversize, 
+                mode   = self.elon_mode,
+                margin = self.elon_margin,
+                smooth = self.elon_smooth,
+                )
+
+        # Horizontal adjustment
+        if self.child_index in ('below','above'):
+            mesh.elongation(
+                axis   = 'X',
+                size   = self._adjust_bbox.width + 2*self.oversize, 
+                mode   = self.elon_mode,
+                margin = self.elon_margin,
+                smooth = self.elon_smooth,
+                )
+            
+        self._bbox = BBox.from_points(mesh.points.position)
+
+        return mesh
+
+    def get_mesh(self, transfo=None):
+        transfo = self.get_transfo(transfo)
+        return self.mesh.transform(transfo.transformation3d)
+    
+# ----------------------------------------------------------------------------------------------------
+# A formula whose terms are MeshTerms
+# ----------------------------------------------------------------------------------------------------
+
+class Formula(Term):
+
+    # ----------------------------------------------------------------------------------------------------
+    # Convert a formula input in MeshTerm
+    # ----------------------------------------------------------------------------------------------------
+
+    def convert_term(self, term):
+        """Convert a term to a Term.
+        """
+        if isinstance(term, TermBox):
+            return term
+        else:
+            return MeshTerm(term)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Build the mesh from content and decorators
+    # ----------------------------------------------------------------------------------------------------
+
+    def get_mesh(self, transfo=None):
+
+        # Compute
+        self.get_bbox()
+
+        transfo = self.get_transfo(transfo)
+
+        mesh = Mesh()
+        for term in self.all_children:
+            m = term.get_mesh(transfo=transfo)
+            if m is not None:
+                mesh.join(m)
+
+        return mesh
+    
+    # ====================================================================================================
+    # Parse LaTeX string
+    # ====================================================================================================
+
+    @classmethod
+    def from_latex(cls, latex, **kwargs):
+        
+        
+        from pprint import pprint
+        from .textutils import parse_latex
+
+        def _new(d):
+
+            if d['type'] == 'STRING':
+                s = d['string']
+                italic = s[0] not in '0123456789'
+                frm = cls(MeshTerm(s, italic=italic))
+
+            elif d['type'] == 'SYMBOL':
+                frm = cls(MeshTerm(d['string']))
+
+            elif d['type'] == 'BLOCK':
+                frm = cls()
+                for c in d['content']:
+                    frm.append(_new(c))
+
+            elif d['type'] == 'COMMAND':
+                frm = cls(MeshTerm(d['command']))
+
+            else:
+                pprint(d)
+                raise ValueError(f"Unknown LaTeX type: '{d['type']}'.")
+            
+            for key in ['sub', 'sup']:
+                value = d.get(key)
+                if value is None:
+                    continue
+                deco_key = {'sup': 'superscript', 'sub': 'subscript'}[key]
+                deco = _new(value)
+                frm.set_decorator(deco_key, deco)
+
+            left = d.get('left_char')
+            right = d.get('right_char')
+            if (left is not None) or (right is not None):
+                if left == '.':
+                    left = None
+                if right == '.':
+                    right = None
+
+                if left is not None:
+                    frm.left = _new(left)
+                if right is not None:
+                    frm.right = _new(right)
+
+            return frm
+        
+        #formula = cls(**kwargs)
+        d = parse_latex(latex, math_mode=True)
+
+        print('-'*100)
+        pprint(d)
+        print('-'*100)
+
+        formula = cls(**kwargs)
+        formula.append(_new(d))
+
+        return formula
+
+
+
+        return _append(cls(**kwargs), parse_latex(latex, math_mode=True))
+
+    
+    # ====================================================================================================
+    # LaTeX primitives
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Accents
+    # ----------------------------------------------------------------------------------------------------
+
+    @classmethod
+    def lx_vec(cls, *terms, **kwargs):
+        deco = MeshTerm(r"\rightarrow", elon_mode='LEFT')
+        return Formula(*terms, above=deco, **kwargs)
+    
+    @classmethod
+    def lx_bar(self, *terms, **kwargs):
+        deco = MeshTerm(r"-", elon_mode='CENTER')
+        return Formula(*terms, above=deco, **kwargs)
+    
+    @classmethod
+    def lx_hat(self, *terms, **kwargs):
+        return Formula(*terms, fix_above=r"\^", **kwargs)
+    
+    @classmethod
+    def lx_tilde(self, *terms, **kwargs):
+        return Formula(*terms, fix_above="~", **kwargs)
+    
+    @classmethod
+    def lx_dot(self, *terms, **kwargs):
+        return Formula(*terms, fix_above=".", **kwargs)
+    
+    @classmethod
+    def lx_ddot(self, *terms, **kwargs):
+        return Formula(*terms, fix_above="..", **kwargs)
+    
+    @classmethod
+    def lx_overrightarrow(self, *terms, **kwargs):
+        deco = MeshTerm(r"\rightarrow", elon_mode='LEFT')
+        return Formula(*terms, above=deco, **kwargs)
+    
+    @classmethod
+    def lx_overleftarrow(self, *terms, **kwargs):
+        deco = MeshTerm(r"\leftarrow", elon_mode='RIGHT')
+        return Formula(*terms, above=deco, **kwargs)
+
+    @classmethod
+    def lx_overline(self, *terms, **kwargs):
+        return Formula(*terms, above="_", **kwargs)
+    
+    @classmethod
+    def lx_underline(self, *terms, **kwargs):
+        return Formula(*terms, below="_", **kwargs)
+    
+    
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Sums
+    # ----------------------------------------------------------------------------------------------------
+    
+    @classmethod
+    def lx_sum(cls, *terms, font=None, **kwargs):
+        pass
+
+    @classmethod
+    def lx_int(cls, *terms, font=None, **kwargs):
+        pass
+
+    @classmethod
+    def lx_prod(cls, *terms, font=None, **kwargs):
+        pass
+
+    
+
+
+    
+    
+
+
+
+    
+
+    
+
+    
+
+
+
+
+
+
+
+
+        
+
+
+
 

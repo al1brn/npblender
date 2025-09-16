@@ -1,4 +1,4 @@
-__all__ = ["Transfo2d", "Zone"]
+__all__ = ["Transfo2d", "BBox", "TermBox", "Term"]
 
 import numpy as np
 import math
@@ -43,6 +43,10 @@ class Transfo2d:
     
     def touch(self, touch=True):
         self._touched = touch
+
+    def reset(self):
+        self._matrix[...] = np.eye(3, dtype=float)
+        self.touch(self)
 
     # -------------------------------------
     # Basic accessors
@@ -313,6 +317,41 @@ class Transfo2d:
         self.touch()
         return self
     
+    # -------------------------------------
+    # Interpolation
+    # -------------------------------------
+
+    def interpolate(self, other, factor=.5, ymax=0., turns=0, smooth='LINEAR'):
+        """Interpolate with another transformation.
+        """
+
+        from .constants import TAU, PI
+        from .easings import maprange
+
+        if not isinstance(other, Transfo2d):
+            raise ValueError(f"Argument 'other' must be a 'Transfo2d', not '{type(other).__name__}'")
+        
+        # Read the components
+        tr0 = self.translation
+        sc0, rot0, _ = self._scale_rot
+
+        tr1 = other.translation
+        sc1, rot1, _ = other._scale_rot
+
+        # Rotation angle with optional turns
+        angle = ((rot1 - rot0 + PI)%TAU) - PI
+        angle += int(turns)*TAU
+
+        # Interpolation
+        tr = maprange(factor, 0., 1., tr0, tr1, mode=smooth)
+        sc = maprange(factor, 0., 1., sc0, sc1, mode=smooth)
+        rot = maprange(factor, 0., 1., rot0, rot0 + angle, mode=smooth)
+        dy = maprange(abs(factor - 0.5), 0.5, 0.0, 0., ymax, mode='CIRCULAR')
+
+        # Return the intermediate transformation
+        return Transfo2d.from_components(tx=tr[0], ty=tr[1] + dy, sx=sc[0], sy=sc[1], angle=rot)
+
+    
 # ====================================================================================================
 # A Bounding Box
 # ====================================================================================================
@@ -320,9 +359,9 @@ class Transfo2d:
 class BBox:
     def __init__(self, *bounds):
         if len(bounds) == 1:
-            self.bbox = bounds[0]
+            self.set_bbox(bounds[0])
         else:
-            self.bbox = bounds
+            self.set_bbox(bounds)
 
     def __str__(self):
         return f"<BBox ({self.x0:.2f}, {self.y0:.2f}, {self.x1:.2f}, {self.y1:.2f}])"
@@ -332,38 +371,31 @@ class BBox:
         vmin, vmax = np.min(points, axis=0), np.max(points, axis=0)
         return cls(vmin[:2], vmax[:2])
 
-    @property
-    def bbox(self):
+    def as_tuple(self):
         return self._bbox
     
-    @bbox.setter
-    def bbox(self, bounds):
-        error = False
-
-        print("???", bounds, type(bounds).__name__, isinstance(bounds, BBox))
+    def set_bbox(self, bounds):
 
         if isinstance(bounds, BBox):
-            self._bbox = bounds.bbox
+            self._bbox = bounds.as_tuple()
             return
+        
+        if hasattr(bounds, '__len__'):
+            if len(bounds) == 0:
+                self._bbox = (0., 0., 0., 0.)
+                return
 
-        if len(bounds) == 0:
-            self._bbox = (0., 0., 0., 0.)
+            elif len(bounds) in (1, 2):
+                bounds = np.asarray(bounds, dtype=float)
+                if bounds.size == 4:
+                    self._bbox = tuple(bounds.ravel())
+                return
+                
+            elif len(bounds) == 4:
+                self._bbox = (float(bounds[0]), float(bounds[1]), float(bounds[2]), float(bounds[3]))
+                return
 
-        elif len(bounds) in (1, 2):
-            bounds = np.asarray(bounds, dtype=float)
-            if bounds.size != 4:
-                error = True
-            else:
-                self._bbox = tuple(bounds.ravel())
-            
-        elif len(bounds) == 4:
-            self._bbox = (float(bounds[0]), float(bounds[1]), float(bounds[2]), float(bounds[3]))
-
-        else:
-            error = True
-
-        if error:
-            raise ValueError(f"BBox must be initialized with 4 floats or 2 vectors")        
+        raise ValueError(f"BBox must be initialized with 4 floats or 2 vectors")        
     
     @classmethod
     def as_bbox(cls, other):
@@ -393,24 +425,24 @@ class BBox:
         return BBox.from_points(transfo @ self.corners)
 
     # ====================================================================================================
-    # Zone dimensions
+    # Box dimensions
     # ====================================================================================================
 
     @property
     def x0(self):
-        return self.bbox[0]
+        return self._bbox[0]
         
     @property
     def y0(self):
-        return self.bbox[1]
+        return self._bbox[1]
     
     @property
     def x1(self):
-        return self.bbox[2]
+        return self._bbox[2]
     
     @property
     def y1(self):
-        return self.bbox[3]
+        return self._bbox[3]
     
     @property
     def width(self):
@@ -429,7 +461,7 @@ class BBox:
     # ====================================================================================================
 
     def join(self, *others):
-        x0, y0, x1, y1 = self.bbox
+        x0, y0, x1, y1 = self._bbox
         for other in others:
             x0 = min(x0, BBox.as_bbox(other).x0)
             y0 = min(y0, BBox.as_bbox(other).y0)
@@ -445,7 +477,7 @@ class BBox:
         return self.join(other)
     
     def __iadd__(self, other):
-        self.bbox = self.join(other)
+        self.set_bbox(self.join(other))
         return self
     
     # ====================================================================================================
@@ -485,54 +517,135 @@ class BBox:
         plt.plot(x, y, color=color, alpha=alpha, **kwargs)
 
 # ====================================================================================================
-# Zoen Parameters
+# Root for term : a single box
 # ====================================================================================================
 
-class ZoneParams:
-    def __init__(self, zone, link='child', **parameters):
+class TermBox:
 
-        self.zone = zone
-        self.link = link.lower()
+    DEF_ATTRS = {
+        'x_sepa'        : 0.1,  # Space between successive terms
+        'y_sepa'        : 0.1,  # Space between arranged one over the oher one
+        'script_scale'  : 0.5,  # Scripts scale
+        'dy_super'      : 0.1,  # Location of superscript: y1 - y_super
+        'y_super_min'   : 0.35, # Minimum y location for superscript
+        'dy_sub'        : 0.15, # Location of subscript y0 + y_sub
+        'y_sub_max'     : 0.15, # Max y location of subscript
+        'thickness'     : 0.07, # Bar thickness : arrow, bar, borders...
+        'oversize'      : 0.04, # Delta oversize for decorators
+        'elon_mode'     : 'CENTER', # Elongation type 
+        'elon_margin'   : 0.03, # Margin for decorator elongation
+        'elon_smooth'   : 'SMOOTH', # For decorator elongation
+    }
+
+    def __init__(self, **kwargs):
+        """A TermBox is a placeholder in a formula.
+
+        It exposes controls for its owner such as `space_factor` which controls
+        the space allocated to the term.
+
+        The content transformation is controlled via the transformation:
+        - `transfo` property is the transformation into the owner
+        - the absolute transfo to apply to the content is given by combining
+          the in the childhood hierrachy
+
+        Additional controls for the content can be implemented by child classes.
+
+        For instance, to insert a term into a formula:
+        - compute the formula with the term at its target location
+        - animate the term transformation from starting transformation 
+          to target transformation
+        - contol the formula space allocation to animate the formula creating
+          space for the coming term
+        """
+
+        # Owner
+        self.owner = None
 
         self.x_space_factor = 1.
+        self.y_space_factor = 1.
 
-        for k, v in parameters.items():
+        # Transformation
+        self._transfo = Transfo2d()
+
+        # bbox to adjust with (dynamic decorators)
+        self._adjust_bbox = None
+
+        # Parameters
+        for k, v in kwargs.items():
             setattr(self, k, v)
 
-# ====================================================================================================
-# Root Zone
-# ====================================================================================================
+    # ====================================================================================================
+    # Parameters
+    # ====================================================================================================
 
-class Zone:
-    def __init__(self):
-        """A Zone is made of a bbox and a transformation
-        """
-        self._transfo = Transfo2d()
-        self._bbox = BBox(-1, -1, 1, 1)
+    def __getattr__(self, name):
 
-    @property
-    def ref_bbox(self):
-        """Returns the zone bbox before transformation
-        """
-        return self._bbox
+        if self.owner is not None:
+            return getattr(self.owner, name)
+        
+        elif name in TermBox.DEF_ATTRS:
+            return TermBox.DEF_ATTRS[name]
+        
+        else:
+            raise AttributeError(
+                f"'{name}' is not a valid attribute. Valid are\n{list(TermBox.DEF_ATTRS.keys())}")
 
-    @property
-    def bbox(self):
-        """Returns the zone bbox after transformation
-        """
-        if self._bbox is None:
-            self.update()
-        return self._bbox.transform(self.transfo)
+    # ====================================================================================================
+    # Transformation
+    # ====================================================================================================
 
     @property
     def transfo(self):
         return self._transfo
     
-    def update(self):
-        pass
+    def get_transfo(self, owner_transfo=None):
+        if owner_transfo is None:
+            return self._transfo
+        else:
+            return owner_transfo @ self._transfo
+        
+    def reset_transfo(self):
+        self._transfo.reset()
 
-    def update_for(self, bbox):
-        pass
+    # ====================================================================================================
+    # Bounding boxes
+    # ====================================================================================================
+
+    def get_bbox(self):
+        """Get the bounding box before transformation.
+
+        To be overriden by subclasses
+        """
+        if hasattr(self, '_bbox'):
+            return self._bbox
+        else:
+            raise NotImplementedError(f"'get_box' method not implemented in class {type(self).__name__}")
+
+    @property
+    def bbox(self):
+        """Returns the bounding box before transformation.
+
+        Simply call get_bbox
+        """
+        try:
+            return self.get_bbox()
+        except Exception as e:
+            msg = str(e)
+            raise RuntimeError(f"Error when calling get_bbox: {msg}")
+    
+    
+    @property
+    def transformed_bbox(self):
+        """Returns the transformed bounding box.
+        """
+        try:
+            return self.bbox.transform(self.transfo)
+        except AttributeError as e:
+            msg = str(e)
+            raise RuntimeError(f"Error in transformed_bbox: {msg}")
+        
+    def adjust_size(self, bbox):
+        self._adjust_bbox = bbox
 
     # ====================================================================================================
     # Operations
@@ -540,7 +653,7 @@ class Zone:
 
     def x_align(self, x, *others, align='left', margin=0.0):
 
-        bbox = self.bbox
+        bbox = self.transformed_bbox
 
         # ----- Align together with other zones
         if others:
@@ -569,7 +682,7 @@ class Zone:
 
     def y_align(self, y, *others, align='bottom', margin=0.0):
 
-        bbox = self.bbox
+        bbox = self.transformed_bbox
 
         # ----- Align together with other zones
         if others:
@@ -595,55 +708,14 @@ class Zone:
         delta = y - y_ref
         self.transfo.translate(0.0, delta + margin)
         return self
-    
-    # ====================================================================================================
-    # Relative placement
-    # ====================================================================================================
 
-    def after(self, other, *, margin=0.0):
-        self.x_align(other.x1 + margin, align='left')
-        return self
-
-    def before(self, other, *, margin=0.0):
-        self.x_align(other.x0 -  margin, align='right')
-        return self
-
-    def above(self, other, align='center', *, margin=0.0):
-        self.y_align(other.y1 + margin, align='bottom')
-        self.x_align(other.center[0], align=align)
-        return self
-    
-    def below(self, other, align='center', *, margin=0.0):
-        self.y_align(other.y0 - margin, align='top')
-        self.x_align(other.center[0], align=align)
-        return self
-    
-    def superscript(self, other, scale, y, *, margin=0.0):
-        self.transfo.apply_scale(scale)
-        self.after(other, margin=margin)
-        self.y_align(y, align='bottom')
-        return self
-        
-    def subscript(self, other, scale, y, *, margin=0.0):
-        self.transfo.apply_scale(scale)
-        self.after(other, margin=margin)
-        self.y_align(y, align='top')
-        return self
-    
     # ====================================================================================================
     # Debug
     # ====================================================================================================
 
-    def _plot(self, plt, transfo=None, color='k', alpha=1.0, **kwargs):
+    def _plot(self, plt, owner_transfo=None, color='k', alpha=1.0, **kwargs):
 
-        trf = self.transfo if transfo is None else transfo @ self.transfo
-
-        print("ZONE", trf)
-
-        points = trf @ self.ref_bbox.corners
-
-        print("CORNERS\n", self.bbox.corners)
-        print("POINTS\n", self.bbox.corners)
+        points = self.get_transfo(owner_transfo) @ self.bbox.corners
 
         x, y = list(points[:, 0]), list(points[:, 1])
         x.append(x[0])
@@ -653,206 +725,366 @@ class Zone:
         plt.plot(x, y, color=color, alpha=alpha, **kwargs)
 
 # ====================================================================================================
-# A decorator
+# A Term
 # ====================================================================================================
 
-class Decorator(Zone):
-    """For tests !
-    """
+class Term(TermBox):
 
-    def update_for(self, bbox):
-        self._bbox = BBox(0, 0, bbox.width + 2, .5)
+    # Deco names are given in their priority order
+    DECO_NAMES = [
+        'subscript', 'superscript', 'abovescript', 'belowscript',
+        'fix_above', 'above','fix_below', 'below', 
+        'fix_right', 'right', 'fix_left', 'left', 
+        'around',
+    ]
+    DECO_SCRIPTS = DECO_NAMES[:4] # Not dynamic
 
-
-# ====================================================================================================
-# A List of zones
-# ====================================================================================================
-
-class Formula(Zone):
-    def __init__(self):
-        """A series of zones arranged in a succession:
-
-        Succession code of one item after the previous one are:
-        - After
-        - Above
-        - Below
-        - Superscript
-        - Subscript
-
-        Each succession is driven with the following parameters
-        - Space : space between the zones
-        - Separator : zone to insert
-        - Prev_Offset to apply to the previous block
-
-        Each item can be decorated by five decorations:
-        - Bot
-        - Top
-        - Left
-        - Right
-        - Around
-
-        Animation is driven by the following parameters:
-        - x_space_factor : control the space occupied by the item in the flow
-        - prev_offset_factor : control the offet of the previous item
-        - in addition, the item can be freely transformed to create the desirate effect
-
-        Example
-        - To animate from 'a = b + c' to 'a - c = b':
-          argm = [a, C, eq, b, C] with C = [op, c]]
-          - first C space from 0 to 1
-          - second C space from 1 to 0
-          - op is a special mesh transformable from + to -
-          - C transformation start from second C transfo to first C transfo
-            with whatever intermediary positions
+    def __init__(self, *terms, **kwargs):
+        """A Term is a list concatenated terms plus decorators.
         """
-        # ----- All the zones used for form the whole zone
-        # Content zones and decorator
+        super().__init__()
+        self._content = []
+        self._decos = {}
 
-        self.children = []
+        for term in terms:
+            self.append(term)
 
-        self._bbox = None
-        self._transfo = Transfo2d()
+        for key, value in kwargs.items():
+            if key in Term.DECO_NAMES:
+                self.set_decorator(key, value)
+            else:
+                setattr(self, key, value)
 
-        # Parameters
-        self.x_child_space = 0.1 # Space between two successors
-        self.x_border = 0.1 # decorator x space
-        self.y_border = 0.1 # decorator y space
-        self.script_scale = .9 # Scale to apply to zones put as scripts
-        self.y_superscript = .2 # vertical offset of superscript
-        self.y_subscript = .2 # vertical offset of subscript
-
-    # ====================================================================================================
-    # Transformation
-    # ====================================================================================================
-
-    @property
-    def transfo(self):
-        return self._transfo
+    def __str__(self):
+        return f"<Term: {len(self)} terms, decorators: {list(self._decos.keys())}, transfo: {self.transfo}>"
     
+    def __repr__(self):
+
+        s = str(self)[1:-1]
+        for i, term in enumerate(self._content):
+            lines = repr(term).split("\n")
+            s += f"\n   {i}: " + lines[0]
+            for line in lines[1:]:
+                s += f"\n      {line}"
+
+        for key, term in self._decos.items():
+            lines = repr(term).split("\n")
+            s += f"\n   {key:}: " + lines[0]
+            for line in lines[1:]:
+                s += f"\n       {line}"
+
+        return s
+
+    def __len__(self):
+        return len(self._content)
+    
+    def __getitem__(self, index):
+        return self._content[index]
+
+    # ====================================================================================================
+    # Content and decorators
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Convert a child or a decorator to TermBox
+    # ----------------------------------------------------------------------------------------------------
+
+    def convert_term(self, term):
+        """Convert a term to the class compatible with this context.
+
+        Be default, this method do nothing, supposing the argument has the proper
+        type.
+        """
+        if isinstance(term, TermBox):
+            return term
+        
+        raise ValueError(f"'term' argument must be a Term, make sure to override 'convert_term' method to make the conversion.")
+
+    # ----------------------------------------------------------------------------------------------------
+    # Append a child content
+    # ----------------------------------------------------------------------------------------------------
+
+    def append(self, term):
+
+        term = self.convert_term(term)
+        
+        term.owner = self
+        term.child_type = 'content'
+        term.child_index = len(self._content)
+
+        self._content.append(term)
+
+        return term
+    
+    # ----------------------------------------------------------------------------------------------------
+    # Decorators
+    # ----------------------------------------------------------------------------------------------------
+
+    def set_decorator(self, key, decorator):
+
+        decorator = self.convert_term(decorator)
+        
+        if key not in Term.DECO_NAMES:
+            raise ValueError(f"Invalid decorator key: '{key}', valid keys are {Term.DECO_NAMES}")
+        
+        decorator.owner = self
+        decorator.child_type = 'decorator'
+        decorator.child_index = key
+
+        self._decos[key] = decorator
+        return decorator
+
+    def get_decorator(self, key):
+        return self._decos.get(key)
+    
+    def decorators(self, keys=None):
+        if keys is None:
+            keys = Term.DECO_NAMES
+
+        for key in keys:
+            if key in self._decos:
+                yield (key, self._decos[key])   
+    
+    # ----- Expose keys as shortcuts
+    
+    def __getattr__(self, name):
+        if name in Term.DECO_NAMES and '_decos' in self.__dict__:
+            return self.__dict__['_decos'].get(name)
+        else:
+            return super().__getattr__(name)
+        
+    def __setattr__(self, name, value):
+        if name in Term.DECO_NAMES:
+            self.set_decorator(name, value)
+        else:
+            super().__setattr__(name, value)
+
+    # ----- All the children (content plus decorators)     
+
     @property
-    def ref_bbox(self):
-        if self._bbox is None:
-            self.update()
-        return self._bbox
+    def all_children(self):
+        return list(self._content) + list(self._decos.values())
 
     # ====================================================================================================
-    # Update
+    # Compute the bbox
     # ====================================================================================================
 
-    def update(self):
+    def get_bbox(self):
+        """Compute the bounding box.
+
+        The bbox is computed by:
+        - chaining the terms in the content list one after the other
+        - adding decorators
+        """
 
         # ---------------------------------------------------------------------------
-        # Loop on the child zones forming the content
+        # Loop on the terms in the content
         # ---------------------------------------------------------------------------
 
         bbox = BBox()
         x = 0.
-        for zp in self.children:
+        for term in self._content:
 
-            # Only children
-            if zp.link != 'child':
-                continue
-
-            # Make sure bbox is up to date
-            zp.zone.update()
+            # Term bbox
+            # Calling get_box() will update the term first
+            term.reset_transfo()
+            t_bbox = term.get_bbox()
 
             # Locate after current cursor
-            space = 0. if x < ZERO else self.x_child_space
-            zp.zone.x_align(x + space, align='left')
+            space = 0. if x < ZERO else self.x_sepa
+            term.x_align(x + space, align='left')
 
             # Animated actual space
-            x += (space + zp.zone.bbox.width)*zp.x_space_factor
+            x += (space + t_bbox.width)*term.x_space_factor
 
             # Update bbox
-            bbox += zp.zone.bbox
+            bbox += term.transformed_bbox
 
         # True bbox depends upon animation
-        x0, y0, _, y1 = bbox.bbox
+        x0, y0, _, y1 = bbox.as_tuple()
         bbox = BBox(x0, y0, x, y1)
 
         # ---------------------------------------------------------------------------
-        # Loop on the child decorative zones 
+        # Loop on the decorators
         # ---------------------------------------------------------------------------
 
-        whole_bbox = BBox(bbox)
-        for zp in self.children:
+        # bbox will change, let's store script locations
+        x_script = bbox.x1
 
-            # Children already done
-            if zp.link == 'child':
-                continue
+        # Keep the list of the treated decorators
+        done = []
 
-            # Make sure bbox is up to date
-            zp.zone.update_for(bbox)
+        # To take the keys with respect to their priority order
+        # decorators is an iterator which gaurantees the proper order
+        for key, term in self.decorators():
 
-            if zp.link == 'above':
-                zp.zone.x_align(bbox.center[0], align='middle')
-                zp.zone.y_align(bbox.y1 + self.y_border, align='bottom')
+            # Term bbox
+            # Calling get_box() will update the term first
+            term.reset_transfo()
+            t_bbox = term.get_bbox()
 
-            elif zp.link == 'below':
-                zp.zone.x_align(bbox.center[0], align='middle')
-                zp.zone.y_align(bbox.y0 - self.y_border, align='top')
+            # --------------------------------------------------
+            # Scripts
+            # --------------------------------------------------
 
-            elif zp.link in ['superscript', 'subscript']:
-                zp.zone.transfo.apply_scale(self.script_scale)
-                space = self.script_scale*self.x_child_space
-                zp.zone.x_align(bbox.x1 + space, align='left')
+            if key in Term.DECO_SCRIPTS:
 
-                if zp.link == 'superscript':
-                    zp.zone.y_align(bbox.y1 - self.y_superscript, align='bottom')
-                else:
-                    zp.zone.y_align(bbox.y0 + self.y_subscript, align='top')
+                term.transfo.apply_scale(self.script_scale)
+
+                if key in ['superscript', 'subscript']:
+                    space = self.script_scale*self.x_sepa
+                    term.x_align(x_script + space, align='left')
+
+                    if key == 'superscript':
+                        y = max(bbox.y1 - self.dy_super, self.y_super_min)
+                        term.y_align(y, align='bottom')
+                    else:
+                        y = min(bbox.y0 + self.dy_sub, self.y_sub_max)
+                        term.y_align(y, align='top')
+
+                    bbox = bbox.interpolate(bbox + term.transformed_bbox, term.x_space_factor)
+
+                elif key in ['abovescript', 'belowscript']:
+                    term.x_align(bbox.center[0], align='middle')
+                    if key == 'abovescript':
+                        term.y_align(bbox.y1 + self.y_sepa, align='bottom')
+                    else:
+                        term.y_align(bbox.y0 - self.y_sepa, align='top')
+
+                    width = term.transformed_bbox.width*term.x_space_factor
+                    w = (width - bbox.width)/2
+                    if w > 0:
+                        for t in self._content:
+                            t.transfo.translate(w, 0)
+                        for k, t in self.decorators(done):
+                            t.transfo.translate(w, 0)
+                        term.transfo.translate(w, 0)
+
+                    # Resulting bbox
+                    _, ty0, _, ty1 = term.transformed_bbox.as_tuple()
+                    bbox = bbox + (0, ty0, width, ty1)
+
+            # --------------------------------------------------
+            # Dynamic
+            # --------------------------------------------------
 
             else:
-                raise ValueError(f"Unknown zone link: '{zp.link}'")
+                if not key.startswith('fix_'):
+                    term.adjust_size(bbox)
+                t_bbox = term.transformed_bbox
+
+                if key in ['above', 'below', 'fix_above', 'fix_below']:
+
+                    term.x_align(bbox.center[0], align='center')
+
+                    if key in ['above', 'fix_above']:
+                        term.y_align(bbox.y1 + self.y_sepa, align='bottom')
+                    else:
+                        term.y_align(bbox.y0 - self.y_sepa, align='top')
+
+                    bbox = bbox.interpolate(bbox + term.transformed_bbox, term.x_space_factor)
+
+                elif key in ['left', 'fix_left']:
+
+                    term.x_align(0., align='left')
+                    term.y_align(bbox.center[1], align='middle')
+
+                    w = (t_bbox.width + self.x_sepa)*term.x_space_factor
+
+                    # Shift left all what must be shifted left
+                    for t in self._content:
+                        t.transfo.translate(w, 0)
+
+                    for (k, t) in self.decorators(done):
+                        t.transfo.translate(w, 0)
+
+                    # Resulting bbox
+                    _, ty0, _, ty1 = term.transformed_bbox.as_tuple()
+                    bbox = bbox + (0, ty0, bbox.x1, ty1)
+
+                elif key in ['right', 'fix_right']:
+                    x = bbox.x1 + self.x_sepa
+                    term.x_align(x, align='left')
+                    term.y_align(bbox.center[1], align='middle')
+
+                    bbox = bbox.interpolate(bbox + term.transformed_bbox, term.x_space_factor)
+
+                elif key == 'around':
+                    pass
+
+                else:
+                    # Should never occur
+                    assert(False)
+
+            # Done
+            done.append(key)
             
-            # Animation factor
-            full_bbox = bbox.interpolate(bbox + zp.zone.bbox, zp.x_space_factor)
-            whole_bbox += full_bbox
+        # ----- We've got our bounding box
 
-        self._bbox = whole_bbox
-
+        return bbox
+    
     # ====================================================================================================
     # Debug
     # ====================================================================================================
 
-    def _plot(self, plt, transfo=None, color='red', alpha=1.0, **kwargs):
+    def _plot(self, plt, owner_transfo=None, color='k', alpha=1.0, **kwargs):
 
-        trf = self.transfo if transfo is None else transfo @ self.transfo
+        bbox = self.bbox
 
-        for zp in self.children:
-            zp.zone._plot(plt, transfo=transfo, color=np.random.uniform(0, 1, 3), **kwargs)
+        # Hack
+        self[0].transfo.rotate(np.pi/6)
 
-        # Self with a border
 
-        bbox = self._bbox
-        self._bbox = bbox.bordered(.1)
-        super()._plot(plt, transfo=transfo, color=color, alpha=alpha, **kwargs)
-        self._bbox = bbox
+        # Children
+        trf = self.get_transfo(owner_transfo)
 
+        for term in self.all_children:
+            term._plot(plt, owner_transfo=trf, color=np.random.uniform(0, 1, 3))
+
+        # Surrounding box
+        bbox = bbox.bordered(.1)
+
+        points = trf @ bbox.corners
+
+        x, y = list(points[:, 0]), list(points[:, 1])
+        x.append(x[0])
+        y.append(y[0])
+
+        # Plot the bounding box
+        plt.plot(x, y, color=color, alpha=alpha, **kwargs)
 
 
 if __name__ == "__main__":
 
+    from pprint import pprint
     import matplotlib.pyplot as plt
 
     ok_plot = True
 
-    zone = Zone()
+    # ----- Implement a fixed size term
 
-    frm = Formula()
-    frm.children.extend([ZoneParams(Zone()), ZoneParams(Zone()), ZoneParams(Zone())])
+    class Token(TermBox):
+        def __init__(self, *bounds):
+            super().__init__()
+            if len(bounds) == 0:
+                self._bbox = BBox(-1, -1, 1, 1)
+            else:
+                self._bbox = BBox(*bounds)
 
-    zone = Decorator()
-    frm.children.append(ZoneParams(zone, link='below'))
+    frm0 = Term(
+        Token(),
+        Token(),
+        Token(),
+        abovescript=Token(),
+    )
 
-    frm.children.append(ZoneParams(Zone(), link='subscript'))
-    frm.children.append(ZoneParams(Zone(), link='superscript'))
+    if False:
+        frm = frm0
+        frm.transfo.rotate(np.pi/6)
+    else:
+        frm = Term(frm0)
 
-    frm.children[-1].x_space_factor = .1
-    frm.children[-2].x_space_factor = .1
 
-
-    frm.update()
 
     if ok_plot:
 

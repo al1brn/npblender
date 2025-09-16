@@ -4807,6 +4807,95 @@ class Mesh(Geometry):
 
         return islands
     
+    def elongation(self, axis='X', size=0.0, mode='CENTER', margin=0., smooth='SMOOTH'):
+        """
+        Elongate the mesh in the plane xy.
+
+        The elongation is performed only if the mesh is smaller than the
+        size passed in argument.
+
+        The elongation consists in shifting the points close to the border
+        while keeping the center unchanged.
+
+        This is used, for instance, to make taller a character such as '{'.
+
+        Parameters
+        ----------
+        axis : str, optional
+            Axis to elongate along. 
+            Default is 'X'.
+        size : float, optional
+            Target size. 
+            Default is 0.0.
+        mode : str, optional
+            Elongation mode in ('CENTER', 'LEFT', 'RIGHT', 'BOT', 'TOP', 'SCALE').
+            Default is 'CENTER'.
+        margin : float in [0.0, 0.5], optional
+            Border margin vertices are just shifted without scale.
+            The margin is expressed as a ratio.
+            Default is 0.0
+        smooth : str, optional
+            Easing mode for marrange.
+            Default is 'SMOOTH'.
+        """
+
+        from .maths import maprange
+
+        margin = np.clip(margin, 0.0, 0.5)
+        axis = axis.upper()
+        mode = mode.upper()
+
+        index = 'XYZ'.find(axis)
+        if index < 0:
+            return
+        
+        x = self.points.position[..., index]
+
+        x0, x1 = np.min(x), np.max(x)
+        cur_size = x1 - x0
+
+        # Only if current size is not enough
+        if cur_size >= size:
+            return
+        
+        # Dimensions
+        border = cur_size*margin
+        ds = size - cur_size
+        
+        # Depending on the algo
+        if mode == 'CENTER':
+            cx = (x0 + x1)/2            
+            rel_x = x - cx
+
+            dx = maprange(np.abs(rel_x), border, cur_size/2 - border, 0.0, ds/2, mode=smooth) * np.sign(rel_x)
+
+            self.points.position[..., index] += dx
+
+        elif mode in ['BOT', 'BOTTOM', 'LEFT']:
+            dx = np.zeros_like(x)
+            dx[x <= x0 + border] = -ds
+
+            self.points.position[..., index] += dx
+
+        elif mode in ['TOP', 'RIGHT']:
+            dx = np.zeros_like(x)
+            dx[x >= x1 - border] = ds
+
+            self.points.position[..., index] += dx
+
+        elif mode == 'SCALE':
+
+            sc = x0 + (x - x0)*(size/cur_size)
+
+            self.points.position[..., index] =  x0 + x*sc
+
+        else:
+            raise ValueError("Unknown elongation mode: '{mode}'")
+
+
+
+
+    
     # ====================================================================================================
     # BVHTree
     # ====================================================================================================
