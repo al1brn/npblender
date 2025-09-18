@@ -507,26 +507,17 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#npblender.maths.Term" class="md-nav__link">
+  <a href="#npblender.maths.Formula" class="md-nav__link">
     <span class="md-ellipsis">
-      Term
+      Formula
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Term">
+    <nav class="md-nav" aria-label="Formula">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#npblender.maths.Term.bbox" class="md-nav__link">
-    <span class="md-ellipsis">
-      bbox
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Term.transformed_bbox" class="md-nav__link">
+  <a href="#npblender.maths.Formula.transformed_bbox" class="md-nav__link">
     <span class="md-ellipsis">
       transformed_bbox
     </span>
@@ -535,58 +526,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#npblender.maths.Term.convert_term" class="md-nav__link">
-    <span class="md-ellipsis">
-      convert_term
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.Term.get_bbox" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_bbox
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#npblender.maths.TermBox" class="md-nav__link">
-    <span class="md-ellipsis">
-      TermBox
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="TermBox">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.TermBox.bbox" class="md-nav__link">
-    <span class="md-ellipsis">
-      bbox
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.TermBox.transformed_bbox" class="md-nav__link">
-    <span class="md-ellipsis">
-      transformed_bbox
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#npblender.maths.TermBox.get_bbox" class="md-nav__link">
+  <a href="#npblender.maths.Formula.get_bbox" class="md-nav__link">
     <span class="md-ellipsis">
       get_bbox
     </span>
@@ -974,20 +914,16 @@
 
 
 
-<h2 id="npblender.maths.Term" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">Term</span>
+<h2 id="npblender.maths.Formula" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">Formula</span>
 
 
-<a href="#npblender.maths.Term" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Term</span><span class="p">(</span><span class="o">*</span><span class="n">terms</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a href="#npblender.maths.Formula" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Formula</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="TermBox (npblender.maths.arranger.TermBox)" href="#npblender.maths.TermBox">TermBox</a></code></p>
 
-
-        <p>A Term is a list concatenated terms plus decorators.</p>
 
 
 
@@ -1011,32 +947,7 @@
 
 
 
-<h3 id="npblender.maths.Term.bbox" class="doc doc-heading">
-            <span class="doc doc-object-name doc-attribute-name">bbox</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#npblender.maths.Term.bbox" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">bbox</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Returns the bounding box before transformation.</p>
-<p>Simply call get_bbox</p>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="npblender.maths.Term.transformed_bbox" class="doc doc-heading">
+<h3 id="npblender.maths.Formula.transformed_bbox" class="doc doc-heading">
             <span class="doc doc-object-name doc-attribute-name">transformed_bbox</span>
 
 
@@ -1044,7 +955,7 @@
       <small class="doc doc-label doc-label-property"><code>property</code></small>
   </span>
 
-<a href="#npblender.maths.Term.transformed_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#npblender.maths.Formula.transformed_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature codehilite"><pre><span></span><code><span class="n">transformed_bbox</span>
 </code></pre></div>
 
@@ -1062,171 +973,17 @@
 <div class="doc doc-object doc-function">
 
 
-<h3 id="npblender.maths.Term.convert_term" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">convert_term</span>
-
-
-<a href="#npblender.maths.Term.convert_term" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">convert_term</span><span class="p">(</span><span class="n">term</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Convert a term to the class compatible with this context.</p>
-<p>Be default, this method do nothing, supposing the argument has the proper
-type.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.Term.get_bbox" class="doc doc-heading">
+<h3 id="npblender.maths.Formula.get_bbox" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">get_bbox</span>
 
 
-<a href="#npblender.maths.Term.get_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#npblender.maths.Formula.get_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_bbox</span><span class="p">()</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Compute the bounding box.</p>
-<p>The bbox is computed by:
-- chaining the terms in the content list one after the other
-- adding decorators</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="npblender.maths.TermBox" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">TermBox</span>
-
-
-<a href="#npblender.maths.TermBox" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">TermBox</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-
-        <p>A TermBox is a placeholder in a formula.</p>
-<p>It exposes controls for its owner such as <code>space_factor</code> which controls
-the space allocated to the term.</p>
-<p>The content transformation is controlled via the transformation:
-- <code>transfo</code> property is the transformation into the owner
-- the absolute transfo to apply to the content is given by combining
-  the in the childhood hierrachy</p>
-<p>Additional controls for the content can be implemented by child classes.</p>
-<p>For instance, to insert a term into a formula:
-- compute the formula with the term at its target location
-- animate the term transformation from starting transformation 
-  to target transformation
-- contol the formula space allocation to animate the formula creating
-  space for the coming term</p>
-
-
-
-
-
-
-
-
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="npblender.maths.TermBox.bbox" class="doc doc-heading">
-            <span class="doc doc-object-name doc-attribute-name">bbox</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#npblender.maths.TermBox.bbox" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">bbox</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Returns the bounding box before transformation.</p>
-<p>Simply call get_bbox</p>
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="npblender.maths.TermBox.transformed_bbox" class="doc doc-heading">
-            <span class="doc doc-object-name doc-attribute-name">transformed_bbox</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#npblender.maths.TermBox.transformed_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">transformed_bbox</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Returns the transformed bounding box.</p>
-
-    </div>
-
-</div>
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="npblender.maths.TermBox.get_bbox" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_bbox</span>
-
-
-<a href="#npblender.maths.TermBox.get_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_bbox</span><span class="p">()</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Get the bounding box before transformation.</p>
-<p>To be overriden by subclasses</p>
+        <p>Formula bbox is the body bbox plus decorators</p>
 
 
     </div>
