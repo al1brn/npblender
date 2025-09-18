@@ -10,6 +10,7 @@ else:
 
 
 BBOX_CACHE = False
+DEF_ADJUSTABLE = True
 
 # ====================================================================================================
 # Transfo2D
@@ -547,7 +548,7 @@ class BBox:
 
 class FormulaGeom:
 
-    def __init__(self, term, content, adjustable=False):
+    def __init__(self, term, content, adjustable=DEF_ADJUSTABLE):
 
         # Owning formula term
         self.term = term
@@ -620,6 +621,14 @@ class Formula:
         'elon_mode'     : 'CENTER', # Elongation type 
         'elon_margin'   : 0.03, # Margin for decorator elongation
         'elon_smooth'   : 'SMOOTH', # For decorator elongation
+
+        'int_shear'     : 0.25, # ∫ symbol shear
+        'sub_offset'    : 0.0,  # Subscript offset (when sheared)
+        'int_sub_ofs'   : -0.2, # Subscript offset for integral
+
+        'y_fraction'    : 0.22, # Vertical position of fraction bar
+        'dy_fraction'   : 0.1,  # Separation between bar and operands
+        'dx_fraction'   : 0.04, # Horizontal over space for fraction
     }
 
     # Params for future use
@@ -628,16 +637,22 @@ class Formula:
         'superscript'   : {},
         'overscript'    : {},
         'underscript'   : {},
+
         'fix_over'      : {},
         'over'          : {},
         'fix_under'     : {},
         'under'         : {},
+
         'fix_right'     : {},
         'right'         : {},
         'fix_left'      : {},
         'left'          : {},
+
         'operation'     : {},
         'fix_operation' : {},
+
+        'denominator'   : {},
+        'fraction_bar'  : {},
     }
 
     # ====================================================================================================
@@ -717,8 +732,12 @@ class Formula:
 
         # body is a dict to parse
         elif isinstance(body, dict):
-            self.body_type = 'TERM'
-            self._term = self.parse_dict(body)
+            if self._is_formula_dict(body):
+                self.body_type = 'TERM'
+                self._term = self.parse_dict(body)
+            else:
+                self.body_type = 'GEOM'
+                self._geom = self.geom_cls(self, body)
 
         # body is a FormulaGeom
         elif isinstance(body, FormulaGeom):
@@ -814,6 +833,9 @@ class Formula:
             else:
                 new_attrs[k] = v
         return new_attrs
+    
+    def _is_formula_dict(self, fdict):
+        return 'type' in fdict
 
     def parse_dict(self, fdict):
 
@@ -846,10 +868,15 @@ class Formula:
                 return self.operator('Π', args[0], adjustable=True, **self.to_underover(attrs))
 
             elif name == 'int':
-                return self.operator('∫', args[0], adjustable=True, **attrs)
+                d = {'text': '∫', 'italic': True, 'shear': self.int_shear}
+                return self.operator(d, args[0], adjustable=True, sub_offset=self.int_sub_ofs, **attrs)
             
             elif name == 'lim':
                 return self.operator('lim', args[0], adjustable=False, **self.to_underover(attrs))
+            
+            elif name == 'frac':
+                return self.fraction(args[0], args[1], **attrs)
+
             
             else:
                 frm = Formula(self, name, **attrs)
@@ -875,6 +902,15 @@ class Formula:
         else:
             frm.fix_operation = symbol
         return frm
+    
+    def fraction(self, numerator, denominator, **attrs):
+        if len(attrs):
+            numerator = Formula(self, numerator, **attrs)
+        frm = Formula(self, numerator)
+        frm.denominator = Formula(frm, denominator)
+        frm.fraction_bar = Formula(frm, "_")
+        return frm
+
 
     # ====================================================================================================
     # Body
@@ -1121,8 +1157,6 @@ class Formula:
 
     def reset_transfo(self):
         self._transfo.reset()
-        if self.body_is_geom:
-            self._geom.adjust_size()
 
     @property
     def transfo(self):
@@ -1266,6 +1300,10 @@ class Formula:
             if not key in self._decos:
                 continue
 
+            # Fraction bar is treated with denominator
+            if key == 'fraction_bar':
+                continue
+
             term = self._decos[key]
 
             term.reset_transfo()
@@ -1293,6 +1331,8 @@ class Formula:
 
                 if key in ['subscript', 'superscript']:
                     space = self.script_scale*self.x_sepa
+                    if key == 'subscript':
+                        space += self.sub_offset
                     term.x_align(x_script + space, align='left')
 
                     if key == 'superscript':
@@ -1367,6 +1407,68 @@ class Formula:
 
                     bbox = bbox.interpolate(bbox + term.transformed_bbox, term.owner_factor)
 
+            # --------------------------------------------------
+            # Fraction
+            # --------------------------------------------------
+
+            elif key == 'denominator':
+
+                # fraction bar is treated with denominator
+                if key == 'fraction_bar':
+                    continue
+
+                # Dimensions
+
+                t_bbox = term.bbox
+                w_num, h_num = bbox.width, bbox.height
+                w_den, h_den = t_bbox.width, t_bbox.height
+
+                # Max width
+                width = max(w_num, w_den) + 2*self.dx_fraction
+                # x center
+                xc = width/2
+
+                # y positions
+                y_frac = self.y_fraction
+                dy = self.dy_fraction
+
+                y_num = y_frac + dy
+                y_den = y_frac - dy
+
+                # Do we have a fraction bar
+                bar = self._decos.get('fraction_bar')
+                if bar is not None:
+                    bar.reset_transfo()
+                    bar.adjust_size(width, 0.0)
+
+                    h2 = bar.bbox.height/2
+                    y_num += h2
+                    y_den -= h2
+
+                    bar.x_align(xc, align='center')
+                    bar.y_align(y_frac, align='middle')
+
+                # Let's translate the numerator
+                tx = xc - bbox.center[0]
+                ty = y_num - bbox.y0
+                _translate_dones(tx, ty)
+
+                # Let's align the denominator term
+                term.x_align(xc, align='center')
+                term.y_align(y_den, align='top')
+
+                # New box
+                new_box = BBox(0, y_den - h_den, width, y_num + h_num)
+                bbox = bbox.interpolate(new_box, term.owner_factor)
+
+                # Just in case other decorators
+                # Should be useless
+                # CAUTION: must be done after call to _translate_dones
+                if bar is not None:
+                    dones.append(bar)
+
+
+
             else:
                 # Should never occur
                 assert(False)
@@ -1397,6 +1499,8 @@ class Formula:
         else:
             for t in self._list:
                 t.adjust_size(width, height)
+
+        self._bbox = None
 
     # ====================================================================================================
     # Debug
@@ -1466,6 +1570,12 @@ if __name__ == "__main__":
 
             if isinstance(content, (str, int, float)):
                 self.name = str(content)
+                if self.name == '_':
+                    bbox = BBox(0, 0, .1, .1)
+                else:
+                    bbox = BBox(-1, -1, 1, 1)
+            elif isinstance(content, dict):
+                self.name = content['text']
                 bbox = BBox(-1, -1, 1, 1)
             else:
                 self.name = content[0]
@@ -1576,7 +1686,7 @@ if __name__ == "__main__":
     # from dict
     # ---------------------------------------------------------------------------
 
-    if True:
+    if False:
         d = {'type': 'BLOCK', 'content': [
                 {'type': 'STRING', 'string': 'I='},
                 {'type': 'FUNCTION', 'name': 'sum', 'args': [
@@ -1592,6 +1702,16 @@ if __name__ == "__main__":
                 },
         ]}
         frm = Formula(None, d, geom_cls=Fake)
+
+    # ---------------------------------------------------------------------------
+    # Fraction
+    # ---------------------------------------------------------------------------
+
+    if True:
+        frm = Formula(geom_cls=Fake)
+        frm.append(frm.fraction(1, "x"))
+        print(repr(frm))
+
 
 
     # ---------------------------------------------------------------------------

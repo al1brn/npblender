@@ -290,16 +290,36 @@ class Text(Geometry):
         # Font
         self.font = Font() if font is None else font
 
-        # Enriched text
+        # Properties
+        self.props = {}
+
+        # --------------------------------------------------
+        # Type of text
+        # --------------------------------------------------
+
+        # LaTeX
         if is_latex:
             self.etext = parse_latex(text, math_mode=False)
+
+        # A dict with attributes
+        # - text is mandatory
+        # - attributes can be for EText or self
+        elif isinstance(text, dict):
+            attrs = {}
+            for k, v in text.items():
+                if k == 'text' or k in EText.STYLES:
+                    attrs[k] = v
+                else:
+                    self.props[k] = v
+
+            self.etext = EText(**attrs)
+
         else:
             self.text = text
 
         # Properties
-        self.props = {}
         for k, vdef in kwargs.items():
-            if k in self._etext.attributes:
+            if k in EText.STYLES:
                 self._etext[k] = vdef
 
             elif k in Text.PROPERTIES:
@@ -617,6 +637,11 @@ class FGeom(maths.FormulaGeom):
             self._string = str(content)
             self.name = self._string
 
+        elif isinstance(content, dict):
+            text = Text(content, font=self.term.font)
+            self._mesh = text.to_mesh()
+            self.name = str(content['text'])
+
         elif isinstance(content, Geometry):
             self._mesh = content.to_mesh()
             self.name = type(content).__name__
@@ -632,7 +657,7 @@ class FGeom(maths.FormulaGeom):
                 self._bbox = BBox()
 
             else:
-                text = Text(self._string, font=self.term.font, is_latex=False)
+                text = Text(self._string, font=self.term.font)
                 self._mesh = text.to_mesh()
 
     # ---------------------------------------------------------------------------
@@ -705,12 +730,12 @@ class FGeom(maths.FormulaGeom):
 
 class Formula(maths.Formula):
 
-    def __init__(self, body, font=None, materials=None):
+    def __init__(self, body, font=None, materials=None, **attrs):
 
         if isinstance(body, str):
             body = parse_latex(body, math_mode=True)
-            
-        super().__init__(None, body, geom_cls=FGeom, font=font)
+
+        super().__init__(None, body, geom_cls=FGeom, font=font, **attrs)
 
         if materials is None:
             self.materials = []

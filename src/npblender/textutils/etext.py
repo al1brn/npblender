@@ -101,6 +101,8 @@ class CharStyle:
 
 class EText:
 
+    STYLES = CharStyle.STYLES
+
     __slots__ = ["_cstyle", "_data", "_len"]
 
     def __init__(self, text=None, **styles):
@@ -235,6 +237,10 @@ class EText:
 
     def __getitem__(self, name):
         return getattr(self, name)
+    
+    def __setitem__(self, name, value):
+        setattr(self, name, value)
+
 
     # ----------------------------------------------------------------------------------------------------
     # To Blender body_data
