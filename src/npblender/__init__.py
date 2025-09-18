@@ -12,7 +12,6 @@ from .cloud import Cloud
 from .mesh import Mesh
 from .curve import Curve
 from .instances import Instances, Meshes
-from .text import Font, Text, Formula, MeshTerm
 from .multiresgrid import MultiResGrid
 
 from .simulation import Simulation
@@ -38,7 +37,6 @@ __all__ = [
     "ShapeKeys",
     "Custom",
     "Geometry", "Mesh", "Curve", "Cloud",
-    "Text", "Formula", "Font", "MeshTerm",
     "Instances", "Meshes",
     "MultiResGrid",
     "Simulation",
@@ -49,22 +47,20 @@ __all__ = [
 ]
 
 # ---------------------------------------------------------------------------
-# Add constants
+# Add from all
 
-from . import constants as _pkg
-
+from . import constants
 from .constants import *    
+__all__.extend(list(constants.__all__))
 
-__all__.extend(list(_pkg.__all__))
-
-# ---------------------------------------------------------------------------
-# Add deps
-
-from . import deps as _pkg
-
+from . import deps
 from .deps import *    
+__all__.extend(list(deps.__all__))
 
-__all__.extend(list(_pkg.__all__))
+from . import text
+from .text import *
+__all__.extend(list(text.__all__))
+
 
 
 

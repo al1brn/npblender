@@ -73,19 +73,6 @@ MATH_PATTERN_COMMANDS = {
   "binom":  "FRAC_PAT",
   "boxed":  "ACCENT_PAT",
 
-  "hat":        "ACCENT_PAT",
-  "widehat":    "ACCENT_PAT",
-  "tilde":      "ACCENT_PAT",
-  "widetilde":  "ACCENT_PAT",
-  "bar":        "ACCENT_PAT",
-  "vec":        "ACCENT_PAT",
-  "dot":        "ACCENT_PAT",
-  "ddot":       "ACCENT_PAT",
-  "overline":   "ACCENT_PAT",
-  "underline":  "ACCENT_PAT",
-  "overbrace":  "ACCENT_PAT",
-  "underbrace": "ACCENT_PAT",
-
   "int":    "INT_PAT",
   "iint":   "INT_PAT",
   "iiint":  "INT_PAT",
@@ -97,6 +84,60 @@ MATH_PATTERN_COMMANDS = {
   "liminf": "INT_PAT",
 }
 
+# Mapping for LaTeX-like decorators placed above or below an expression.
+# Keys are command names WITHOUT the backslash.
+# 'char': LaTeX symbol (with backslash) or a Python string character
+# 'fix' : False → stretch across the whole width; True → small fixed accent
+# 'over'/'under': where the decoration sits
+
+DECORATORS = {
+    # ===== Arrows above (stretchable) =====
+    'overrightarrow'     : {'char': '→',    'fix': False, 'under': False, 'elon_mode': 'LEFT'},
+    'overleftarrow'      : {'char': '←',    'fix': False, 'under': False, 'elon_mode': 'RIGHT'},
+    'overleftrightarrow' : {'char': '↔',    'fix': False, 'under': False, 'elon_mode': 'SHIFT'},
+    'xrightarrow'        : {'char': '→',    'fix': False, 'under': False, 'elon_mode': 'LEFT'},
+    'xleftarrow'         : {'char': '←',    'fix': False, 'under': False, 'elon_mode': 'RIGHT'},
+
+    # ===== Arrows below (stretchable) =====
+    'underrightarrow'    : {'char': '→',    'fix': False, 'under': True, 'elon_mode': 'LEFT'},
+    'underleftarrow'     : {'char': '←',    'fix': False, 'under': True, 'elon_mode': 'RIGHT'},
+    'underleftrightarrow': {'char': '↔',    'fix': False, 'under': True, 'elon_mode': 'SHIFT'},
+
+    # ===== Vector accent (fixed) =====
+    'vec'                : {'char': '→',    'fix': False, 'under': False, 'elon_mode': 'LEFT'}, 
+
+    # ===== Hats / tildes =====
+    'hat'                : {'char': '^',    'fix': True,  'under': False},
+    'widehat'            : {'char': '^',    'fix': False, 'under': False},
+    'tilde'              : {'char': '~',    'fix': True,  'under': False},
+    'widetilde'          : {'char': '~',    'fix': False, 'under': False},
+
+    # ===== Bars / overlines =====
+    'bar'                : {'char': '-',    'fix': True,  'under': False}, # MACRON
+    'overline'           : {'char': '-',    'fix': False, 'under': False}, # OVERLINE
+    'underline'          : {'char': '_',    'fix': False, 'under': True},  # text-style underline (stretches)
+
+    # ===== Dots & small accents (fixed, above) =====
+    'dot'                : {'char': '.',    'fix': True,  'under': False},
+    'ddot'               : {'char': '..',   'fix': True,  'under': False},
+    'dddot'              : {'char': '...',  'fix': True,  'under': False},
+    'ddddot'             : {'char': '....', 'fix': True,  'under': False},
+    'breve'              : {'char': '˘',    'fix': True,  'under': False}, # 
+    'check'              : {'char': 'ˇ',    'fix': True,  'under': False}, # 
+    'grave'              : {'char': 'ˋ',    'fix': True,  'under': False}, # 
+    'acute'              : {'char': '´',    'fix': True,  'under': False}, # 
+    'mathring'           : {'char': '˚',    'fix': True,  'under': False}, # 
+
+    # ===== Braces / brackets / parens (stretchable) =====
+    'overbrace'          : {'char': '⏞',    'fix': False, 'under': False},
+    'underbrace'         : {'char': '⏟',    'fix': False, 'under': True},
+    'overbracket'        : {'char': '⎴',    'fix': False, 'under': False},
+    'underbracket'       : {'char': '⎵',    'fix': False, 'under': True},
+    'overparen'          : {'char': '⏜',    'fix': False, 'under': False},
+    'underparen'         : {'char': '⏝',    'fix': False, 'under': True},
+}
+
+
 # ====================================================================================================
 # Exposed methods
 # ====================================================================================================
@@ -107,7 +148,7 @@ def parse_latex(text, math_mode=False):
 
     parser = Parser(text, math_mode=math_mode, ignore_comments=True)
     token = parser.read_block(None)
-    d = parser.parse_block(token)
+    d = parser.block_token_to_dict(token)
 
     if math_mode:
         return d
@@ -468,7 +509,7 @@ class Builder:
         
         self.consume_etext()
 
-        # In text mode, all the token are merge in a single string
+        # In text mode, all the token are merged in a single string
         # This is a simple LaTeX parser !
         if text_mode:
             etext = EText()
@@ -876,6 +917,7 @@ class Parser:
         tokens = []
 
         while True:
+
             token = self.read_token()
 
             # --------------------------------------------------
@@ -930,73 +972,20 @@ class Parser:
     # Grammar level
     # ====================================================================================================
 
-    def parse_block(self, block):
+    def block_token_to_dict(self, block):
+
+        # ---------------------------------------------------------------------------
+        # Read from tokens -> write to builder
+        # ---------------------------------------------------------------------------
 
         tokens = Tokens(block.value)
         builder = Builder()
 
-        # ===========================================================================
-        # Text parser
-        # ===========================================================================
-
+        # Text mode : capture font style
         if not block.is_math_block:
-
             for k, v in block.props.items():
                 if k in builder.etext.attributes:
                     builder.etext.default[k] = v
-
-            while not tokens.eof:
-
-                token = tokens.read_token()
-
-                if token.is_text:
-                    builder.add_text(token.value)
-
-                elif token.is_control:
-                    builder.add_text(token.value)
-
-                elif token.is_command:
-
-                    if token.value in TEXT_SWITCHES:
-                        builder.etext.default.set(**TEXT_SWITCHES[token.value])
-
-                    elif token.value == 'color':
-                        col = tokens.read_option()
-                        if col is not None:
-                            OK = True
-                            try:
-                                from ..maths import Color
-                            except:
-                                OK = False
-
-                            if OK:
-                                builder.etext.default.color = Color(col).rgba
-
-                    elif token.value in ['matindex', 'material', 'materialindex']:
-                        matind = tokens.read_option()
-                        if matind is not None:
-                            builder.etext.default.material_index = matind
-
-                    else:
-                        pass
-
-                elif token.is_text_block:
-                    for k, v in builder.etext.default:
-                        if k not in token.props:
-                            token.props[k] = v
-
-                    tk = self.parse_block(token)
-
-                    builder.add_content(tk)
-
-                else:
-                    pass
-
-            return builder.get_dict(text_mode=True)
-
-        # ===========================================================================
-        # Math parser
-        # ===========================================================================
 
         # ---------------------------------------------------------------------------
         # Parse a token to a dict
@@ -1004,11 +993,11 @@ class Parser:
 
         def _token_to_dict(token):
             if token.is_eof:
-                return {'type': 'STRING', 'string': EText()}
+                return {'type': 'STRING', 'string': EText("?")}
             if token.is_block:
-                return self.parse_block(token)
+                return self.block_token_to_dict(token)
             else:
-                return self.parse_block(Token.block(block.is_math_block, [token]))['content'][0]
+                return self.block_token_to_dict(Token.block(block.is_math_block, [token]))['content'][0]
             
         # ---------------------------------------------------------------------------
         # Read subscript or superscript
@@ -1026,7 +1015,7 @@ class Parser:
                 scripts[k] = _token_to_dict(v)
 
             return scripts
-
+        
         # ---------------------------------------------------------------------------
         # Loop on the tokens in the block
         # ---------------------------------------------------------------------------
@@ -1034,7 +1023,7 @@ class Parser:
         while not tokens.eof:
 
             # ---------------------------------------------------------------------------
-            # Scripts : added to last token
+            # Math specific : subscripts and superscripts are added to last token
             # ---------------------------------------------------------------------------
 
             while tokens.next_is_script:
@@ -1044,14 +1033,76 @@ class Parser:
                 if tokens.eof:
                     break
 
-            # ---------------------------------------------------------------------------
-            # Let's read next token
-            # ---------------------------------------------------------------------------
+            # ===========================================================================
+            # Common to math & text
+            # ===========================================================================
 
             token = tokens.read_token()
 
+            # Debug
             if False:
                 print("Grammar", token)
+
+            if token.is_command:
+
+                if token.value == 'color':
+                    col = tokens.read_option()
+                    if col is not None:
+                        OK = True
+                        try:
+                            from ..maths import Color
+                        except:
+                            OK = False
+
+                        if OK:
+                            builder.etext.default.color = Color(col).rgba
+
+                    continue
+
+                elif token.value in ['matindex', 'material', 'materialindex']:
+                    matind = tokens.read_option()
+                    if matind is not None:
+                        builder.etext.default.material_index = matind
+
+                    continue
+
+            # ===========================================================================
+            # Text parser
+            # ===========================================================================
+
+            if not block.is_math_block:
+
+                if token.is_text:
+                    builder.add_text(token.value)
+
+                elif token.is_control:
+                    builder.add_text(token.value)
+
+                elif token.is_command:
+
+                    if token.value in TEXT_SWITCHES:
+                        builder.etext.default.set(**TEXT_SWITCHES[token.value])
+
+                    else:
+                        pass
+
+                elif token.is_text_block:
+                    for k, v in builder.etext.default:
+                        if k not in token.props:
+                            token.props[k] = v
+
+                    tk = self.block_token_to_dict(token)
+
+                    builder.add_content(tk)
+
+                else:
+                    pass
+
+                continue
+
+            # ===========================================================================
+            # Math parser
+            # ===========================================================================
 
             # ---------------------------------------------------------------------------
             # Text : we add to the stack
@@ -1080,6 +1131,9 @@ class Parser:
             # ---------------------------------------------------------------------------
 
             elif token.is_command:
+
+                is_under_deco = token.value.startswith('under') and token.value[5:] in DECORATORS
+                is_deco = is_under_deco or token.value in DECORATORS
 
                 # ---------------------------------------------------------------------------
                 # A function
@@ -1144,7 +1198,7 @@ class Parser:
                             if tk.value != '.':
                                 brackets['right_char'] = tk.value
 
-                            block_dict = self.parse_block(Token.block(True, user_block))
+                            block_dict = self.block_token_to_dict(Token.block(True, user_block))
                             sub_block = {**block_dict, **brackets}
 
                             builder.add_content(sub_block)
@@ -1158,6 +1212,28 @@ class Parser:
 
                 elif token.value == 'right':
                     self.error(f"'\\right' command encountered with no '\\left' comand before.")
+
+                # ---------------------------------------------------------------------------
+                # Decorators
+                # ---------------------------------------------------------------------------
+
+                elif is_deco:
+
+                    cont = _token_to_dict(tokens.read_token())
+                    if is_under_deco:
+                        params = dict(DECORATORS[token.value[5:]])
+                        params['under'] = True
+                    else:
+                        params = dict(DECORATORS[token.value])
+
+                    loc = 'under' if params['under'] else 'over'
+                    if params['fix']:
+                        loc = 'fix_' + loc
+
+                    deco = {'location': loc, **{k: v for k, v in params.items() if k not in ['fix', 'under']}}
+                    deco_dict = {'type': 'BLOCK', 'content': [cont], 'deco': deco}
+
+                    builder.add_content(deco_dict)
 
                 # ---------------------------------------------------------------------------
                 # Transform the command into string
@@ -1175,7 +1251,7 @@ class Parser:
 
             elif token.is_block:
 
-                sub_block = self.parse_block(token)
+                sub_block = self.block_token_to_dict(token)
 
                 builder.add_content(sub_block)
 
@@ -1187,7 +1263,11 @@ class Parser:
                 if not token.is_eof:
                     assert False, str(token)
 
-        return builder.get_dict()
+        # ===========================================================================
+        # Ouf
+        # ===========================================================================
+
+        return builder.get_dict(text_mode=block.is_text_block)
     
     # ====================================================================================================
     # Debug
@@ -1197,7 +1277,7 @@ class Parser:
 
         def _lines(d):
 
-            if not isinstance(d, dict):
+            if not isinstance(d, dict) or 'type' not in d:
                 yield str(d)
 
             else:
@@ -1245,13 +1325,13 @@ if __name__ == '__main__':
 
     from pprint import pprint
     print('-'*100)
-    text = r"Normal \color[red]matind"
-    p = Parser(text, math_mode=False)
+    text = r"\undervec v = 1"
+    p = Parser(text, math_mode=True)
     block = p.read_block()
     for tk in block.value:
         print(tk)
 
     print('-'*100)
 
-    d = p.parse_block(block)
+    d = p.block_token_to_dict(block)
     p._dump_parsed(d)

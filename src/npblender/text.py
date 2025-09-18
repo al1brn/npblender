@@ -32,7 +32,7 @@ Summary:
 
 """
 
-__all__ = ["Font", "Text", "Formula", "MeshTerm"]
+__all__ = ["Font", "Text", "Formula", "FGeom"]
 
 import numpy as np
 from pathlib import Path
@@ -48,7 +48,8 @@ from .domain import Point
 
 from .textutils import EText, parse_latex
 from .maths import Color, Transformation, Rotation, Quaternion, maprange
-from .maths import Transfo2d, BBox, Term, TermBox
+from .maths import Transfo2d, BBox
+from . import maths
 
 # ====================================================================================================
 # Font
@@ -247,8 +248,8 @@ class Font:
 class Text(Geometry):
 
     FONT_STYLE = ('BOLD', 'ITALIC', 'SMALL_CAPS', 'UNDERLINE')
-    X_ALIGN = ('LEFT', 'CENTER', 'RIGHT', 'JUSTIFY', 'FLUSH')
-    Y_ALIGN = ('TOP', 'TOP_BASELINE', 'CENTER', 'BOTTOM_BASELINE', 'BOTTOM')
+    X_ALIGN    = ('LEFT', 'CENTER', 'RIGHT', 'JUSTIFY', 'FLUSH')
+    Y_ALIGN    = ('TOP', 'TOP_BASELINE', 'CENTER', 'BOTTOM_BASELINE', 'BOTTOM')
     BEVEL_MODE = ('ROUND', 'OBJECT', 'PROFILE')
 
     PROPERTIES = {
@@ -589,304 +590,143 @@ class Text(Geometry):
 # ====================================================================================================
 
 # ----------------------------------------------------------------------------------------------------
-# A formula term which encapsulate a mesh
+# Content item
 # ----------------------------------------------------------------------------------------------------
 
-class MeshTerm(TermBox):
+class FGeom(maths.FormulaGeom):
 
-    def __init__(self, mesh, **kwargs):
+    # ---------------------------------------------------------------------------
+    # Set the content : a string or a mesh
+    # ---------------------------------------------------------------------------
 
-        super().__init__(**kwargs)
-        if 'italic' not in kwargs:
-            self.italic = False
+    def set_content(self, content):
 
         self._string = None # To build mesh once font is avaiablable
         self._mesh = None
         self._bbox = None
 
-        if isinstance(mesh, Mesh):
-            self._mesh = mesh
+        if isinstance(content, Mesh):
+            self._mesh = content
+            self.name = "Mesh"
 
-        elif isinstance(mesh, str):
-            self._string = mesh
+        elif isinstance(content, (str, EText)):
+            self._string = content
+            self.name = str(content)
 
-        elif isinstance(mesh, (float, int, np.integer, np.float64, np.float32)):
-            self._string = str(mesh)
+        elif isinstance(content, (float, int, np.integer, np.float64, np.float32)):
+            self._string = str(content)
+            self.name = self._string
 
-        elif isinstance(mesh, Geometry):
-            self._mesh = mesh.to_mesh()
+        elif isinstance(content, Geometry):
+            self._mesh = content.to_mesh()
+            self.name = type(content).__name__
 
         else:
-            raise ValueError(f"MeshTerm(): mesh argument must be Geometry or a string, not '{type(mesh).__name__}'")
+            raise ValueError(f"FGeom(): 'content' must be Geometry or a string, not '{type(content).__name__}'")
+        
+        # ----- Build Mesh from string
 
-    def __str__(self):
-        s = "" if self._string is None else f"[{self._string}]" 
-        return f"<MeshTerm{s}: {self._mesh}, {self.transfo}>"
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Return bbox and mesh
-    # ----------------------------------------------------------------------------------------------------
+        if self._mesh is None:
+            if self._string is None:
+                self._mesh = None
+                self._bbox = BBox()
 
-    @property
-    def adjustable(self):
-        return self._adjust_bbox is not None and hasattr(self, 'child_index')
+            else:
+                text = Text(self._string, font=self.term.font, is_latex=False)
+                self._mesh = text.to_mesh()
+
+    # ---------------------------------------------------------------------------
+    # Compute the bbox
+    # ---------------------------------------------------------------------------
 
     def get_bbox(self):
-        if self.adjustable or self._mesh is None:
-            return BBox.from_points(self.mesh.points.position)
-        else:
-            return BBox.from_points(self._mesh.points.position)
+        if self._mesh is None:
+            return BBox()
+        return BBox.from_points(self.mesh.points.position)
+
+    # ----------------------------------------------------------------------------------------------------
+    # Compute the mesh, possibly deformed
+    # ----------------------------------------------------------------------------------------------------
 
     @property
     def mesh(self):
 
         if self._mesh is None:
-            if self._string is None:
-                return Mesh()
-            
-            text = Text(self._string, font=self.font, is_latex=False, italic=self.italic)
-            self._mesh = text.to_mesh()
+            return Mesh()
         
         mesh = Mesh.from_mesh(self._mesh)
-
         if not self.adjustable:
             return mesh
         
-        # ----- Adjust size to the bbox
+        # Adjust from property adjust_dims
 
-        assert hasattr(self, 'child_index')
+        bbox = BBox.from_points(self._mesh.points.position)
+        width, height = self.adjust_dims
 
         # Vertical adjustment
-        if self.child_index in ('left','right'):
+        if height > bbox.height:
             mesh.elongation(
                 axis   = 'Y',
-                size   = self._adjust_bbox.height + 2*self.oversize, 
-                mode   = self.elon_mode,
-                margin = self.elon_margin,
-                smooth = self.elon_smooth,
+                size   = height + 2*self.term.oversize, 
+                mode   = self.term.elon_mode,
+                margin = self.term.elon_margin,
+                smooth = self.term.elon_smooth,
                 )
 
         # Horizontal adjustment
-        if self.child_index in ('below','above'):
+        if width > bbox.width:
             mesh.elongation(
                 axis   = 'X',
-                size   = self._adjust_bbox.width + 2*self.oversize, 
-                mode   = self.elon_mode,
-                margin = self.elon_margin,
-                smooth = self.elon_smooth,
+                size   = width + 2*self.term.oversize, 
+                mode   = self.term.elon_mode,
+                margin = self.term.elon_margin,
+                smooth = self.term.elon_smooth,
                 )
             
         self._bbox = BBox.from_points(mesh.points.position)
 
         return mesh
-
-    def get_mesh(self, transfo=None):
-        transfo = self.get_transfo(transfo)
-        return self.mesh.transform(transfo.transformation3d)
     
-# ----------------------------------------------------------------------------------------------------
-# A formula whose terms are MeshTerms
-# ----------------------------------------------------------------------------------------------------
-
-class Formula(Term):
-
     # ----------------------------------------------------------------------------------------------------
-    # Convert a formula input in MeshTerm
+    # Get the transformed mesh
     # ----------------------------------------------------------------------------------------------------
 
-    def convert_term(self, term):
-        """Convert a term to a Term.
-        """
-        if isinstance(term, TermBox):
-            return term
-        else:
-            return MeshTerm(term)
+    def to_mesh(self, transfo=None, materials=None):
+        if transfo is None:
+            transfo = self.transfo3d
 
-    # ----------------------------------------------------------------------------------------------------
-    # Build the mesh from content and decorators
-    # ----------------------------------------------------------------------------------------------------
-
-    def get_mesh(self, transfo=None):
-
-        # Compute
-        self.get_bbox()
-
-        transfo = self.get_transfo(transfo)
-
-        mesh = Mesh()
-        for term in self.all_children:
-            m = term.get_mesh(transfo=transfo)
-            if m is not None:
-                mesh.join(m)
+        mesh = self.mesh.transform(transfo)
 
         return mesh
     
-    # ====================================================================================================
-    # Parse LaTeX string
-    # ====================================================================================================
+# ====================================================================================================
+# Formula
+# ====================================================================================================
 
-    @classmethod
-    def from_latex(cls, latex, **kwargs):
-        
-        
-        from pprint import pprint
-        from .textutils import parse_latex
+class Formula(maths.Formula):
 
-        def _new(d):
+    def __init__(self, body, font=None, materials=None):
 
-            if d['type'] == 'STRING':
-                s = d['string']
-                italic = s[0] not in '0123456789'
-                frm = cls(MeshTerm(s, italic=italic))
-
-            elif d['type'] == 'SYMBOL':
-                frm = cls(MeshTerm(d['string']))
-
-            elif d['type'] == 'BLOCK':
-                frm = cls()
-                for c in d['content']:
-                    frm.append(_new(c))
-
-            elif d['type'] == 'COMMAND':
-                frm = cls(MeshTerm(d['command']))
-
-            else:
-                pprint(d)
-                raise ValueError(f"Unknown LaTeX type: '{d['type']}'.")
+        if isinstance(body, str):
+            body = parse_latex(body, math_mode=True)
             
-            for key in ['sub', 'sup']:
-                value = d.get(key)
-                if value is None:
-                    continue
-                deco_key = {'sup': 'superscript', 'sub': 'subscript'}[key]
-                deco = _new(value)
-                frm.set_decorator(deco_key, deco)
+        super().__init__(None, body, geom_cls=FGeom, font=font)
 
-            left = d.get('left_char')
-            right = d.get('right_char')
-            if (left is not None) or (right is not None):
-                if left == '.':
-                    left = None
-                if right == '.':
-                    right = None
+        if materials is None:
+            self.materials = []
+        else:
+            self.materials = []
 
-                if left is not None:
-                    frm.left = _new(left)
-                if right is not None:
-                    frm.right = _new(right)
+    def to_mesh(self):
+        mesh = Mesh(materials=self.materials)
+        for _, fgeom in self.depths():
+            if not fgeom.body_is_geom:
+                continue
 
-            return frm
-        
-        #formula = cls(**kwargs)
-        d = parse_latex(latex, math_mode=True)
+            m = fgeom.body.to_mesh()
+            m.materials = list(self.materials)
+            mesh.join(m)
 
-        print('-'*100)
-        pprint(d)
-        print('-'*100)
-
-        formula = cls(**kwargs)
-        formula.append(_new(d))
-
-        return formula
-
-
-
-        return _append(cls(**kwargs), parse_latex(latex, math_mode=True))
-
-    
-    # ====================================================================================================
-    # LaTeX primitives
-    # ====================================================================================================
-
-    # ----------------------------------------------------------------------------------------------------
-    # Accents
-    # ----------------------------------------------------------------------------------------------------
-
-    @classmethod
-    def lx_vec(cls, *terms, **kwargs):
-        deco = MeshTerm(r"\rightarrow", elon_mode='LEFT')
-        return Formula(*terms, above=deco, **kwargs)
-    
-    @classmethod
-    def lx_bar(self, *terms, **kwargs):
-        deco = MeshTerm(r"-", elon_mode='CENTER')
-        return Formula(*terms, above=deco, **kwargs)
-    
-    @classmethod
-    def lx_hat(self, *terms, **kwargs):
-        return Formula(*terms, fix_above=r"\^", **kwargs)
-    
-    @classmethod
-    def lx_tilde(self, *terms, **kwargs):
-        return Formula(*terms, fix_above="~", **kwargs)
-    
-    @classmethod
-    def lx_dot(self, *terms, **kwargs):
-        return Formula(*terms, fix_above=".", **kwargs)
-    
-    @classmethod
-    def lx_ddot(self, *terms, **kwargs):
-        return Formula(*terms, fix_above="..", **kwargs)
-    
-    @classmethod
-    def lx_overrightarrow(self, *terms, **kwargs):
-        deco = MeshTerm(r"\rightarrow", elon_mode='LEFT')
-        return Formula(*terms, above=deco, **kwargs)
-    
-    @classmethod
-    def lx_overleftarrow(self, *terms, **kwargs):
-        deco = MeshTerm(r"\leftarrow", elon_mode='RIGHT')
-        return Formula(*terms, above=deco, **kwargs)
-
-    @classmethod
-    def lx_overline(self, *terms, **kwargs):
-        return Formula(*terms, above="_", **kwargs)
-    
-    @classmethod
-    def lx_underline(self, *terms, **kwargs):
-        return Formula(*terms, below="_", **kwargs)
-    
-    
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Sums
-    # ----------------------------------------------------------------------------------------------------
-    
-    @classmethod
-    def lx_sum(cls, *terms, font=None, **kwargs):
-        pass
-
-    @classmethod
-    def lx_int(cls, *terms, font=None, **kwargs):
-        pass
-
-    @classmethod
-    def lx_prod(cls, *terms, font=None, **kwargs):
-        pass
-
-    
-
-
-    
-    
-
-
-
-    
-
-    
-
-    
-
-
-
-
-
-
-
-
-        
-
-
+        return mesh
 
 

@@ -4883,6 +4883,15 @@ class Mesh(Geometry):
 
             self.points.position[..., index] += dx
 
+        elif mode == 'SHIFT':
+            cx = (x0 + x1)/2            
+
+            dx = np.zeros_like(x)
+            dx[x > cx] = ds/2
+            dx[x < cx] = -ds/2
+
+            self.points.position[..., index] += dx
+
         elif mode == 'SCALE':
 
             sc = x0 + (x - x0)*(size/cur_size)

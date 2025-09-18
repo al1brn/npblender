@@ -20,17 +20,17 @@ from .constants import *
 from . import constants
 __all__.extend(constants.__all__)
 
+from .color import *
+from . import color
+__all__.extend(color.__all__)
+
 from .geo2d import *
 from . import geo2d
 __all__.extend(geo2d.__all__)
 
-from .arranger import *
-from . import arranger
-__all__.extend(arranger.__all__)
-
-from .color import *
-from . import color
-__all__.extend(color.__all__)
+from .formula import *
+from . import formula
+__all__.extend(formula.__all__)
 
 
 

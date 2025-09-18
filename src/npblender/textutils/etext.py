@@ -122,6 +122,9 @@ class EText:
         return "".join(self._data.char[:self._len])
     
     def __repr__(self):
+        return str(self)
+    
+    def dump(self):
         n = 60
         return "\n".join([
             "> " + "".join(self._data.char[:n]),
