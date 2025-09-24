@@ -491,6 +491,8 @@ class Geometry:
         if not readonly:
             self.capture(type(self).from_object(obj))
 
+
+        data = obj.data
         blender.delete_object(obj)
 
         bpy.ops.object.select_all(action='DESELECT')        
@@ -501,6 +503,17 @@ class Geometry:
 
         if old_active_name is not None:
             bpy.context.view_layer.objects.active = bpy.data.objects.get(old_active_name)
+
+        # Purge data
+        if data.name in bpy.data.curves:
+            bpy.data.curves.remove(data)
+        elif data.name in bpy.data.meshes:
+            bpy.data.curves.remove(data)
+        elif data.name in bpy.data.pointclouds:
+            bpy.data.pointclouds.remove(data)
+        else:
+            print(f"CAUTION 'object()': {type(data).__name__} not purged.")
+
 
     # ====================================================================================================
     # Material

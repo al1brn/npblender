@@ -14,15 +14,15 @@ ET_DTYPE = np.dtype([
 
 
 BL_ATTRS = {
-    'bold': 'use_bold',
-    'italic': 'use_italic',
-    'small_caps': 'use_small_caps',
-    'underline': 'use_underline',
-    'material_index': 'material_index',
-    'kerning': 'kerning',
+    'bold'           : 'use_bold',
+    'italic'         : 'use_italic',
+    'small_caps'     : 'use_small_caps',
+    'underline'      : 'use_underline',
+    'material_index' : 'material_index',
+    'kerning'        : 'kerning',
 }
 
-__all__ = ["EText", "CharStyle"]
+__all__ = ["CharStyle", "EText", "EChar", "StyleContext"]
 
 # ====================================================================================================
 # Style
@@ -94,6 +94,76 @@ class CharStyle:
         for k, v in styles.items():
             self[k] = v
 
+# ====================================================================================================
+# Style context
+# ====================================================================================================
+
+class StyleContext:
+    
+    __slots__ = ["_styles"]
+
+    def __init__(self, **styles):
+        self._styles = {}
+        for k, v in styles.items():
+            setattr(self, k, v)
+
+    def push(self, **styles):
+        new_styles = {**self._styles}
+        for k in CharStyle.STYLES:
+            if k in styles and styles[k] is not None:
+                new_styles[k] = styles[k]
+
+        return StyleContext(**new_styles)
+
+    def __setattr__(self, name, value):
+        if name in CharStyle.STYLES:
+            self._styles[name] = value
+        else:
+            super().__setattr__(name, value)
+
+    def __getattr__(self, name):
+        if name in CharStyle.STYLES:
+            return self._styles.get(name, CharStyle.STYLES[name])
+        else:
+            raise AttributeError(f"'{name}' is not a valid char style name.")
+
+    def as_dict(self):
+        d = {}
+        for k, v in self._styles.items():
+            if v is not None:
+                d[k] = v
+        return d
+
+
+# ====================================================================================================
+# EChar
+# ====================================================================================================
+
+class EChar:
+    def __init__(self, c, **styles):
+        self.c = c
+        for k in CharStyle.STYLES:
+            if k in styles:
+                setattr(self, k, styles[k])
+            else:
+                setattr(self, k, CharStyle.STYLES[k])
+
+        for k in styles:
+            if k not in CharStyle.STYLES:
+                raise AttributeError(f"Unknown char style: {k}={v}")
+            
+    def __str__(self):
+        return self.c
+    
+    def __repr__(self):
+        return self.c
+    
+    def dump(self):
+        s = f"<EChar {self.c}"
+        for k in CharStyle.STYLES:
+            s += f", {k}: {getattr(self, k)}"
+        return s + ">"
+    
 
 # ====================================================================================================
 # Enriched text
@@ -103,30 +173,31 @@ class EText:
 
     STYLES = CharStyle.STYLES
 
-    __slots__ = ["_cstyle", "_data", "_len"]
+    __slots__ = ["_cstyle", "_data"]
 
     def __init__(self, text=None, **styles):
 
-        self._len  = 0
         self._cstyle = CharStyle(**styles)
+        self._data = None
 
-        if text is None:
-            self._data = np.zeros(100, dtype=ET_DTYPE).view(np.recarray)
-
-        else:
-            self._data = np.zeros(len(text), dtype=ET_DTYPE).view(np.recarray)
-
+        if text is not None:
             self.text = text
+
             for k, v in styles.items():
                 setattr(self, k, v)
 
     def __str__(self):
-        return "".join(self._data.char[:self._len])
+        if self._data is None:
+            return ""
+        else:
+            return "".join(self._data.char)
     
     def __repr__(self):
         return str(self)
     
     def dump(self):
+        if self._data is None:
+            return "<Empty EText>"
         n = 60
         return "\n".join([
             "> " + "".join(self._data.char[:n]),
@@ -137,41 +208,31 @@ class EText:
         ])
     
     # ----------------------------------------------------------------------------------------------------
-    # Buffer management
+    # Init data
     # ----------------------------------------------------------------------------------------------------
 
-    def _ensure_len(self, new_len):
+    def _init_data(self, length):
+        if length == 0:
+            self._data = None
+        elif self._data is None:
+            self._data = np.zeros(length, dtype=ET_DTYPE).view(np.recarray)
+        else:
+            self._data = np.resize(self._data, length).view(np.recarray)
 
-        if self._data is not None and len(self._data) >= new_len:
-            return
-
-        buf_len = (new_len // 100)*100 + 100
-        assert(buf_len >= new_len)
-
-        data = np.zeros(buf_len, dtype=ET_DTYPE).view(np.recarray)
-
-        # Default
-        for k, v in CharStyle.STYLES.items():
-            data[k] = v
-
-        # Existing chars
-        if self._data is not None:
-            data[:self._len] = self._data[:self._len]
-
-        self._data = data
-    
     # ----------------------------------------------------------------------------------------------------
     # Clone
     # ----------------------------------------------------------------------------------------------------
 
     def clone(self):
         txt = EText()
-        txt.text = self
+        if len(self):
+            txt.text = self
+        
         txt.default.set(**self.default.as_dict())
         return txt
     
     def clear(self):
-        self._len = 0
+        self._data = None
 
     # ----------------------------------------------------------------------------------------------------
     # Styles
@@ -190,22 +251,57 @@ class EText:
     # ----------------------------------------------------------------------------------------------------
 
     def __len__(self):
-        return self._len
+        if self._data is None:
+            return 0
+        else:
+            return len(self._data)
 
     @property
     def text(self):
-        return "".join(self._data.char[:self._len])
+        if self._data is None:
+            return ""
+        else:
+            return "".join(self._data.char)
     
     @text.setter
     def text(self, value):
         if isinstance(value, EText):
             self._data = np.array(value._data).view(np.recarray)
-            self._len = value._len
+
+        elif isinstance(value, EChar):
+            self.text = value.c
+            for k, v in CharStyle.STYLES.items():
+                v = getattr(value, k)
+                if v is not None:
+                    setattr(self, k, v)
+
+
+        # A list of strs or EChars
+        elif isinstance(value, list):
+            s = ""
+            for ec in value:
+                if isinstance(ec, str):
+                    s += ec
+                else:
+                    s += ec.c
+
+            self.text = s
+            index = 0
+            for ec in value:
+                if isinstance(ec, str):
+                    continue
+
+                n = len(ec.c)
+                for k in CharStyle.STYLES:
+                    self._data[k][index:index + n] = getattr(ec, k)
+                index += n
+
+        elif len(value) == 0:
+            self._data = None
 
         else:
-            self._ensure_len(len(value))
-            self._len = len(value)
-            self._data.char[:self._len] = list(value)
+            self._init_data(len(value))
+            self._data.char[:] = list(value)
 
             for k, v in self.default:
                 setattr(self, k, v)
@@ -217,30 +313,27 @@ class EText:
     def __getattr__(self, name):
 
         if name in CharStyle.STYLES:
-            return self._data[name][:self._len]
+            return self._data[name]
         
         raise AttributeError(f"No style named '{name}'. Valid styles are {list(CharStyle.STYLES.keys())}")
     
     def __setattr__(self, name, value):
 
-        if name in ['_data', '_len', '_cstyle']:
+        if name in ['_data', '_cstyle']:
             object.__setattr__(self, name, value)
             return
 
         elif name in CharStyle.STYLES:
-            self._data[name][:self._len] = value
+            self._data[name] = value
             return
         
         super().__setattr__(name, value)
-
-        #raise AttributeError(f"No style named '{name}'. Valid styles are {list(CharStyle.STYLES.keys())}")
 
     def __getitem__(self, name):
         return getattr(self, name)
     
     def __setitem__(self, name, value):
         setattr(self, name, value)
-
 
     # ----------------------------------------------------------------------------------------------------
     # To Blender body_data
@@ -263,39 +356,35 @@ class EText:
 
     def append(self, text, **styles):
 
-        new_len = self._len + len(text)
-        self._ensure_len(new_len)
+        cur_len = len(self)
+        new_len = cur_len + len(text)
+        self._init_data(new_len)
         
         if isinstance(text, EText):
-            self._data[self._len:new_len] = text._data[:text._len]
+            self._data[cur_len] = text._data
         
         else:
             text = str(text)
-            self._data['char'][self._len:new_len] = list(text)
+            self._data['char'][cur_len:] = list(text)
 
             for k, v in self.default:
                 if k in styles:
-                    self._data[k][self._len:new_len] = styles[k]
+                    self._data[k][cur_len:] = styles[k]
                 else:
-                    self._data[k][self._len:new_len] = v
-
-        self._len = new_len
+                    self._data[k][cur_len:] = v
 
     def extract(self, index0=0, index1=None):
 
         if index0 < 0:
-            index0 = self._len + index0
+            index0 = len(self) + index0
 
         if index1 is None:
-            index1 = self._len
+            index1 = len(self)
         elif index1 < 0:
-            index1 = self._len + index1
-
-        data = np.array(self._data[index0:index1]).view(np.recarray)
+            index1 = len(self) + index1
 
         etext = EText()
-        etext._data = data
-        etext._len  = len(data)
+        etext._data = np.array(self._data[index0:index1]).view(np.recarray)
 
         return etext
 
@@ -336,5 +425,22 @@ if __name__ == '__main__':
     print(txt)
     txt.append("abc")
     print(txt)
+
+    ec = EChar("I", italic=True)
+    print(ec.dump())
+
+    et = EText(ec)
+    print(et.dump())
+
+    a = EChar("Italic", italic=True)
+    b = EChar("Bold", bold=True)
+    c = "string"
+
+    et = EText([a, b, c])
+    print(et.dump())
+
+    sc = StyleContext(italic=True)
+    print(sc.italic, sc.bold, sc.as_dict())
+
 
 

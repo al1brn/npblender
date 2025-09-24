@@ -39,7 +39,7 @@ from pathlib import Path
 
 import bpy
 
-from .constants import bint, bfloat
+from .constants import bint, bfloat, ZERO
 from . import blender
 from .geometry import Geometry
 from .curve import Curve
@@ -51,24 +51,35 @@ from .maths import Color, Transformation, Rotation, Quaternion, maprange
 from .maths import Transfo2d, BBox
 from . import maths
 
+
 # ====================================================================================================
 # Font
 # ====================================================================================================
 
 class Font:
 
-    def __init__(self, name=None, filepath=None, regular="", bold="Bold", italic="Italic", bold_italic="Bold Italic", extension="ttf"):
+    def __init__(self, name=None, filepath=None, regular="", bold="Bold", italic="Italic", bold_italic="Bold Italic", font_scale=1.0, extension="ttf"):
 
         self.filepath = filepath
         self.extension = extension
 
-        self._regular = self.load_font(name, regular, filepath, default=None)
-        self._bold = self.load_font(name, bold, filepath, default=self._regular)
-        self._italic = self.load_font(name, italic, filepath, default=self._regular)
-        self._bold_italic = self.load_font(name, bold_italic, filepath, default=self._bold)
+        self._regular     = self.load_font(name, regular,     filepath, default = None)
+        self._bold        = self.load_font(name, bold,        filepath, default = self._regular)
+        self._italic      = self.load_font(name, italic,      filepath, default = self._regular)
+        self._bold_italic = self.load_font(name, bold_italic, filepath, default = self._bold)
+
+        self.font_scale     = font_scale
+
+    # ====================================================================================================
+    # Load a font
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Build a font name from name and variant
+    # ----------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def _get_full_name(name, variant):
+    def _get_font_name(name, variant):
         if name is None:
             if variant is None or variant == "":
                 return "Bfont"
@@ -80,10 +91,86 @@ class Font:
                 return name
             else:
                 return f"{name} {variant}"
+            
+    # ----------------------------------------------------------------------------------------------------
+    # Load a font from a file
+    # ----------------------------------------------------------------------------------------------------
     
-    # ====================================================================================================
+    @staticmethod
+    def _load_from_path(file_name):
+        """Load a font from its full path.
+
+        Compare the path to loaded VectorFont paths before actually loading the font
+
+        Returns
+        -------
+        VectorFont or None:
+            The Font or None if load is unsuccessful
+        """
+
+        # In case it Path
+        file_name = str(file_name)
+
+        # ----- Default font
+
+        if file_name in ['Bfont', '<builtin>']:
+            for font in bpy.data.fonts:
+                if font.filepath == '<builtin>':
+                    return font
+                
+            temp = blender.create_text_object("NPB Text Temp")
+            font = temp.data.font
+            data = temp.data
+            blender.delete_object(temp)
+            bpy.data.curves.remove(data)
+            return font
+        
+        # ----- Actual file name
+
+        # Comparing the file paths
+
+        path = Path(file_name)
+        for font in bpy.data.fonts:
+            vf_path = Path(font.filepath)
+            if path == vf_path:
+                return font
+
+        # First load
+
+        try:
+            return bpy.data.fonts.load(file_name)
+        except Exception as e:
+            msg = str(e)
+
+        print(f"WARNING Impossible to load font '{file_name}' : {msg}")
+            
+        return None
+    
+    # ----------------------------------------------------------------------------------------------------
+    # STIX Font
+    # ----------------------------------------------------------------------------------------------------
+    
+    @staticmethod
+    def _STIX_folder():
+        return str(Path(__file__).resolve().parent / "fonts")
+    
+    @classmethod
+    def _STIX_load(cls, variant='Regular'):
+        variant = variant.replace(' ', '').strip()
+        if variant == "":
+            variant = "Regular"
+        fname = f"STIXTwoText-{variant}.ttf"
+
+        return cls._load_from_path(Path(cls._STIX_folder()) / fname)
+    
+    @classmethod
+    def _STIX_math_load(cls):
+        fname = "STIXTwoMath-Regular.ttf"
+        return cls._load_from_path(Path(cls._STIX_folder()) / fname)
+    
+    # ----------------------------------------------------------------------------------------------------
     # Load a font
-    # ====================================================================================================
+    # ----------------------------------------------------------------------------------------------------
 
     @classmethod
     def load_font(cls, name, variant="Regular", filepath=None, extension="ttf", default=None):
@@ -96,37 +183,51 @@ class Font:
         if isinstance(variant, bpy.types.VectorFont):
             return variant
         
-        # Let's try to load an existing font
+        # Included STIX font
+        if name == 'STIX':
+            font = cls._STIX_load(variant)
+            if font is not None:
+                return font
+            
+        # Included STIX Math font
+        if name.lower() in ['math', 'maths']:
+            font = cls._STIX_math_load()
+            if font is not None:
+                return font
 
-        full_name = cls._get_full_name(name, variant)
-        font = bpy.data.fonts.get(full_name)
+        # Let's try to load from name only
+        font_name = cls._get_font_name(name, variant)
+        font = bpy.data.fonts.get(font_name)
         if font is not None:
             return font
         
         # If path is provided, we try to load the file
+        file_name = None
         if filepath is not None:
 
-            file_name = str(Path(filepath) / full_name) + f".{extension}"
+            file_name = str(Path(filepath) / font_name) + f".{extension}"
 
-            try:
-                return bpy.data.fonts.load(file_name)
-            except:
-                pass
+            font = cls._load_from_path(file_name)
+            if font is not None:
+                return font
 
         # If default is not provided, we load the default fault
         if default is None:
-            temp = blender.create_text_object("NPB Text Temp")
-            default = temp.data.font
-            blender.delete_object(temp)
+            default = cls._load_from_path("Bfont")
 
         font = default
 
-        # Warning message
-        if full_name != "Bfont" and (default is None):
-            print(f"WARNING Impossible to load font '{full_name}' with path '{filepath}'")
+        if font is None:
+            raise ValueError(
+                f"Impossible to load font:\n"
+                f"- name:       {name}\n",
+                f"- variant:    {variant}\n",
+                f"- font name:  {font_name}\n",
+                f"- file name:  {file_name}\n"
+                )
 
         return font
-    
+
     # ====================================================================================================
     # From blender
     # ====================================================================================================
@@ -134,16 +235,16 @@ class Font:
     @classmethod
     def from_data(cls, data):
         return cls(
-            regular = data.font,
-            bold = data.font_bold,
-            italic = data.font_italic,
+            regular     = data.font,
+            bold        = data.font_bold,
+            italic      = data.font_italic,
             bold_italic = data.font_bold_italic,
         )
     
     def to_data(self, data):
-        data.font = self.regular
-        data.font_bold = self.bold
-        data.font_italic = self.italic
+        data.font             = self.regular
+        data.font_bold        = self.bold
+        data.font_italic      = self.italic
         data.font_bold_italic = self.bold_italic
 
     
@@ -175,7 +276,7 @@ class Font:
             return self.italic if self._bold is None else self.bold
         else:
             return self._bold_italic
-        
+
     # ====================================================================================================
     # Call
     # ====================================================================================================
@@ -198,13 +299,14 @@ class Font:
             
     def to_dict(self):
         return {
-            'class' : 'Font',
-            'filepath': self.filepath,
-            'extension' : self.extension,
-            'regular' : self.regular.name,
-            'bold' : self.bold.name,
-            'italic' : self.italic.name,
+            'class'       : 'Font',
+            'filepath'    : self.filepath,
+            'extension'   : self.extension,
+            'regular'     : self.regular.name,
+            'bold'        : self.bold.name,
+            'italic'      : self.italic.name,
             'bold_italic' : self.bold_italic.name,
+            'font_scale'  : self.font_scale,
         }
         
     @classmethod
@@ -212,33 +314,49 @@ class Font:
         if d.get('class') != 'Font':
             raise Exception(f"Dictionnary doesn't contain Font data ({d.get('class')}).\n{str(d)[:100]}")
         
-        return cls(name="", filepath=d['filepath'],
-            regular=d['regular'], 
-            bold=d['bold'], 
-            italic=d['italic'], 
-            bold_italic=d['bold_italic'],
-            extension=d['extension'],
+        return cls(
+            name        = "",
+            filepath    = d['filepath'],
+            regular     = d['regular'], 
+            bold        = d['bold'], 
+            italic      = d['italic'], 
+            bold_italic = d['bold_italic'],
+            extension   = d['extension'],
+            font_scale  = d['font_scale'],
             )
     
     # ====================================================================================================
     # Get dimenions
     # ====================================================================================================
 
-    def get_dimensions(self, italic=False, bold=False):
+    def get_dimensions(self, italic=False, bold=False, scale=1.0):
 
-        mesh = Text("aAp> <", font=self).to_mesh(transform=False, char_index=True)
+        mesh = Text("aAp> <=_", font=self).to_mesh(transform=False, char_index=True)
 
         def _dims(char_index):
             cis = mesh.faces[mesh.faces.char_index==char_index].loop_index
             pts = mesh.points.position[mesh.corners[cis].vertex_index]
             return np.min(pts[:, 0]), np.min(pts[:, 1]), np.max(pts[:, 0]), np.max(pts[:, 1])
         
+        d_eq  = _dims(6)
+        d_bar = _dims(7)
+
         d = {
-            'y_body'   : _dims(0)[3],
-            'y_ascen'  : _dims(1)[3],
-            'y_descen' : _dims(2)[1],
-            'x_space'  : _dims(5)[0] - _dims(3)[2]
+            'y_body'    : _dims(0)[3],
+            'y_ascen'   : _dims(1)[3],
+            'y_descen'  : _dims(2)[1],
+            'x_space'   : _dims(5)[0] - _dims(3)[2],
+            'y_frac'    : (d_eq[1] + d_eq[3])/2.0,
+            'thickness' : d_bar[3] - d_bar[1],
         }
+        d['x_sepa']      = d['x_space']*0.5
+        d['y_sepa']      = d['thickness']*3.0
+        d['dy_super']    = d['y_body']*0.2
+        d['y_super_min'] = d['y_body']*0.8
+        d['dy_sub']      = d['y_body']*0.4
+        d['y_sub_max']   = d['y_body']*0.4
+        d['oversize']    = d['thickness']*0.8
+
         return d
 
 # ====================================================================================================
@@ -253,25 +371,25 @@ class Text(Geometry):
     BEVEL_MODE = ('ROUND', 'OBJECT', 'PROFILE')
 
     PROPERTIES = {
-        'align_x' : 'LEFT',
-        'align_y' : 'TOP_BASELINE',
-        'shear' : 0., 
-        #'size' : 1., 
-        'small_caps_scale' : 0.75, 
-        'space_character' : 1., 
-        'space_line' : 1., 
-        'space_word' : 1.,
-        'underline_height' : 0.05, 
-        'underline_position' : 0.0,
-        'offset_x' : 0.0, 
-        'offset_y' : 0.0, 
-        'bevel_mode' : 'ROUND', 
-        'extrude' : 0.0,
-        'offset': 0.0,
-        'bevel_depth' : 0.0, 
-        'bevel_resolution' : 4, 
-        'bevel_object' : None,
-        'use_fill_caps' : False,
+        'align_x'               : 'LEFT',
+        'align_y'               : 'TOP_BASELINE',
+        'shear'                 : 0., 
+        #'size'                 : 1., 
+        'small_caps_scale'      : 0.75, 
+        'space_character'       : 1., 
+        'space_line'            : 1., 
+        'space_word'            : 1.,
+        'underline_height'      : 0.05, 
+        'underline_position'    : 0.0,
+        'offset_x'              : 0.0, 
+        'offset_y'              : 0.0, 
+        'bevel_mode'            : 'ROUND', 
+        'extrude'               : 0.0,
+        'offset'                : 0.0,
+        'bevel_depth'           : 0.0, 
+        'bevel_resolution'      : 4, 
+        'bevel_object'          : None,
+        'use_fill_caps'         : False,
         }    
         
     domain_names = ["points"]
@@ -357,15 +475,6 @@ class Text(Geometry):
         self._etext = EText(value)
 
     # ----------------------------------------------------------------------------------------------------
-    # Conveniance
-    # ----------------------------------------------------------------------------------------------------
-
-    def solidify(self, extrude=.05, bevel_depth=.02, bevel_resolution=3):
-        self.extrude          = extrude
-        self.bevel_depth      = bevel_depth
-        self.bevel_resolution = bevel_resolution
-
-    # ----------------------------------------------------------------------------------------------------
     # Dimensions
     # ----------------------------------------------------------------------------------------------------
     
@@ -383,17 +492,17 @@ class Text(Geometry):
     def dimensions(self):
         if not hasattr(self, '_dimensions'):
             self._dimensions = self.get_dimensions()
-        return self._dimensions
+        return self._dimensions        
 
-    @property
-    def font_dims(self):
-        mem_text = self.text
-        self.text = "Ap"
-        dims = self.get_dimensions()
-        self.text = mem_text
-        dims['width'] /= 3 # Heuristic for space width
-        return dims
-    
+    # ----------------------------------------------------------------------------------------------------
+    # Conveniance
+    # ----------------------------------------------------------------------------------------------------
+
+    def solidify(self, extrude=.05, bevel_depth=.02, bevel_resolution=3):
+        self.extrude          = extrude
+        self.bevel_depth      = bevel_depth
+        self.bevel_resolution = bevel_resolution
+
     # ====================================================================================================
     # To and from Text Data (TextCurve)
     # ====================================================================================================
@@ -404,8 +513,8 @@ class Text(Geometry):
         # Initialize Text
         txt = cls(
             data.body, 
-            font = Font.from_data(data),
-            materials = cls.materials_from_data(data), 
+            font        = Font.from_data(data),
+            materials   = cls.materials_from_data(data), 
             **{k: getattr(data, k) for k in Text.PROPERTIES}) 
 
         # Char properties
@@ -421,6 +530,8 @@ class Text(Geometry):
         # Global Properties
         for k, v in self.props.items():
             setattr(data, k, v)
+
+        data.size *= self.font.font_scale
 
         # Materials
         # CAUTION : before etext.to_body_format to make sure materials exist
@@ -495,14 +606,14 @@ class Text(Geometry):
     
     def to_dict(self):
         return {
-            'geometry': 'Text',
-            'points': self.points.to_dict(),
-            'text': self.text,
-            'font' : self.font.to_dict(),
-            'materials': self.materials,
-            'bold' : self.bold,
-            'italic': self.italic,
-            'props' : dict(self.props),
+            'geometry'  : 'Text',
+            'points'    : self.points.to_dict(),
+            'text'      : self.text,
+            'font'      : self.font.to_dict(),
+            'materials' : self.materials,
+            'bold'      : self.bold,
+            'italic'    : self.italic,
+            'props'     : dict(self.props),
         }
         
     @classmethod
@@ -521,7 +632,7 @@ class Text(Geometry):
     # To Mesh
     # ----------------------------------------------------------------------------------------------------
 
-    def to_mesh(self, transform=True, char_index=True):
+    def to_mesh(self, transform=True, char_index=True, **kwargs):
 
         # Char index
         if char_index:
@@ -531,7 +642,7 @@ class Text(Geometry):
             self._etext.material_index = np.arange(len(matind), dtype=bint)
 
         # Create the mesh
-        with self.object(readonly=True) as obj:
+        with self.object(readonly=True, **kwargs) as obj:
             bl_mesh = bpy.data.meshes.new_from_object(obj)
             mesh = Mesh.from_mesh_data(bl_mesh)
 
@@ -565,7 +676,7 @@ class Text(Geometry):
     # To Mesh
     # ----------------------------------------------------------------------------------------------------
     
-    def to_curve(self, transform=True, char_index=True):
+    def to_curve(self, transform=True, char_index=True, **kwargs):
 
         # Char index
         if char_index:
@@ -575,7 +686,7 @@ class Text(Geometry):
             self._etext.material_index = np.arange(len(matind), dtype=bint)
 
         # Create the curve
-        with self.object(readonly=True) as obj:
+        with self.object(readonly=True, **kwargs) as obj:
             bpy.ops.object.convert(target='CURVE', keep_original=False)
             curve = Curve.from_curve_data(obj.data)
 
@@ -621,20 +732,29 @@ class FGeom(maths.FormulaGeom):
 
     def set_content(self, content):
 
-        self._string = None # To build mesh once font is avaiablable
-        self._mesh = None
-        self._bbox = None
+        self._special = None # Special char built manually
+        self._mesh    = None # Mesh
+        self._bbox    = None # bbox cache
+
+        _string  = None
 
         if isinstance(content, Mesh):
             self._mesh = content
             self.name = "Mesh"
 
-        elif isinstance(content, (str, EText)):
-            self._string = content
+        elif isinstance(content, str):
+            self.name = str(content)
+            if content.startswith('\\'):
+                self._special = content
+            else:
+                _string = content
+
+        elif isinstance(content, EText):
+            _string = content
             self.name = str(content)
 
         elif isinstance(content, (float, int, np.integer, np.float64, np.float32)):
-            self._string = str(content)
+            _string = str(content)
             self.name = self._string
 
         elif isinstance(content, dict):
@@ -652,12 +772,12 @@ class FGeom(maths.FormulaGeom):
         # ----- Build Mesh from string
 
         if self._mesh is None:
-            if self._string is None:
-                self._mesh = None
+            if _string is None:
                 self._bbox = BBox()
 
             else:
-                text = Text(self._string, font=self.term.font)
+                # self.font is either font or math_font depending on self.symbol
+                text = Text(_string, font=self.font)
                 self._mesh = text.to_mesh()
 
     # ---------------------------------------------------------------------------
@@ -665,8 +785,9 @@ class FGeom(maths.FormulaGeom):
     # ---------------------------------------------------------------------------
 
     def get_bbox(self):
-        if self._mesh is None:
+        if self._mesh is None and self._special is None:
             return BBox()
+        
         return BBox.from_points(self.mesh.points.position)
 
     # ----------------------------------------------------------------------------------------------------
@@ -675,6 +796,8 @@ class FGeom(maths.FormulaGeom):
 
     @property
     def mesh(self):
+        if self._special is not None:
+            return self.special_mesh(self._special)
 
         if self._mesh is None:
             return Mesh()
@@ -724,18 +847,72 @@ class FGeom(maths.FormulaGeom):
 
         return mesh
     
+    # ====================================================================================================
+    # Special chars
+    # ====================================================================================================
+
+    def special_mesh(self, code):
+
+        # Special mesh are built around (0, 0, width height)
+
+        if code == r"\sqrt":
+
+            # Dimensions
+            x0, y0 = 0.0, 0.0
+            width, height = self.adjust_dims
+            if width < ZERO or height < ZERO:
+                return Text("√").to_mesh()
+            
+            w = self.term.thickness
+            dx, dy = w, 2.1*w
+            # Length and height
+            l, h = width + 1.3*self.term.x_sepa, height + self.term.y_sepa
+
+            # Points
+            px0, py0 = -(dy + 6*dx + self.term.x_sepa), 2*dy
+            px1, py1 = px0 + dy, py0 + dx
+            px2, py2 = px1 + 3*dx, py1 - 3*dy
+            px3, py3 = px2 + 3*dx, h
+            px4, py4 = l, h
+            px5, py5 = l, h - 2*w
+
+            pts = [[px0, py0, 0], [px1, py1, 0], [px2, py2, 0], [px3, py3, 0], [px4, py4, 0], [px5, py5, 0]]
+            mesh = Curve(pts).set_spline2d_thickness(
+                thickness       = [.8*w, 1.8*w, .9*w, w, w, w/2], 
+                mode            = 0, 
+                inner_mode      = [0, 0, 1, 0, 0, 0], 
+                factor          = .8,
+                end_thickness   = 0)
+            
+            return mesh
+
+        else:
+            return Text("?{code}?").to_mesh()
+
+    
 # ====================================================================================================
 # Formula
 # ====================================================================================================
 
 class Formula(maths.Formula):
 
-    def __init__(self, body, font=None, materials=None, **attrs):
+    def __init__(self, body, materials=None, font=None, math_font=None, **attrs):
 
         if isinstance(body, str):
             body = parse_latex(body, math_mode=True)
 
-        super().__init__(None, body, geom_cls=FGeom, font=font, **attrs)
+        if font is None:
+            font = Font('STIX')
+
+        if math_font is None:
+            math_font = Font("Maths", font_scale=3.0)
+        
+        font_attrs = {}
+        for k, v in font.get_dimensions().items():
+            if k not in attrs:
+                font_attrs[k] = v
+
+        super().__init__(None, body, geom_cls=FGeom, font=font, math_font=math_font, **attrs, **font_attrs)
 
         if materials is None:
             self.materials = []

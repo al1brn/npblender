@@ -8,9 +8,17 @@ if __name__ == '__main__':
 else:
     from .constants import TAU, PI, ZERO
 
-
 BBOX_CACHE = False
 DEF_ADJUSTABLE = True
+
+INT_SYMBS = {
+    'int': '∫',
+    'iint': '∬',
+    'iiint': '∭',
+    'oint': '∮',
+    'oiint': '∯',
+    'oiiint': '∰',        
+}
 
 # ====================================================================================================
 # Transfo2D
@@ -548,10 +556,11 @@ class BBox:
 
 class FormulaGeom:
 
-    def __init__(self, term, content, adjustable=DEF_ADJUSTABLE):
+    def __init__(self, term, content, symbol=True, adjustable=DEF_ADJUSTABLE):
 
         # Owning formula term
         self.term = term
+        self.symbol = symbol
 
         # Default name
         self.name = type(content).__name__
@@ -566,6 +575,15 @@ class FormulaGeom:
 
     def __str__(self):
         return f"<{type(self).__name__}: {self.name}>"
+    
+    @property
+    def font(self):
+        if self.symbol:
+            font = self.term.math_font
+            if font is not None:
+                return font
+            
+        return self.term.font
 
     @property
     def transfo3d(self):
@@ -608,6 +626,7 @@ class Formula:
     ATTRIBUTES = {
         'geom_cls'      : FormulaGeom,
         'font'          : None,
+        'math_font'     : None,
 
         'x_sepa'        : 0.1,  # Space between successive terms
         'y_sepa'        : 0.1,  # Space between arranged one over the oher one
@@ -622,13 +641,14 @@ class Formula:
         'elon_margin'   : 0.03, # Margin for decorator elongation
         'elon_smooth'   : 'SMOOTH', # For decorator elongation
 
-        'int_shear'     : 0.25, # ∫ symbol shear
+        'int_shear'     : 0.0, # ∫ symbol shear
         'sub_offset'    : 0.0,  # Subscript offset (when sheared)
         'int_sub_ofs'   : -0.2, # Subscript offset for integral
 
         'y_fraction'    : 0.22, # Vertical position of fraction bar
         'dy_fraction'   : 0.1,  # Separation between bar and operands
-        'dx_fraction'   : 0.04, # Horizontal over space for fraction
+        'dx_fraction'   : 0.1, # Horizontal over space for fraction
+
     }
 
     # Params for future use
@@ -653,6 +673,9 @@ class Formula:
 
         'denominator'   : {},
         'fraction_bar'  : {},
+
+        'sqrt'          : {},
+        'sqrt_option'   : {},
     }
 
     # ====================================================================================================
@@ -836,13 +859,17 @@ class Formula:
     
     def _is_formula_dict(self, fdict):
         return 'type' in fdict
+    
+    @staticmethod
+    def symbol_string(s):
+        return {'type': 'SYMBOL', 'string': s}
 
     def parse_dict(self, fdict):
 
-        if fdict['type'] == 'STRING':
+        if fdict['type'] in ['STRING', 'SYMBOL']:
 
             attrs = {k: v for k, v in fdict.items() if k not in ['type', 'string']}
-            content = self.geom_cls(self, fdict['string'])
+            content = self.geom_cls(self, fdict['string'], symbol=fdict['type']=='SYMBOL')
 
             return Formula(self, content, **attrs)
 
@@ -856,27 +883,31 @@ class Formula:
                 return Formula(self, terms, **attrs)
             
         elif fdict['type'] == 'FUNCTION':
-            name = fdict['name']
-            options = fdict.get('options')
-            args = fdict.get('args')
-            attrs = {k: v for k, v in fdict.items() if k not in ['type', 'name', 'options', 'args']}
+            name    = fdict['name']
+            option  = fdict.get('options')
+            args    = fdict.get('args')
+            attrs   = {k: v for k, v in fdict.items() if k not in ['type', 'name', 'options', 'args']}
 
             if name == 'sum':
-                return self.operator('Σ', args[0], adjustable=True, **self.to_underover(attrs))
+                return self.operator(self.symbol_string('Σ'), args[0], adjustable=True, **self.to_underover(attrs))
 
             elif name == 'prod':
-                return self.operator('Π', args[0], adjustable=True, **self.to_underover(attrs))
-
-            elif name == 'int':
-                d = {'text': '∫', 'italic': True, 'shear': self.int_shear}
-                return self.operator(d, args[0], adjustable=True, sub_offset=self.int_sub_ofs, **attrs)
+                return self.operator(self.symbol_string('Π'), args[0], adjustable=True, **self.to_underover(attrs))
             
-            elif name == 'lim':
-                return self.operator('lim', args[0], adjustable=False, **self.to_underover(attrs))
+            elif name in INT_SYMBS:
+                return self.operator(self.symbol_string(INT_SYMBS[name]), args[0], adjustable=True, sub_offset=self.int_sub_ofs, **attrs)
             
-            elif name == 'frac':
+            elif name in ['lim', 'limsup', 'liminf']:
+                return self.fix_operator(self.symbol_string(name), args[0], adjustable=False, **self.to_underover(attrs))
+            
+            elif name in ['frac', 'tfrac', 'dfrac']:
                 return self.fraction(args[0], args[1], **attrs)
-
+            
+            elif name == 'sqrt':
+                return self.sqrt(args[0], option=option, **attrs)
+            
+            elif name == 'binom':
+                return self.binom(args[0], args[1])
             
             else:
                 frm = Formula(self, name, **attrs)
@@ -910,7 +941,23 @@ class Formula:
         frm.denominator = Formula(frm, denominator)
         frm.fraction_bar = Formula(frm, "_")
         return frm
+    
+    def binom(self, n, k, **attrs):
+        if len(attrs):
+            n = Formula(self, n, **attrs)
+        body = Formula(self, n)
+        body.denominator = Formula(body, k)
+        return Formula(self, body, left=self.symbol_string("("), right=self.symbol_string(")"))
+    
+    def sqrt(self, body, option=None, **attrs):
 
+        if len(attrs):
+            body = Formula(self, body, **attrs)
+
+        frm = Formula(self, body)
+        frm.sqrt = Formula(frm, r"\sqrt")
+
+        return frm
 
     # ====================================================================================================
     # Body
@@ -1295,13 +1342,16 @@ class Formula:
         # Loop on the decorators with respect to their priority
         # ---------------------------------------------------------------------------
 
+        # Make sure left and right symbols make the same size
+        left_right_bbox = None
+
         for key in Formula.DECORATORS:
 
             if not key in self._decos:
                 continue
 
-            # Fraction bar is treated with denominator
-            if key == 'fraction_bar':
+            # Keys which are treated by their owner
+            if key in ['fraction_bar', 'sqrt_option']:
                 continue
 
             term = self._decos[key]
@@ -1315,7 +1365,13 @@ class Formula:
             # Adjust size if necessary
             if key in ['over', 'under']:
                 term.adjust_size(bbox.width + 2*self.x_sepa, 0.0)
-            elif key in ['left', 'right', 'operation']:
+
+            elif key in ['left', 'right']:
+                if left_right_bbox is None:
+                    left_right_bbox = bbox
+                term.adjust_size(0.0, left_right_bbox.height + 2*self.y_sepa)
+
+            elif key in ['operation']:
                 term.adjust_size(0.0, bbox.height + 2*self.y_sepa)
 
             # Recompute
@@ -1467,7 +1523,33 @@ class Formula:
                 if bar is not None:
                     dones.append(bar)
 
+            # --------------------------------------------------
+            # Sqrt
+            # --------------------------------------------------
 
+            elif key == 'sqrt':
+                
+                # Do we have an option ?
+                # NOT YET IMPLEMENTED
+                opt = self._decos.get('sqrt_option')
+
+                # The symbol is around the bbox size
+                term.adjust_size(bbox.width, bbox.height)
+                t_bbox = term.bbox
+                tx = -t_bbox.x0
+
+                # Move body to right
+                _translate_dones(tx, 0.0)
+
+                # Adjust term location
+                term.transfo.translate(tx, bbox.y0)
+
+                # New bbox
+                bbox = bbox.interpolate(term.transformed_bbox, term.owner_factor)
+
+            # --------------------------------------------------
+            # Fall Back
+            # --------------------------------------------------
 
             else:
                 # Should never occur
@@ -1707,9 +1789,27 @@ if __name__ == "__main__":
     # Fraction
     # ---------------------------------------------------------------------------
 
-    if True:
+    if False:
         frm = Formula(geom_cls=Fake)
         frm.append(frm.fraction(1, "x"))
+        print(repr(frm))
+
+    # ---------------------------------------------------------------------------
+    # Sqrt
+    # ---------------------------------------------------------------------------
+
+    if False:
+        frm = Formula(geom_cls=Fake)
+        frm.append(frm.sqrt("x"))
+        print(repr(frm))
+
+    # ---------------------------------------------------------------------------
+    # Binom
+    # ---------------------------------------------------------------------------
+
+    if True:
+        frm = Formula(geom_cls=Fake)
+        frm.append(frm.binom("n", "k"))
         print(repr(frm))
 
 

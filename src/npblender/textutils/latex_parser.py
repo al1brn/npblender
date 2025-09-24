@@ -1,12 +1,19 @@
+from pprint import pprint
 
 if __name__ == '__main__':
-    from latex_codes import SYMBOLS
-    from etext import EText
+    from latex_codes import SYMBOLS, MATHBB
+    from etext import EText, EChar, StyleContext
 else:
-    from .latex_codes import SYMBOLS
-    from .etext import EText
+    from .latex_codes import SYMBOLS, MATHBB
+    from .etext import EText,EChar, StyleContext
 
 __all__ = ["parse_latex"]
+
+# ----------------------------------------------------------------------------------------------------
+# Commandw which can be followed by an option [...]
+# ----------------------------------------------------------------------------------------------------
+
+OPTION_COMMANDS = ['sqrt', 'color', 'materialindex', 'material', 'matindex']
 
 # ----------------------------------------------------------------------------------------------------
 # Text mode commands
@@ -37,22 +44,21 @@ TEXT_SWITCHES = {
 }
 
 TEXT_BLOCKS = {
-    'text': {},
-    'textit': {'italic': True},
-    'textbf': {'bold': True},
-    'emph': {'bold': True, 'italic': True},
-    #'textrm': {'family': 'serif'},
-    #'textsf': {'family': 'sans serif'}, 
-    #'texttt': {'family': 'courrier'},
-    'underline': {'underline': True},
-    'textnormal': {'bold': False, 'italic': False, 'family': False, 'underline': False},
+    'text'       : {},
+    'textit'     : {'italic': True},
+    'textbf'     : {'bold': True},
+    'emph'       : {'bold': True, 'italic': True},
+    'underline'  : {'underline': True},
+    'textnormal' : {'bold': False, 'italic': False, 'family': False, 'underline': False},
+
+    #'textrm'     : {'family': 'serif'},
+    #'textsf'     : {'family': 'sans serif'}, 
+    #'texttt'     : {'family': 'courrier'},
 }
 
-# Hard coded
+# Note : Hard coded
 # - color
 # - matindex, material, materialindex (synonyms)
-
-
 
 # ----------------------------------------------------------------------------------------------------
 # Math commands
@@ -67,22 +73,26 @@ MATH_PATTERNS = {
 
 MATH_PATTERN_COMMANDS = {
   "frac":   "FRAC_PAT",
-  "dfrac":  "FRAC_PAT",   
+  "dfrac":  "FRAC_PAT",
   "tfrac":  "FRAC_PAT",
-  "sqrt":   "SQRT_PAT",
   "binom":  "FRAC_PAT",
+  "sqrt":   "SQRT_PAT",
   "boxed":  "ACCENT_PAT",
 
   "int":    "INT_PAT",
   "iint":   "INT_PAT",
   "iiint":  "INT_PAT",
   "oint":   "INT_PAT",
+  "oiint":  "INT_PAT",
+  "oiiint": "INT_PAT",
   "sum":    "INT_PAT",
   "prod":   "INT_PAT",
   "lim":    "INT_PAT",
   "limsup": "INT_PAT",
   "liminf": "INT_PAT",
+  "mathbb": "ACCENT_PAT",
 }
+
 
 # Mapping for LaTeX-like decorators placed above or below an expression.
 # Keys are command names WITHOUT the backslash.
@@ -166,17 +176,18 @@ class Char:
 
     KINDS = [
         'EOF',
-        'special', # ^_ { }
+        'special', # \ ^_ { }
         'blank',   # space, \n \t
         'char',    # rest : a, b ( )
         ]
     
-    def __init__(self, kind, value):
+    def __init__(self, kind, value, index):
 
         assert(kind in self.KINDS)
 
         self.kind = kind
         self.value = value
+        self.index = index
 
     def __str__(self):
         return f"<{self.kind}: '{self.value}'>"
@@ -185,24 +196,24 @@ class Char:
         return self.kind == other.kind and self.value == other.value
     
     @classmethod
-    def command(cls, value):
-        return cls('command', value)
+    def command(cls, value, index):
+        return cls('command', value, index)
     
     @classmethod
-    def char(cls, value):
-        return cls('char', value)
+    def char(cls, value, index):
+        return cls('char', value, index)
     
     @classmethod
-    def special(cls, value):
-        return cls('special', value)
+    def special(cls, value, index):
+        return cls('special', value, index)
     
     @classmethod
-    def blank(cls, value):
-        return cls('blank', value)
+    def blank(cls, value, index):
+        return cls('blank', value, index)
     
     @classmethod
-    def eof(cls):
-        return cls('EOF', None)
+    def eof(cls, index):
+        return cls('EOF', None, index)
     
     # ---------------------------------------------------------------------------
     # Tests
@@ -240,34 +251,40 @@ class Char:
 class Token:
     KINDS = [
         'EOF',        # No more token
-        'open',       # open block
-        'close',      # close block
         'math_block', # list of math tokens
         'text_block', # list of text tokens
 
         'control',    # : ^ _ { }
         'command',    # : word (command \word without \)
         'text',       # : flow of chars
+
+        # Intermediary tokens, not returned at grammar level
+        'open',       # open block
+        'close',      # close block
         ]
     
     def __init__(self, kind, value):
 
         assert(kind in self.KINDS)
 
-        self.kind = kind
+        self.kind  = kind
         self.value = value
 
     def __str__(self):
-        s = ""
-        if isinstance(self.value, list):
-            lst = self.value
-            s = ", [" + ", ".join([str(t) for t in lst]) + "]"
+        s = f"<{self.kind}"
+        if self.is_block:
+            s += f"[{len(self.value)}], block_command: {self.block_command}>"
         else:
-            s = f"'{self.value}'"
-        if hasattr(self, 'props'):
-            s += f", props: {self.props}"
+            s += f", {self.value}>"
 
-        return f"({self.kind}: {s})"
+        return s
+    
+    def __repr__(self):
+        s = str(self)
+        if self.is_block:
+            sepa = "\n   - "
+            s += sepa + sepa.join([str(tk) for tk in self.value])
+        return s
 
     def __eq__(self, other):
         return self.kind == other.kind and self.value == other.value
@@ -285,18 +302,20 @@ class Token:
         return cls('close', value)
     
     @classmethod
-    def block(cls, math_mode, tokens, **kwargs):
+    def block(cls, math_mode, tokens):
         if math_mode:
             token = cls('math_block', tokens)
         else:
             token = cls('text_block', tokens)
 
-        token.props = dict(kwargs)
+        token.block_command = None
         return token
     
     @classmethod
-    def control(cls, value):
-        return cls('control', value)
+    def control(cls, value, token):
+        tk = cls('control', value)
+        tk.token = token
+        return tk
     
     @classmethod
     def command(cls, value):
@@ -324,7 +343,6 @@ class Token:
             return self.value is None
         
         assert self.is_close, str(self)
-
 
         if open.value is None:
             return False
@@ -375,6 +393,8 @@ class Token:
             return False
         
         for c in self.value:
+            if c == ' ':
+                continue
             if not c.lower() in Char.ALPHA:
                 return False
             
@@ -407,180 +427,324 @@ class Token:
 
 class Tokens(list):
     
-    def __init__(self, l=None):
+    def __init__(self, parser, l=None):
+        """A list of tokens.
+
+        This class plays two roles:
+        - storing the list of successive tokens read from LaTeX flow of chars
+        - Implementing the grammer level by reading linked tokens
+        """
+        self.parser = parser
+
         if l is not None:
             self.extend(l)
         self.index = 0
+
+    # ====================================================================================================
+    # Read the flow of tokens
+    # ====================================================================================================
 
     @property
     def eof(self):
         return self.index >= len(self)
     
-    def read_token(self, advance=True):
+    # ----------------------------------------------------------------------------------------------------
+    # Get the next token if any
+    # ----------------------------------------------------------------------------------------------------
+
+    def get_token(self, advance=True):
         if self.eof:
-            return Token.eof()
+            return Token.eof(None)
         else:
             token = self[self.index]
             if advance:
                 self.index += 1
             return token
         
+    # ----------------------------------------------------------------------------------------------------
+    # Is the next token _ or ^
+    # ----------------------------------------------------------------------------------------------------
+
     @property
     def next_is_script(self):
         if self.eof:
             return False
         else:
             return self[self.index].is_control and self[self.index].value in ['^', '_']
-        
-    def read_scripts(self):
+
+    # ====================================================================================================
+    # Grammar level
+    # ====================================================================================================
+
+    # ----------------------------------------------------------------------------------------------------
+    # Read scripts _ or ^if any
+    # ----------------------------------------------------------------------------------------------------
+
+    def read_scripts(self, styles):
         scripts = {}
         while self.next_is_script:
-            ctl = self.read_token(False).value
+
+            # Look forward the control char
+            ctl = self.get_token(False).value
             key = 'subscript' if ctl == '_' else 'superscript'
+
+            # The key already exists : x^2^2
             if key in scripts:
                 break
-            self.read_token()
-            scripts[key] = self.read_token()
+
+            # Actually consume the control char
+            ctl = self.get_token()
+
+            # Read a term
+            token = ctl.token
+            if token.is_block:
+                scripts[key] = token.value.to_formula(True, styles)
+            else:
+                tokens = Tokens(self.parser, [token])
+                scripts[key] = tokens.to_formula(True, styles)
 
         return scripts
     
-    def read_option(self, advance=True):
-        """Read string content between [ and ]
-        """
-        if self.index == len(self):
+    # ----------------------------------------------------------------------------------------------------
+    # Read a term
+    # ----------------------------------------------------------------------------------------------------
+
+    def read_term(self, math_mode, styles):
+
+        if self.eof:
             return None
         
-        if not self[self.index].is_text:
-            return None
-        
-        if len(self[self.index].value) > 1:
-            s = self[self.index].value.strip()
-            if s[0] != '[':
-                return None
-            idx = None
-            for i in range(len(s)):
-                if s[i] == ']':
-                    idx = i
-                    break
-            if idx is None:
-                return None
-            
-            if advance:
-                self[self.index].value = s[idx+1:]
-            
-            return s[1:idx]
+        # Resulting dict
+        dct = None
 
-        if len(self) <= self.index + 2:
-            return None
-        
-        if self[self.index] != Token.text('['):
-            return None
+        # Loop until a grammar level token
 
-        if self[self.index+1] == Token.text(']'):
-            if advance:
-                self.index += 2
-            return None
+        while dct is None:
 
-        end_index = None
-        s = ""
-        for i in range(self.index + 1, len(self)):
-            if not self[i].is_text:
-                return None
-            if self[i].value == ']':
-                end_index = i
-                break
-            s += self[i].value
+            # Next token
+            token = self.get_token()
 
-        if end_index is None:
-            return None
-        else:
-            if advance:
-                self.index = end_index + 1
-            return s
+            if True:
+                print("\n---- read_term loop:", token)
 
-        
-class Builder:
+            # ---------------------------------------------------------------------------
+            # Text token
+            # ---------------------------------------------------------------------------
 
-    def __init__(self):
-        self.content = []
-        self.etext = EText()
-
-    def get_dict(self, text_mode=False):
-        
-        self.consume_etext()
-
-        # In text mode, all the token are merged in a single string
-        # This is a simple LaTeX parser !
-        if text_mode:
-            etext = EText()
-            for tk in self.content:
-
-                if tk['type'] == 'STRING':
-                    etext += tk['string']
-
-                elif tk['type'] == 'BLOCK':
-                    for c in tk['content']:
-                        if c['type'] == 'STRING':
-                            etext += tk['string']
-                        else:
-                            assert False, str(c)
-
+            if token.is_text:
+                echar = EChar(token.value, **styles.as_dict())
+                if math_mode:
+                    if token.is_alpha or token.is_num:
+                        echar.italic = token.is_alpha
+                        dct = {'type': 'STRING', 'string': echar}
+                    else:
+                        dct = {'type': 'SYMBOL', 'string': echar}
                 else:
-                    assert False, str(tk)
+                    dct = {'type': 'STRING', 'string': echar}
 
-            return {'type': 'STRING', 'string': etext}
+            # ---------------------------------------------------------------------------
+            # Block
+            # ---------------------------------------------------------------------------
 
-        return {'type': 'BLOCK', 'content': self.content}
+            elif token.is_text_block:
+                cmd = getattr(token, 'command', None)
+                if cmd in TEXT_BLOCKS:
+                    block_styles = styles.push(**TEXT_BLOCKS[cmd])
+                else:
+                    block_styles = styles
 
-    def consume_etext(self, scripts=None):
-        if scripts is None:
-            scripts = {}
+                #d = self.read_formula(token.value, block_styles)
+                d = token.value.to_formula(False, block_styles)
+                dct = {'type': 'BLOCK', 'content': [d]}
 
-        if len(self.etext) == 0:
-            if len(scripts) == 0:
-                return
+            elif token.is_math_block:
+                #d = self.read_formula(token.value, styles)
+                d = token.value.to_formula(True, styles)
+                dct = {'type': 'BLOCK', 'content': [d]}
+
+            # ---------------------------------------------------------------------------
+            # A command
+            # ---------------------------------------------------------------------------
+
+            elif token.is_command:
+
+                is_under_deco = token.value.startswith('under') and token.value[5:] in DECORATORS
+                is_deco       = is_under_deco or token.value in DECORATORS
+
+                # ---------------------------------------------------------------------------
+                # Text Switch
+                # ---------------------------------------------------------------------------
+
+                if token.value == 'color':
+                    if token.option is not None:
+                        styles.color = token.option
+
+                elif token.value in ['matindex', 'material', 'materialindex']:
+                    if token.option is not None:
+                        styles.material_index = int(token.option)
+
+                elif token.value in TEXT_SWITCHES:
+                    for k, v in TEXT_SWITCHES[token.value].items():
+                        setattr(styles, k, v)
+
+                # ---------------------------------------------------------------------------
+                # A function
+                # ---------------------------------------------------------------------------
+
+                elif token.value in MATH_PATTERN_COMMANDS:
+
+                    print("PATTERN", token)
+
+                    pat = MATH_PATTERNS[MATH_PATTERN_COMMANDS[token.value]]
+
+                    # Read the optional scripts
+
+                    scripts = self.read_scripts(styles)
+                    dct = {'type': 'FUNCTION', 'name': token.value, **scripts}
+
+                    # Do we have an option
+
+                    if token.value in OPTION_COMMANDS and token.option is not None:
+                        dct['option'] = token.option
+
+                    # Read the arguments
+
+                    args = []
+                    for i in range(pat['tokens']):
+                        args.append(self.read_term(True, styles))
+
+                    dct['args'] = args
+
+                    # mathbb : transform the argument to special math char
+
+                    if token.value == 'mathbb':
+                        darg = args[0]
+                        if darg['type'] == 'BLOCK':
+                            darg = darg['content'][0]
+
+                        if darg['type'] == 'STRING':
+                            mathbb = str(darg['string'])
+                            if mathbb in MATHBB:
+                                mathbb = MATHBB[mathbb]
+
+                            dct = {'type': 'SYMBOL', 'string': mathbb}
+
+                        else:
+                            self.parser.error(f"mathbb command accept only string param, not: {darg}")
+
+                # ---------------------------------------------------------------------------
+                # Left / Right
+                # ---------------------------------------------------------------------------
+
+                elif token.value == 'left':
+
+                    tk = tokens.read_token()
+                    if not tk.is_text:
+                        self.parser.error(f"'\\left' must be followed by a character, not {tk}.")
+
+                    brackets = {}
+                    if tk.value != '.':
+                        brackets['left'] = tk.value
+
+                    user_block = Tokens(self.parser)
+                    while True:
+
+                        sub_token = self.read_token()
+
+                        if sub_token.is_eof:
+                            self.parser.error(f"'\\right' command expected to close block opened with '\\left{tk.value}'.")
+
+                        elif sub_token == Token.command('right'):
+                            tk = self.read_token()
+                            if not tk.is_text:
+                                self.parser.error(f"'\\right' must be followed by a character, not {tk}.")
+
+                            if tk.value != '.':
+                                brackets['right'] = tk.value
+
+                            #dct = self.read_formula(user_block, styles)
+                            dct = user_block.to_formula(styles)
+                            break
+                            
+                        else:
+                            # Add the current token to the list to parse
+                            user_block.append(sub_token)
+
+                # ----- Right is an error
+
+                elif token.value == 'right':
+                    self.parser.error(f"'\\right' command encountered with no '\\left' comand before.")
+
+                # ---------------------------------------------------------------------------
+                # Decorators
+                # ---------------------------------------------------------------------------
+
+                elif is_deco:
+
+                    # Content to decorate
+                    dct = self.read_term(True, styles)
+
+                    if is_under_deco:
+                        params = dict(DECORATORS[token.value[5:]])
+                        params['under'] = True
+                    else:
+                        params = dict(DECORATORS[token.value])
+
+                    deco_key = 'under' if params['under'] else 'over'
+                    if params['fix']:
+                        deco_key = 'fix_' + deco_key
+
+                    dct[deco_key] = params['char']
+
+            # ---------------------------------------------------------------------------
+            # Control
+            # ---------------------------------------------------------------------------
+
+            elif token.is_control:
+                assert False, f"Strange, shouldn't happen {token}"
+
+            # ---------------------------------------------------------------------------
+            # Fall back
+            # ---------------------------------------------------------------------------
+
             else:
-                self.etxt.append("?")
+                assert False, f"Unknown token {token}"
 
-        self.content.append({'type': 'STRING', 'string': self.etext.clone(), **scripts})
-        self.etext.clear()
+        # ---------------------------------------------------------------------------
+        # Scripts
+        # ---------------------------------------------------------------------------
 
-    def add_text(self, text, scripts=None, **styles):
-        if scripts is None:
-            self.etext.append(text, **styles)
+        scripts = self.read_scripts(styles)
+        while len(scripts):
+            dct = {'type': 'BLOCK', 'content': [dct], **scripts}
+            scripts = self.read_scripts(styles)
 
+        return dct
+
+    # ----------------------------------------------------------------------------------------------------
+    # Read a formula, i.e. a list of tokens
+    # ----------------------------------------------------------------------------------------------------
+
+    def to_formula(self, math_mode, styles):
+        """Read the tokens to build a formula dict.
+        """
+
+        # Copy for local changes
+        if styles is  None:
+            styles = StyleContext()
         else:
-            self.consume_etext()
-            self.etext.append(text, **styles)
-            self.consume_etext(scripts=scripts)
+            styles = StyleContext(**styles.as_dict())
 
-    def add_content(self, d, **kwargs):
-        self.consume_etext()
-        self.content.append(d)
+        # Resulting list of term dicts
+        content = []
 
-    def add_scripts(self, scripts):
-
-        if scripts is None or len(scripts) == 0:
-            return
+        while not self.eof:
         
-        self.consume_etext()
-        
-        if not self.content:
-            self.add_text("?", scripts=scripts)
+            # Current term
+            dct = self.read_term(math_mode, styles)
+            content.append(dct)
 
-        else:
-            d = self.content[-1]
-            create_block = False
-            for k in scripts.keys():
-                if k in d:
-                    create_block=True
-
-            if create_block:
-                self.content[-1] = {'type': 'BLOCK', 'content': [d], **scripts}
-            else:
-                for k, v in scripts.items():
-                    d[k] = v
-
+        return {'type': 'BLOCK', 'content': content}
     
 # ====================================================================================================
 # Char Parser
@@ -588,7 +752,7 @@ class Builder:
 
 class Parser:
 
-    BLANK = set("\n\t ")
+    BLANK         = set("\n\t ")
     TEXT_SPECIALS = set("{}~$\\")
     MATH_SPECIALS = set("{}~$\\#&^_")
 
@@ -603,6 +767,9 @@ class Parser:
         self.ignore_comments = ignore_comments
         self.math_mode = math_mode
 
+        # math_mode stack
+        self.mm_stack = []
+
         # Position stack
         self.stack = []
 
@@ -613,8 +780,11 @@ class Parser:
     def push_index(self):
         self.stack.append(self.index)
 
-    def pop_index(self):
-        self.index = self.stack.pop()
+    def pop_index(self, advance=True):
+        if advance:
+            self.stack.pop()
+        else:
+            self.index = self.stack.pop()
 
     # ----------------------------------------------------------------------------------------------------
     # Special chars depends upon the context
@@ -636,13 +806,21 @@ class Parser:
         if not self.ignore_comments:
             self.specials = self.specials.union("%")
 
+    def push_math_mode(self, new_mode=None):
+        self.mm_stack.append(self.math_mode)
+        if new_mode is not None:
+            self.math_mode = new_mode
+
+    def pop_math_mode(self):
+        self.math_math = self.mm_stack.pop()
+
     # ----------------------------------------------------------------------------------------------------
     # Error message
     # ----------------------------------------------------------------------------------------------------
 
-    def error(self, message):
+    def error(self, message, index=None):
         lines = self.text.split("\n")
-        n = self.index
+        n = self.index if index is None else index
         dump = []
         for iline, line in enumerate(lines):
             s = f"{iline:2d}: {line}"
@@ -687,15 +865,38 @@ class Parser:
     # ----------------------------------------------------------------------------------------------------
     
     def read_char(self, advance=True):
+        r""" Char reader.
+
+        Reads the next chars while managing special chars. The escape
+        char \ is treated by looking at the following char:
+        - \{ -> char {
+        - \\ -> char {
+        - \a -> command \ then char a
+
+        Parameters
+        ----------
+        advance : int, default=True
+            Actually consume the char.
+
+        Returns
+        -------
+        Char
+            Char of kind:
+            - 'EOF'     : end of file, no more char to read
+            - 'special' : \ ^ _ { ... depending on mode
+            - 'blank'   : space, \t or \n (math_mode only)
+            - 'char'    : a char
+        """
 
         mem_index = self.index
 
         while True:
 
+            char_index = self.index
             c = self.peek()
 
             if c is None:
-                ch = Char.eof()
+                ch = Char.eof(char_index)
             
             # --------------------------------------------------
             # Blank char
@@ -707,12 +908,7 @@ class Parser:
                 while self.peek(False) in self.BLANK:
                     self.peek()
 
-                #if self.eof:
-                #    s = self.text[start:]
-                #else:
-                #    s = self.text[start:self.index]
-
-                ch = Char.blank(' ')
+                ch = Char.blank(' ', char_index)
 
             # --------------------------------------------------
             # Escape char, before a special or not
@@ -724,9 +920,9 @@ class Parser:
                     self.error("CharParser: A character is expected after escape character '\\'.")
 
                 if self.peek(False) in self.specials:
-                    ch = Char.char(self.peek())
+                    ch = Char.char(self.peek(), char_index)
                 else:
-                    ch = Char.special(c)
+                    ch = Char.special(c, char_index)
 
             # --------------------------------------------------
             # Special char
@@ -740,17 +936,17 @@ class Parser:
 
                 elif c == '$' and self.peek(False) == '$':
                     self.peek()
-                    ch = Char.special('$$')
+                    ch = Char.special('$$', char_index)
 
                 else:
-                    ch = Char.special(c)
+                    ch = Char.special(c, char_index)
 
             # --------------------------------------------------
             # Char
             # --------------------------------------------------
 
             else:
-                ch = Char.char(c)
+                ch = Char.char(c, char_index)
 
             break
 
@@ -771,9 +967,34 @@ class Parser:
         while True:
             ch = self.read_char()
             if not ch.is_blank:
-                if not advance:
-                    self.pop_index()
+                self.pop_index(advance)
                 return ch
+            
+    # ----------------------------------------------------------------------------------------------------
+    # Read option [...]
+    # ----------------------------------------------------------------------------------------------------
+
+    def read_option(self):
+        
+        if self.read_char(False) != Char.char('[', None):
+            return None
+        
+        self.push_index()
+        self.read_char()
+
+        option = ""
+        while True:
+            c = self.read_char()
+            if not c.is_text:
+                self.pop_index(False)
+                return None
+            
+            if c == Char.char(']', None):
+                self.pop_index(True)
+                return option
+            
+            option += c.value
+
     
     # ====================================================================================================
     # Token level
@@ -784,6 +1005,41 @@ class Parser:
     # ----------------------------------------------------------------------------------------------------
 
     def read_token(self):
+        r""" Read successive chars forming a token.
+
+        The function returns either a single token or a block token, the list of tokens
+        enclosed between opening and closing tokens. Enclosing tokens are:
+        - {...}
+        - \[...\]
+        - \(...\)
+        - $ ... $
+        - $$ ... $$
+
+        The corresponding opening and closing tokens are used by this level and are not returned
+        to the grammar level. For instance in the LaTeX string
+        "before {within a block} after", the content between { and } is returned as a single
+        block token.
+
+        Note that \left and \right tokens are not treated at this level but at grammar level.
+
+        In addition to block tokens, the kind of returned token can be:
+        - EOF : end of file, no more token to read
+        - command : \ followed by a alpha word, "\int" for instance
+        - text : several successive characters
+
+        In math mode, the 'control' token can also be returned for chars ~, ^ and _.
+
+        When a command \command is read, it is compared to the list of symbols SYMBOLS. The
+        corresponding symbol is returned as text token if found, otherwise a command
+        token is returned.
+        
+        Returns
+        -------
+        Token
+            Token of kind 'EOF', 'command', 'block', 'text' or 'control'.
+            Intermediary token 'close' is captured by `read_block` and never returned
+            to the grammar level.
+        """        
 
         while True:
 
@@ -804,7 +1060,7 @@ class Parser:
                 if ch.value == '\\':
 
                     # --------------------------------------------------
-                    # Read word or single non alpha char
+                    # Command or symbol
                     # --------------------------------------------------
 
                     c = self.read_char()
@@ -822,12 +1078,12 @@ class Parser:
                             return Token.text(SYMBOLS[cmd])
                         else:
                             return Token.command(cmd)
-                    
+
                     # --------------------------------------------------
-                    # From text to math mode
+                    # Math block
                     # --------------------------------------------------
 
-                    elif c in '([':
+                    elif c.value in '([':
 
                         if self.math_mode:
                             self.error(f"Control '\\{c}' not valid in math mode.")
@@ -835,10 +1091,10 @@ class Parser:
                         return self.read_block(Token.open(c))
 
                     # --------------------------------------------------
-                    # End of math mode
+                    # Close (intermediary token)
                     # --------------------------------------------------
 
-                    elif c in ')]':
+                    elif c.value in ')]':
                         if not self.math_mode:
                             self.error(f"Control '\\{c}' not valid in text mode.")
 
@@ -860,15 +1116,18 @@ class Parser:
                         return self.read_block(Token.open(ch.value))
                     
                 elif ch.value in ['^', '_', '~']:
-                    return Token.control(ch.value)
+                    if ch.value in ['^', '_']:
+                        tk = self.read_token()
+                        return Token.control(ch.value, tk)
+                    else:
+                        return Token.control(ch.value, None)
                 
                 else:
                     # Not supported as special char
                     return Token.text(ch.value)
-                    self.error(f"Special character {ch.value} not supported.")
 
             # ---------------------------------------------------------------------------
-            # Blank
+            # Blank char are ignored in math mode
             # ---------------------------------------------------------------------------
 
             elif ch.is_blank and self.math_mode:
@@ -879,26 +1138,33 @@ class Parser:
             # ---------------------------------------------------------------------------
 
             else:
+                # Text mode: read at once successive chars 
                 if not self.math_mode:
-                    text = ch.value
+                    cs = [ch.value]
                     while self.read_char(False).is_text:
-                        text += self.read_char().value
-                    return Token.text(text)
+                        cs.append(self.read_char().value)
+
+                    return Token.text("".join(cs))
+                
+                # Math mode:
+                # - group alpha in words
+                # - group num in numbers
                 
                 if ch.is_alpha:
-                    word = ch.value
+                    cs = [ch.value]
                     while self.read_char(False).is_alpha:
-                        word += self.read_char().value
+                        cs.append(self.read_char().value)
 
-                    return Token.text(word)
+                    return Token.text("".join(cs))
                 
                 if ch.is_num:
-                    word = ch.value
+                    cs = [ch.value]
                     while self.read_char(False).is_num:
-                        word += self.read_char().value
+                        cs.append(self.read_char().value)
 
-                    return Token.text(word)
+                    return Token.text("".join(cs))
                 
+                # Math mode : a single char
                 return Token.text(ch.value)
             
     # ----------------------------------------------------------------------------------------------------
@@ -906,15 +1172,47 @@ class Parser:
     # ----------------------------------------------------------------------------------------------------
 
     def read_block(self, open_token=None):
+        r"""Read a series of succesive tokens.
+
+        This method reads the successive tokens until a closing token is encountered.
+
+        The EOF token is considered as a closing token matching the None opening token.
+
+        If the closing token doesn't match with the opening token, an error is raised.
+
+        The math mode can be changed if the opening token is defining the mode by
+        itself : \( or $ for instance.
+
+        Commands such as \text or \textbf are followed by a {...} block to be read in text
+        mode. When such a command is encountered, the mode is temporarily switched to
+        text mode for reading the next block in text mode.
+
+        Parameters
+        ----------
+        open_token : Token or None
+            Used to match the expected closing token.
+
+        Raises
+        ------
+        RuntimeError
+            If a mismatching closing token is encountered
+            If a text command is not followed by a {...} block
+
+        Returns
+        -------
+        Token
+            Block token        
+        """
 
         if open_token is None:
             open_token = Token.open(None)
 
-        math_mode = self.math_mode
+        # New math mode
+        self.push_math_mode()
         if open_token.value in ['(', '[', '$', '$$']:
             self.math_mode = True
 
-        tokens = []
+        tokens = Tokens(self)
 
         while True:
 
@@ -934,22 +1232,39 @@ class Parser:
                     self.error(f"Block closing {token} is encountered without opening.")
 
             # --------------------------------------------------
-            # Command switching to text mode
+            # Command
             # --------------------------------------------------
 
-            elif token.is_command and (token.value in TEXT_BLOCKS):
+            elif token.is_command:
 
-                next_char = self.read_non_blank_char(False)
-                if next_char != Char.special('{'):
-                    self.error(f"The text command \\{token.value} must be followed by a {{...}} block.")
+                # Some commands can be followed by an option
 
-                mode = self.math_mode
-                self.math_mode = False
-                block = self.read_token()
-                assert(block.is_text_block)
-                block.props = {'command': token.value, **TEXT_BLOCKS[token.value]}
-                tokens.append(block)
-                self.math_mode = mode
+                has_option = token.value in OPTION_COMMANDS
+                if has_option:
+                    token.option = self.read_option()
+
+                # Text command needs as block afterwards
+
+                if token.value in TEXT_BLOCKS:
+
+                    next_char = self.read_char(False)
+                    if next_char != Char.special('{', None):
+                        self.error(f"The text command \\{token.value} must be followed by a {{...}} block, not {next_char}.")
+
+                    self.push_math_mode(False)
+                    block = self.read_token()
+                    self.pop_math_mode()
+
+                    # Just in case
+                    assert block.is_text_block, str(block)
+
+                    block.block_command = token.value
+                    if has_option:
+                        block.option = token.option
+                    tokens.append(block)
+
+                else:
+                    tokens.append(token)
 
             # --------------------------------------------------
             # Otherwise simply append the token to the list
@@ -958,13 +1273,18 @@ class Parser:
             else:
                 tokens.append(token)
 
+        # ---------------------------------------------------------------------------
         # Returning a block
+        # ---------------------------------------------------------------------------
 
         props = {}
         if token.value in ['$$', '\\[']:
             props['align'] = 'left'
+
         token = Token.block(self.math_mode, tokens, **props)
-        self.math_mode = math_mode
+        
+        # pop math mode
+        self.pop_math_mode()
 
         return token
     
@@ -972,7 +1292,11 @@ class Parser:
     # Grammar level
     # ====================================================================================================
 
-    def block_token_to_dict(self, block):
+    def block_token_to_dict_OLD(self, block):
+        """ Read a series of blocks and transform them into a hierarchy of dicts
+        """
+
+        assert block.is_block
 
         # ---------------------------------------------------------------------------
         # Read from tokens -> write to builder
@@ -988,17 +1312,29 @@ class Parser:
                     builder.etext.default[k] = v
 
         # ---------------------------------------------------------------------------
-        # Parse a token to a dict
+        # Transform a Token to a dict
         # ---------------------------------------------------------------------------
 
         def _token_to_dict(token):
+
+            print(f"TOKEN TO DICT: {token.is_block=}", token)
             if token.is_eof:
                 return {'type': 'STRING', 'string': EText("?")}
-            if token.is_block:
-                return self.block_token_to_dict(token)
-            else:
-                return self.block_token_to_dict(Token.block(block.is_math_block, [token]))['content'][0]
             
+            elif token.is_block:
+                return self.block_token_to_dict(token)
+            
+            """
+            'EOF',        # No more token
+            'open',       # open block
+            'close',      # close block
+            'math_block', # list of math tokens
+            'text_block', # list of text tokens
+
+            'control',    # : ^ _ { }
+            'command',    # : word (command \word without \)
+            'text',       # : flow of chars
+            """
         # ---------------------------------------------------------------------------
         # Read subscript or superscript
         # ---------------------------------------------------------------------------
@@ -1040,7 +1376,7 @@ class Parser:
             token = tokens.read_token()
 
             # Debug
-            if False:
+            if True:
                 print("Grammar", token)
 
             if token.is_command:
@@ -1109,14 +1445,11 @@ class Parser:
             # ---------------------------------------------------------------------------
 
             if token.is_text:
-                if block.is_math_block:
-                    # Consume text: the stack will contain only this one
-                    if tokens.next_is_script:
-                        builder.consume_etext()
+                # Consume text: the stack will contain only this one
+                if tokens.next_is_script:
+                    builder.consume_etext()
 
-                    builder.add_text(token.value, italic=True)
-                else:
-                    builder.add_text(token.value)
+                builder.add_text(token.value, italic=token.is_alpha)
 
             # ---------------------------------------------------------------------------
             # Control char
@@ -1166,7 +1499,23 @@ class Parser:
                         args.append(_token_to_dict(tokens.read_token()))
 
                     function['args'] = args
-                    builder.add_content(function)
+
+                    # \mathbb : special math char
+                    if token.value == 'mathbb':
+                        darg = args[0]
+                        if darg['type'] == 'BLOCK':
+                            darg = darg['content'][0]
+
+                        if darg['type'] == 'STRING':
+                            mathbb = str(darg['string'])
+                            if mathbb in MATHBB:
+                                mathbb = MATHBB[mathbb]
+
+                            builder.add_content({'type': 'STRING', 'string': mathbb})
+                        else:
+                            self.error(f"mathbb command accept only string param, not: {darg}")
+                    else:
+                        builder.add_content(function)
 
                 # ---------------------------------------------------------------------------
                 # Left / Right
@@ -1180,7 +1529,7 @@ class Parser:
 
                     brackets = {}
                     if tk.value != '.':
-                        brackets['left_char'] = tk.value
+                        brackets['left'] = tk.value
 
                     user_block = []
                     while True:
@@ -1196,7 +1545,7 @@ class Parser:
                                 self.error(f"'\\right' must be followed by a character, not {tk}.")
 
                             if tk.value != '.':
-                                brackets['right_char'] = tk.value
+                                brackets['right'] = tk.value
 
                             block_dict = self.block_token_to_dict(Token.block(True, user_block))
                             sub_block = {**block_dict, **brackets}
@@ -1219,21 +1568,25 @@ class Parser:
 
                 elif is_deco:
 
+                    # Content to decorate
                     cont = _token_to_dict(tokens.read_token())
+
                     if is_under_deco:
                         params = dict(DECORATORS[token.value[5:]])
                         params['under'] = True
                     else:
                         params = dict(DECORATORS[token.value])
 
-                    loc = 'under' if params['under'] else 'over'
+                    deco_key = 'under' if params['under'] else 'over'
                     if params['fix']:
-                        loc = 'fix_' + loc
+                        deco_key = 'fix_' + deco_key
 
-                    deco = {'location': loc, **{k: v for k, v in params.items() if k not in ['fix', 'under']}}
-                    deco_dict = {'type': 'BLOCK', 'content': [cont], 'deco': deco}
+                    cont[deco_key] = params['char']
+                    for k, v in params.items():
+                        if k not in ['char', 'under', 'over']:
+                            cont[k] = v
 
-                    builder.add_content(deco_dict)
+                    builder.add_content(cont)
 
                 # ---------------------------------------------------------------------------
                 # Transform the command into string
@@ -1267,7 +1620,352 @@ class Parser:
         # Ouf
         # ===========================================================================
 
-        return builder.get_dict(text_mode=block.is_text_block)
+        return builder.get_dict(math_mode=block.is_math_block)
+        
+    
+    # ====================================================================================================
+    # Grammar level
+    # ====================================================================================================
+
+    def block_token_to_dict_OLDER(self, block):
+
+        assert block.is_block
+
+        print('>'*60)
+        print("block_token_to_dict")
+        print(block)
+        for i, c in enumerate(block.value):
+            print("   ", i, c)
+        print()
+
+        # ---------------------------------------------------------------------------
+        # Read from tokens -> write to builder
+        # ---------------------------------------------------------------------------
+
+        tokens = Tokens(block.value)
+        builder = Builder()
+
+        # Text mode : capture font style
+        if not block.is_math_block:
+            for k, v in block.props.items():
+                if k in builder.etext.attributes:
+                    builder.etext.default[k] = v
+
+        # ---------------------------------------------------------------------------
+        # Parse a token to a dict
+        # ---------------------------------------------------------------------------
+
+        def _token_to_dict(token):
+
+            print(f"TOKEN TO DICT: {token.is_block=}", token)
+            if token.is_eof:
+                return {'type': 'STRING', 'string': EText("?")}
+            
+            elif token.is_block:
+                return self.block_token_to_dict(token)
+            
+            """
+            'EOF',        # No more token
+            'open',       # open block
+            'close',      # close block
+            'math_block', # list of math tokens
+            'text_block', # list of text tokens
+
+            'control',    # : ^ _ { }
+            'command',    # : word (command \word without \)
+            'text',       # : flow of chars
+            """
+
+            
+        # ---------------------------------------------------------------------------
+        # Read subscript or superscript
+        # ---------------------------------------------------------------------------
+
+        def _read_scripts():
+
+            scripts = tokens.read_scripts()
+            if not scripts:
+                return {}
+            
+            for k, v in scripts.items():
+                if v.is_eof:
+                    self.error(f"'k' char at end of block. Need a token.")
+                scripts[k] = _token_to_dict(v)
+
+            return scripts
+        
+        # ---------------------------------------------------------------------------
+        # Loop on the tokens in the block
+        # ---------------------------------------------------------------------------
+
+        while not tokens.eof:
+
+            # ---------------------------------------------------------------------------
+            # Math specific : subscripts and superscripts are added to last token
+            # ---------------------------------------------------------------------------
+
+            while tokens.next_is_script:
+                scripts = _read_scripts()
+                builder.add_scripts(scripts)
+
+                if tokens.eof:
+                    break
+
+            # ===========================================================================
+            # Common to math & text
+            # ===========================================================================
+
+            token = tokens.read_token()
+
+            # Debug
+            if True:
+                print("Grammar", token)
+
+            if token.is_command:
+
+                if token.value == 'color':
+                    col = tokens.read_option()
+                    if col is not None:
+                        OK = True
+                        try:
+                            from ..maths import Color
+                        except:
+                            OK = False
+
+                        if OK:
+                            builder.etext.default.color = Color(col).rgba
+
+                    continue
+
+                elif token.value in ['matindex', 'material', 'materialindex']:
+                    matind = tokens.read_option()
+                    if matind is not None:
+                        builder.etext.default.material_index = matind
+
+                    continue
+
+            # ===========================================================================
+            # Text parser
+            # ===========================================================================
+
+            if not block.is_math_block:
+
+                if token.is_text:
+                    builder.add_text(token.value)
+
+                elif token.is_control:
+                    builder.add_text(token.value)
+
+                elif token.is_command:
+
+                    if token.value in TEXT_SWITCHES:
+                        builder.etext.default.set(**TEXT_SWITCHES[token.value])
+
+                    else:
+                        pass
+
+                elif token.is_text_block:
+                    for k, v in builder.etext.default:
+                        if k not in token.props:
+                            token.props[k] = v
+
+                    tk = self.block_token_to_dict(token)
+
+                    builder.add_content(tk)
+
+                else:
+                    pass
+
+                continue
+
+            # ===========================================================================
+            # Math parser
+            # ===========================================================================
+
+            # ---------------------------------------------------------------------------
+            # Text : we add to the stack
+            # ---------------------------------------------------------------------------
+
+            if token.is_text:
+                # Consume text: the stack will contain only this one
+                if tokens.next_is_script:
+                    builder.consume_etext()
+
+                builder.add_text(token.value, italic=token.is_alpha)
+
+            # ---------------------------------------------------------------------------
+            # Control char
+            # ---------------------------------------------------------------------------
+
+            elif token.is_control:
+                
+                self.error(f"Control token {token} not supported yet.")
+
+            # ---------------------------------------------------------------------------
+            # Command
+            # ---------------------------------------------------------------------------
+
+            elif token.is_command:
+
+                is_under_deco = token.value.startswith('under') and token.value[5:] in DECORATORS
+                is_deco = is_under_deco or token.value in DECORATORS
+
+                # ---------------------------------------------------------------------------
+                # A function
+                # ---------------------------------------------------------------------------
+
+                if token.value in MATH_PATTERN_COMMANDS:
+                    pat = MATH_PATTERNS[MATH_PATTERN_COMMANDS[token.value]]
+
+                    # Read the optional scripts
+
+                    scripts = _read_scripts()
+                    if tokens.next_is_script:
+                        self.error(f"The control char {tokens.read_token()} is misplaced after function '{token.value}'.")
+
+                    if len(scripts) and not pat.get('scripts', False):
+                        self.error(f"The function '{token.value}' doesn't accept subscript or superscript.")
+
+                    function = {'type': 'FUNCTION', 'name': token.value, **scripts}
+
+                    # Read the option
+                    if pat.get('option', False):
+                        s = tokens.read_option()
+                        if s is not None:
+                            function['option'] = s
+
+                    # Read the arguments
+
+                    args = []
+                    for i in range(pat['tokens']):
+                        args.append(_token_to_dict(tokens.read_token()))
+
+                    print('PARSE', token.value)
+                    pprint(args)
+
+                    function['args'] = args
+
+                    # \mathbb : special math char
+                    if token.value == 'mathbb':
+                        darg = args[0]
+                        if darg['type'] == 'BLOCK':
+                            darg = darg['content'][0]
+
+                        if darg['type'] == 'STRING':
+                            mathbb = str(darg['string'])
+                            if mathbb in MATHBB:
+                                mathbb = MATHBB[mathbb]
+
+                            builder.add_content({'type': 'STRING', 'string': mathbb})
+                        else:
+                            self.error(f"mathbb command accept only string param, not: {darg}")
+                    else:
+                        builder.add_content(function)
+
+                # ---------------------------------------------------------------------------
+                # Left / Right
+                # ---------------------------------------------------------------------------
+
+                elif token.value == 'left':
+
+                    tk = tokens.read_token()
+                    if not tk.is_text:
+                        self.error(f"'\\left' must be followed by a character, not {tk}.")
+
+                    brackets = {}
+                    if tk.value != '.':
+                        brackets['left'] = tk.value
+
+                    user_block = []
+                    while True:
+
+                        sub_token = tokens.read_token()
+
+                        if sub_token.is_eof:
+                            self.error(f"'\\right' command expected to close block opened with '\\left{tk.value}'.")
+
+                        elif sub_token == Token.command('right'):
+                            tk = tokens.read_token()
+                            if not tk.is_text:
+                                self.error(f"'\\right' must be followed by a character, not {tk}.")
+
+                            if tk.value != '.':
+                                brackets['right'] = tk.value
+
+                            block_dict = self.block_token_to_dict(Token.block(True, user_block))
+                            sub_block = {**block_dict, **brackets}
+
+                            builder.add_content(sub_block)
+
+                            break
+
+                        # Add the current token to the list to parse
+                        user_block.append(sub_token)
+
+                # ----- Right is an error
+
+                elif token.value == 'right':
+                    self.error(f"'\\right' command encountered with no '\\left' comand before.")
+
+                # ---------------------------------------------------------------------------
+                # Decorators
+                # ---------------------------------------------------------------------------
+
+                elif is_deco:
+
+                    # Content to decorate
+                    cont = _token_to_dict(tokens.read_token())
+
+                    if is_under_deco:
+                        params = dict(DECORATORS[token.value[5:]])
+                        params['under'] = True
+                    else:
+                        params = dict(DECORATORS[token.value])
+
+                    deco_key = 'under' if params['under'] else 'over'
+                    if params['fix']:
+                        deco_key = 'fix_' + deco_key
+
+                    cont[deco_key] = params['char']
+                    for k, v in params.items():
+                        if k not in ['char', 'under', 'over']:
+                            cont[k] = v
+
+                    builder.add_content(cont)
+
+                # ---------------------------------------------------------------------------
+                # Transform the command into string
+                # ---------------------------------------------------------------------------
+
+                else:
+                    if block.is_math_block:
+                        builder.add_text(token.value, italic=False)
+                    else:
+                        builder.add_text(token.value)
+
+            # ---------------------------------------------------------------------------
+            # A block
+            # ---------------------------------------------------------------------------
+
+            elif token.is_block:
+
+                sub_block = self.block_token_to_dict(token)
+
+                builder.add_content(sub_block)
+
+            # ---------------------------------------------------------------------------
+            # Shouldn't happen
+            # ---------------------------------------------------------------------------
+
+            else:
+                if not token.is_eof:
+                    assert False, str(token)
+
+        # ===========================================================================
+        # Ouf
+        # ===========================================================================
+
+        return builder.get_dict(math_mode=block.is_math_block)
     
     # ====================================================================================================
     # Debug
@@ -1281,57 +1979,131 @@ class Parser:
                 yield str(d)
 
             else:
-                if d['type'] == 'STRING':
-                    yield f"{d['type']} : '{str(d['string'])}'"
+                if True:
+                    # ----- Type
+
+                    excl = ['type']
+                    content = None
+                    if d['type'] == 'STRING':
+                        yield f"STRING : '{str(d['string'])}'"
+                        excl.append('string')
+
+                    elif d['type'] == 'BLOCK':
+                        yield "BLOCK"
+                        content = 'content'
+                        excl.append(content)
+
+                    elif d['type'] == 'FUNCTION':
+                        yield f"FUNCTION {d['name']}"
+                        excl.append('name')
+                        content = 'args'
+                        excl.append(content)
+
+                    else:
+                        yield f"{d['name']} ???"
+
+                    # ----- Attributes
+
                     for k, v in d.items():
-                        if k not in ['type', 'string']:
-                            yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
+                        if k not in excl:
+                            s = f"- {k:10s} : "
+                            for l in _lines(v):
+                                yield s + l
+                                s = "   "
 
-                elif d['type'] == 'BLOCK':
-                    yield f"{d['type']}"
-                    for k, v in d.items():
-                        if k not in ['type', 'content']:
-                            yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
-                            #yield f"- {k:10s} : '{v}'"
+                    # ----- Content
 
-                    yield "- content:"
-                    for c in d['content']:
-                        for line in _lines(c):
-                            yield "   " + line
+                    if content is not None:
+                        yield f"- {content}:"
+                        for c in d[content]:
+                            for line in _lines(c):
+                                yield "   " + line
 
-                elif d['type'] == 'FUNCTION':
-                    yield f"{d['type']} : '{d['name']}'"
-                    for k, v in d.items():
-                        if k not in ['type', 'name', 'args']:
-                            yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
-                            #yield f"- {k:10s} : '{v}'"
-
-                    yield "- args:"
-                    for c in d['args']:
-                        for line in _lines(c):
-                            yield "   " + line
 
                 else:
-                    yield f"{d['type']}"
-                    for k, v in d.items():
-                        if k not in ['type']:
-                            #yield f"- {k:10s} : '{v}'"
-                            yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
+                    if d['type'] == 'STRING':
+                        yield f"{d['type']} : '{str(d['string'])}'"
+                        for k, v in d.items():
+                            if k not in ['type', 'string']:
+                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
 
+                    elif d['type'] == 'BLOCK':
+                        yield f"{d['type']}"
+                        for k, v in d.items():
+                            if k not in ['type', 'content']:
+                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
+                                #yield f"- {k:10s} : '{v}'"
+
+                        yield "- content:"
+                        for c in d['content']:
+                            for line in _lines(c):
+                                yield "   " + line
+
+                    elif d['type'] == 'FUNCTION':
+                        yield f"{d['type']} : '{d['name']}'"
+                        for k, v in d.items():
+                            if k not in ['type', 'name', 'args']:
+                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
+                                #yield f"- {k:10s} : '{v}'"
+
+                        yield "- args:"
+                        for c in d['args']:
+                            for line in _lines(c):
+                                yield "   " + line
+
+                    else:
+                        yield f"{d['type']}"
+                        for k, v in d.items():
+                            if k not in ['type']:
+                                #yield f"- {k:10s} : '{v}'"
+                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
+
+
+        print()
+        print("-"*10, "Dump formula")
         for line in _lines(parsed):
             print(line)
+        print("\n")
+
 
 if __name__ == '__main__':
 
     from pprint import pprint
     print('-'*100)
-    text = r"\undervec v = 1"
-    p = Parser(text, math_mode=True)
-    block = p.read_block()
-    for tk in block.value:
-        print(tk)
+
+    text_tests = [
+        r"text",
+        r"{text} normal",
+        r"Normal \textbf{bold}",
+        r"Normal {\color[red]red color}default \matindex[1]change mat"
+    ]
+
+    math_tests = [
+        r"x",
+        r"x^2",
+        r"\vec x",
+        r"\frac{1}{x}",
+        r"\int_0^1x",
+        r"x^2^2",
+        r"\sum{i^2}^2"
+    ]
+
+    math_mode = True
+    index = 5
+
+
+    tests = math_tests if math_mode else text_tests
+    text = tests[index]
 
     print('-'*100)
 
-    d = p.block_token_to_dict(block)
-    p._dump_parsed(d)
+    p = Parser(text, math_mode=math_mode)
+    block = p.read_block()
+    print("BLOCK DUMP")
+    print(repr(block))
+
+    dct = block.value.to_formula(math_mode, None)
+    p._dump_parsed(dct)
+    print()
+
+
