@@ -1,10 +1,10 @@
 from pprint import pprint
 
 if __name__ == '__main__':
-    from latex_codes import SYMBOLS, MATHBB
+    from latex_codes import SYMBOLS, MATHBB, GREEK
     from etext import EText, EChar, StyleContext
 else:
-    from .latex_codes import SYMBOLS, MATHBB
+    from .latex_codes import SYMBOLS, MATHBB, GREEK
     from .etext import EText,EChar, StyleContext
 
 __all__ = ["parse_latex"]
@@ -159,19 +159,27 @@ def parse_latex(text, math_mode=False):
     parser = Parser(text, math_mode=math_mode, ignore_comments=True)
     block = parser.read_block(None)
 
-    print("BLOCK.VALUE")
-    for c in block.value:
-        print(f" - {str(c)}")
-    print()
-
-
+    if False:
+        print("BLOCK.VALUE")
+        for c in block.value:
+            print(f" - {str(c)}")
+        print()
 
     dct = block.value.to_formula(math_mode, None)
 
     if math_mode:
         return dct
-    else:
-        return dct['string']
+    
+    strs = []
+    def _merge(d):
+        if d['type'] == 'STRING':
+            strs.append(d['string'])
+        elif d['type'] == 'BLOCK':
+            for c in d['content']:
+                _merge(c)
+
+    _merge(dct)
+    return EText(strs)
 
 # ====================================================================================================
 # Char
@@ -549,7 +557,7 @@ class Tokens(list):
             if token.is_text:
                 echar = EChar(token.value, **styles.as_dict())
                 if math_mode:
-                    if token.is_alpha or token.is_num:
+                    if token.is_alpha or token.is_num or (len(token.value) == 1 and token.value in GREEK):
                         echar.italic = token.is_alpha
                         dct = {'type': 'STRING', 'string': echar}
                     else:

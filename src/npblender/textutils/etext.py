@@ -265,6 +265,13 @@ class EText:
     
     @text.setter
     def text(self, value):
+
+        ok_color = True
+        try:
+            from ..maths import Color
+        except:
+            ok_color = False
+
         if isinstance(value, EText):
             self._data = np.array(value._data).view(np.recarray)
 
@@ -293,7 +300,15 @@ class EText:
 
                 n = len(ec.c)
                 for k in CharStyle.STYLES:
-                    self._data[k][index:index + n] = getattr(ec, k)
+                    v = getattr(ec, k)
+                    if k == 'color':
+                        if ok_color:
+                            self._data[k][index:index + n] = Color.to_rgba(v)
+                        else:
+                            self._data[k][index:index + n] = v
+
+                    else:
+                        self._data[k][index:index + n] = v
                 index += n
 
         elif len(value) == 0:
