@@ -46,7 +46,7 @@ from .curve import Curve
 from .mesh import Mesh
 from .domain import Point
 
-from .textutils import EText, parse_latex
+from .textutils import EText, EChar, parse_latex
 from .maths import Color, Transformation, Rotation, Quaternion, maprange
 from .maths import Transfo2d, BBox
 from . import maths
@@ -749,7 +749,7 @@ class FGeom(maths.FormulaGeom):
             else:
                 _string = content
 
-        elif isinstance(content, EText):
+        elif isinstance(content, (EText, EChar)):
             _string = content
             self.name = str(content)
 
@@ -843,7 +843,11 @@ class FGeom(maths.FormulaGeom):
         if transfo is None:
             transfo = self.transfo3d
 
-        mesh = self.mesh.transform(transfo)
+        mesh = self.mesh
+        if len(mesh.points) == 0:
+            return mesh
+
+        mesh = mesh.transform(transfo)
 
         return mesh
     

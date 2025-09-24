@@ -157,13 +157,21 @@ def parse_latex(text, math_mode=False):
     """
 
     parser = Parser(text, math_mode=math_mode, ignore_comments=True)
-    token = parser.read_block(None)
-    d = parser.block_token_to_dict(token)
+    block = parser.read_block(None)
+
+    print("BLOCK.VALUE")
+    for c in block.value:
+        print(f" - {str(c)}")
+    print()
+
+
+
+    dct = block.value.to_formula(math_mode, None)
 
     if math_mode:
-        return d
+        return dct
     else:
-        return d['string']
+        return dct['string']
 
 # ====================================================================================================
 # Char
@@ -268,7 +276,14 @@ class Token:
         assert(kind in self.KINDS)
 
         self.kind  = kind
-        self.value = value
+        if isinstance(value, Char):
+            self.value = value.value
+            self.index = value.index
+        else:
+            self.value = value
+            self.index = None
+
+        self.index = None
 
     def __str__(self):
         s = f"<{self.kind}"
@@ -524,7 +539,7 @@ class Tokens(list):
             # Next token
             token = self.get_token()
 
-            if True:
+            if False:
                 print("\n---- read_term loop:", token)
 
             # ---------------------------------------------------------------------------
@@ -553,14 +568,11 @@ class Tokens(list):
                 else:
                     block_styles = styles
 
-                #d = self.read_formula(token.value, block_styles)
                 d = token.value.to_formula(False, block_styles)
                 dct = {'type': 'BLOCK', 'content': [d]}
 
             elif token.is_math_block:
-                #d = self.read_formula(token.value, styles)
-                d = token.value.to_formula(True, styles)
-                dct = {'type': 'BLOCK', 'content': [d]}
+                dct = token.value.to_formula(True, styles)
 
             # ---------------------------------------------------------------------------
             # A command
@@ -615,11 +627,16 @@ class Tokens(list):
 
                     dct['args'] = args
 
+                    print("ARGUMENTS")
+                    for a in args:
+                        pprint(a)
+
                     # mathbb : transform the argument to special math char
 
                     if token.value == 'mathbb':
                         darg = args[0]
-                        if darg['type'] == 'BLOCK':
+
+                        while darg['type'] == 'BLOCK':
                             darg = darg['content'][0]
 
                         if darg['type'] == 'STRING':
@@ -630,7 +647,7 @@ class Tokens(list):
                             dct = {'type': 'SYMBOL', 'string': mathbb}
 
                         else:
-                            self.parser.error(f"mathbb command accept only string param, not: {darg}")
+                            self.parser.error(f"mathbb command accept only string param, not: {darg}", index=token.index)
 
                 # ---------------------------------------------------------------------------
                 # Left / Right
@@ -638,9 +655,9 @@ class Tokens(list):
 
                 elif token.value == 'left':
 
-                    tk = tokens.read_token()
+                    tk = self.get_token()
                     if not tk.is_text:
-                        self.parser.error(f"'\\left' must be followed by a character, not {tk}.")
+                        self.parser.error(f"'\\left' must be followed by a character, not {tk}.", index=tk.index)
 
                     brackets = {}
                     if tk.value != '.':
@@ -649,31 +666,26 @@ class Tokens(list):
                     user_block = Tokens(self.parser)
                     while True:
 
-                        sub_token = self.read_token()
+                        sub_token = self.get_token()
 
                         if sub_token.is_eof:
-                            self.parser.error(f"'\\right' command expected to close block opened with '\\left{tk.value}'.")
+                            self.parser.error(f"'\\right' command expected to close block opened with '\\left{tk.value}'.", index=sub_token.index)
 
                         elif sub_token == Token.command('right'):
-                            tk = self.read_token()
+                            tk = self.get_token()
                             if not tk.is_text:
-                                self.parser.error(f"'\\right' must be followed by a character, not {tk}.")
+                                self.parser.error(f"'\\right' must be followed by a character, not {tk}.", index=tk.index)
 
                             if tk.value != '.':
                                 brackets['right'] = tk.value
 
                             #dct = self.read_formula(user_block, styles)
-                            dct = user_block.to_formula(styles)
+                            dct = user_block.to_formula(True, styles)
                             break
                             
                         else:
                             # Add the current token to the list to parse
                             user_block.append(sub_token)
-
-                # ----- Right is an error
-
-                elif token.value == 'right':
-                    self.parser.error(f"'\\right' command encountered with no '\\left' comand before.")
 
                 # ---------------------------------------------------------------------------
                 # Decorators
@@ -696,6 +708,14 @@ class Tokens(list):
 
                     dct[deco_key] = params['char']
 
+                # ---------------------------------------------------------------------------
+                # User command
+                # ---------------------------------------------------------------------------
+
+                else:
+                    return {'type': 'STRING', 'string': token.value}
+
+
             # ---------------------------------------------------------------------------
             # Control
             # ---------------------------------------------------------------------------
@@ -709,6 +729,8 @@ class Tokens(list):
 
             else:
                 assert False, f"Unknown token {token}"
+
+        return dct
 
         # ---------------------------------------------------------------------------
         # Scripts
@@ -742,6 +764,13 @@ class Tokens(list):
         
             # Current term
             dct = self.read_term(math_mode, styles)
+
+            # Scripts
+            scripts = self.read_scripts(styles)
+            while len(scripts):
+                dct = {'type': 'BLOCK', 'content': [dct], **scripts}
+                scripts = self.read_scripts(styles)
+
             content.append(dct)
 
         return {'type': 'BLOCK', 'content': content}
@@ -812,7 +841,7 @@ class Parser:
             self.math_mode = new_mode
 
     def pop_math_mode(self):
-        self.math_math = self.mm_stack.pop()
+        self.math_mode = self.mm_stack.pop()
 
     # ----------------------------------------------------------------------------------------------------
     # Error message
@@ -1044,6 +1073,7 @@ class Parser:
         while True:
 
             ch = self.read_char()
+            index = ch.index
 
             if ch.is_eof:
                 return Token.eof()
@@ -1075,9 +1105,11 @@ class Parser:
 
                         # Command or symbol code
                         if cmd in SYMBOLS:
-                            return Token.text(SYMBOLS[cmd])
+                            tk = Token.text(SYMBOLS[cmd])
                         else:
-                            return Token.command(cmd)
+                            tk = Token.command(cmd)
+                        tk.index = index
+                        return tk
 
                     # --------------------------------------------------
                     # Math block
@@ -1104,27 +1136,27 @@ class Parser:
                         self.error(f"Unsupported command : '\\{c}.")
 
                 elif ch.value == '{':
-                    return self.read_block(Token.open('{'))
+                    return self.read_block(Token.open(ch))
                 
                 elif ch.value == '}':
-                    return Token.close('}')
+                    return Token.close(ch)
                 
                 elif ch.value in ['$', '$$']:
                     if self.math_mode:
-                        return Token.close(ch.value)
+                        return Token.close(ch)
                     else:
-                        return self.read_block(Token.open(ch.value))
+                        return self.read_block(Token.open(ch))
                     
                 elif ch.value in ['^', '_', '~']:
                     if ch.value in ['^', '_']:
                         tk = self.read_token()
-                        return Token.control(ch.value, tk)
+                        return Token.control(ch, tk)
                     else:
-                        return Token.control(ch.value, None)
+                        return Token.control(ch, None)
                 
                 else:
                     # Not supported as special char
-                    return Token.text(ch.value)
+                    return Token.text(ch)
 
             # ---------------------------------------------------------------------------
             # Blank char are ignored in math mode
@@ -1144,7 +1176,9 @@ class Parser:
                     while self.read_char(False).is_text:
                         cs.append(self.read_char().value)
 
-                    return Token.text("".join(cs))
+                    tk = Token.text("".join(cs))
+                    tk.index = index
+                    return tk
                 
                 # Math mode:
                 # - group alpha in words
@@ -1155,14 +1189,18 @@ class Parser:
                     while self.read_char(False).is_alpha:
                         cs.append(self.read_char().value)
 
-                    return Token.text("".join(cs))
+                    tk = Token.text("".join(cs))
+                    tk.index = index
+                    return tk
                 
                 if ch.is_num:
                     cs = [ch.value]
                     while self.read_char(False).is_num:
                         cs.append(self.read_char().value)
 
-                    return Token.text("".join(cs))
+                    tk = Token.text("".join(cs))
+                    tk.index = index
+                    return tk
                 
                 # Math mode : a single char
                 return Token.text(ch.value)
@@ -1287,686 +1325,7 @@ class Parser:
         self.pop_math_mode()
 
         return token
-    
-    # ====================================================================================================
-    # Grammar level
-    # ====================================================================================================
 
-    def block_token_to_dict_OLD(self, block):
-        """ Read a series of blocks and transform them into a hierarchy of dicts
-        """
-
-        assert block.is_block
-
-        # ---------------------------------------------------------------------------
-        # Read from tokens -> write to builder
-        # ---------------------------------------------------------------------------
-
-        tokens = Tokens(block.value)
-        builder = Builder()
-
-        # Text mode : capture font style
-        if not block.is_math_block:
-            for k, v in block.props.items():
-                if k in builder.etext.attributes:
-                    builder.etext.default[k] = v
-
-        # ---------------------------------------------------------------------------
-        # Transform a Token to a dict
-        # ---------------------------------------------------------------------------
-
-        def _token_to_dict(token):
-
-            print(f"TOKEN TO DICT: {token.is_block=}", token)
-            if token.is_eof:
-                return {'type': 'STRING', 'string': EText("?")}
-            
-            elif token.is_block:
-                return self.block_token_to_dict(token)
-            
-            """
-            'EOF',        # No more token
-            'open',       # open block
-            'close',      # close block
-            'math_block', # list of math tokens
-            'text_block', # list of text tokens
-
-            'control',    # : ^ _ { }
-            'command',    # : word (command \word without \)
-            'text',       # : flow of chars
-            """
-        # ---------------------------------------------------------------------------
-        # Read subscript or superscript
-        # ---------------------------------------------------------------------------
-
-        def _read_scripts():
-
-            scripts = tokens.read_scripts()
-            if not scripts:
-                return {}
-            
-            for k, v in scripts.items():
-                if v.is_eof:
-                    self.error(f"'k' char at end of block. Need a token.")
-                scripts[k] = _token_to_dict(v)
-
-            return scripts
-        
-        # ---------------------------------------------------------------------------
-        # Loop on the tokens in the block
-        # ---------------------------------------------------------------------------
-
-        while not tokens.eof:
-
-            # ---------------------------------------------------------------------------
-            # Math specific : subscripts and superscripts are added to last token
-            # ---------------------------------------------------------------------------
-
-            while tokens.next_is_script:
-                scripts = _read_scripts()
-                builder.add_scripts(scripts)
-
-                if tokens.eof:
-                    break
-
-            # ===========================================================================
-            # Common to math & text
-            # ===========================================================================
-
-            token = tokens.read_token()
-
-            # Debug
-            if True:
-                print("Grammar", token)
-
-            if token.is_command:
-
-                if token.value == 'color':
-                    col = tokens.read_option()
-                    if col is not None:
-                        OK = True
-                        try:
-                            from ..maths import Color
-                        except:
-                            OK = False
-
-                        if OK:
-                            builder.etext.default.color = Color(col).rgba
-
-                    continue
-
-                elif token.value in ['matindex', 'material', 'materialindex']:
-                    matind = tokens.read_option()
-                    if matind is not None:
-                        builder.etext.default.material_index = matind
-
-                    continue
-
-            # ===========================================================================
-            # Text parser
-            # ===========================================================================
-
-            if not block.is_math_block:
-
-                if token.is_text:
-                    builder.add_text(token.value)
-
-                elif token.is_control:
-                    builder.add_text(token.value)
-
-                elif token.is_command:
-
-                    if token.value in TEXT_SWITCHES:
-                        builder.etext.default.set(**TEXT_SWITCHES[token.value])
-
-                    else:
-                        pass
-
-                elif token.is_text_block:
-                    for k, v in builder.etext.default:
-                        if k not in token.props:
-                            token.props[k] = v
-
-                    tk = self.block_token_to_dict(token)
-
-                    builder.add_content(tk)
-
-                else:
-                    pass
-
-                continue
-
-            # ===========================================================================
-            # Math parser
-            # ===========================================================================
-
-            # ---------------------------------------------------------------------------
-            # Text : we add to the stack
-            # ---------------------------------------------------------------------------
-
-            if token.is_text:
-                # Consume text: the stack will contain only this one
-                if tokens.next_is_script:
-                    builder.consume_etext()
-
-                builder.add_text(token.value, italic=token.is_alpha)
-
-            # ---------------------------------------------------------------------------
-            # Control char
-            # ---------------------------------------------------------------------------
-
-            elif token.is_control:
-                
-                self.error(f"Control token {token} not supported yet.")
-
-            # ---------------------------------------------------------------------------
-            # Command
-            # ---------------------------------------------------------------------------
-
-            elif token.is_command:
-
-                is_under_deco = token.value.startswith('under') and token.value[5:] in DECORATORS
-                is_deco = is_under_deco or token.value in DECORATORS
-
-                # ---------------------------------------------------------------------------
-                # A function
-                # ---------------------------------------------------------------------------
-
-                if token.value in MATH_PATTERN_COMMANDS:
-                    pat = MATH_PATTERNS[MATH_PATTERN_COMMANDS[token.value]]
-
-                    # Read the optional scripts
-
-                    scripts = _read_scripts()
-                    if tokens.next_is_script:
-                        self.error(f"The control char {tokens.read_token()} is misplaced after function '{token.value}'.")
-
-                    if len(scripts) and not pat.get('scripts', False):
-                        self.error(f"The function '{token.value}' doesn't accept subscript or superscript.")
-
-                    function = {'type': 'FUNCTION', 'name': token.value, **scripts}
-
-                    # Read the option
-                    if pat.get('option', False):
-                        s = tokens.read_option()
-                        if s is not None:
-                            function['option'] = s
-
-                    # Read the arguments
-
-                    args = []
-                    for i in range(pat['tokens']):
-                        args.append(_token_to_dict(tokens.read_token()))
-
-                    function['args'] = args
-
-                    # \mathbb : special math char
-                    if token.value == 'mathbb':
-                        darg = args[0]
-                        if darg['type'] == 'BLOCK':
-                            darg = darg['content'][0]
-
-                        if darg['type'] == 'STRING':
-                            mathbb = str(darg['string'])
-                            if mathbb in MATHBB:
-                                mathbb = MATHBB[mathbb]
-
-                            builder.add_content({'type': 'STRING', 'string': mathbb})
-                        else:
-                            self.error(f"mathbb command accept only string param, not: {darg}")
-                    else:
-                        builder.add_content(function)
-
-                # ---------------------------------------------------------------------------
-                # Left / Right
-                # ---------------------------------------------------------------------------
-
-                elif token.value == 'left':
-
-                    tk = tokens.read_token()
-                    if not tk.is_text:
-                        self.error(f"'\\left' must be followed by a character, not {tk}.")
-
-                    brackets = {}
-                    if tk.value != '.':
-                        brackets['left'] = tk.value
-
-                    user_block = []
-                    while True:
-
-                        sub_token = tokens.read_token()
-
-                        if sub_token.is_eof:
-                            self.error(f"'\\right' command expected to close block opened with '\\left{tk.value}'.")
-
-                        elif sub_token == Token.command('right'):
-                            tk = tokens.read_token()
-                            if not tk.is_text:
-                                self.error(f"'\\right' must be followed by a character, not {tk}.")
-
-                            if tk.value != '.':
-                                brackets['right'] = tk.value
-
-                            block_dict = self.block_token_to_dict(Token.block(True, user_block))
-                            sub_block = {**block_dict, **brackets}
-
-                            builder.add_content(sub_block)
-
-                            break
-
-                        # Add the current token to the list to parse
-                        user_block.append(sub_token)
-
-                # ----- Right is an error
-
-                elif token.value == 'right':
-                    self.error(f"'\\right' command encountered with no '\\left' comand before.")
-
-                # ---------------------------------------------------------------------------
-                # Decorators
-                # ---------------------------------------------------------------------------
-
-                elif is_deco:
-
-                    # Content to decorate
-                    cont = _token_to_dict(tokens.read_token())
-
-                    if is_under_deco:
-                        params = dict(DECORATORS[token.value[5:]])
-                        params['under'] = True
-                    else:
-                        params = dict(DECORATORS[token.value])
-
-                    deco_key = 'under' if params['under'] else 'over'
-                    if params['fix']:
-                        deco_key = 'fix_' + deco_key
-
-                    cont[deco_key] = params['char']
-                    for k, v in params.items():
-                        if k not in ['char', 'under', 'over']:
-                            cont[k] = v
-
-                    builder.add_content(cont)
-
-                # ---------------------------------------------------------------------------
-                # Transform the command into string
-                # ---------------------------------------------------------------------------
-
-                else:
-                    if block.is_math_block:
-                        builder.add_text(token.value, italic=False)
-                    else:
-                        builder.add_text(token.value)
-
-            # ---------------------------------------------------------------------------
-            # A block
-            # ---------------------------------------------------------------------------
-
-            elif token.is_block:
-
-                sub_block = self.block_token_to_dict(token)
-
-                builder.add_content(sub_block)
-
-            # ---------------------------------------------------------------------------
-            # Shouldn't happen
-            # ---------------------------------------------------------------------------
-
-            else:
-                if not token.is_eof:
-                    assert False, str(token)
-
-        # ===========================================================================
-        # Ouf
-        # ===========================================================================
-
-        return builder.get_dict(math_mode=block.is_math_block)
-        
-    
-    # ====================================================================================================
-    # Grammar level
-    # ====================================================================================================
-
-    def block_token_to_dict_OLDER(self, block):
-
-        assert block.is_block
-
-        print('>'*60)
-        print("block_token_to_dict")
-        print(block)
-        for i, c in enumerate(block.value):
-            print("   ", i, c)
-        print()
-
-        # ---------------------------------------------------------------------------
-        # Read from tokens -> write to builder
-        # ---------------------------------------------------------------------------
-
-        tokens = Tokens(block.value)
-        builder = Builder()
-
-        # Text mode : capture font style
-        if not block.is_math_block:
-            for k, v in block.props.items():
-                if k in builder.etext.attributes:
-                    builder.etext.default[k] = v
-
-        # ---------------------------------------------------------------------------
-        # Parse a token to a dict
-        # ---------------------------------------------------------------------------
-
-        def _token_to_dict(token):
-
-            print(f"TOKEN TO DICT: {token.is_block=}", token)
-            if token.is_eof:
-                return {'type': 'STRING', 'string': EText("?")}
-            
-            elif token.is_block:
-                return self.block_token_to_dict(token)
-            
-            """
-            'EOF',        # No more token
-            'open',       # open block
-            'close',      # close block
-            'math_block', # list of math tokens
-            'text_block', # list of text tokens
-
-            'control',    # : ^ _ { }
-            'command',    # : word (command \word without \)
-            'text',       # : flow of chars
-            """
-
-            
-        # ---------------------------------------------------------------------------
-        # Read subscript or superscript
-        # ---------------------------------------------------------------------------
-
-        def _read_scripts():
-
-            scripts = tokens.read_scripts()
-            if not scripts:
-                return {}
-            
-            for k, v in scripts.items():
-                if v.is_eof:
-                    self.error(f"'k' char at end of block. Need a token.")
-                scripts[k] = _token_to_dict(v)
-
-            return scripts
-        
-        # ---------------------------------------------------------------------------
-        # Loop on the tokens in the block
-        # ---------------------------------------------------------------------------
-
-        while not tokens.eof:
-
-            # ---------------------------------------------------------------------------
-            # Math specific : subscripts and superscripts are added to last token
-            # ---------------------------------------------------------------------------
-
-            while tokens.next_is_script:
-                scripts = _read_scripts()
-                builder.add_scripts(scripts)
-
-                if tokens.eof:
-                    break
-
-            # ===========================================================================
-            # Common to math & text
-            # ===========================================================================
-
-            token = tokens.read_token()
-
-            # Debug
-            if True:
-                print("Grammar", token)
-
-            if token.is_command:
-
-                if token.value == 'color':
-                    col = tokens.read_option()
-                    if col is not None:
-                        OK = True
-                        try:
-                            from ..maths import Color
-                        except:
-                            OK = False
-
-                        if OK:
-                            builder.etext.default.color = Color(col).rgba
-
-                    continue
-
-                elif token.value in ['matindex', 'material', 'materialindex']:
-                    matind = tokens.read_option()
-                    if matind is not None:
-                        builder.etext.default.material_index = matind
-
-                    continue
-
-            # ===========================================================================
-            # Text parser
-            # ===========================================================================
-
-            if not block.is_math_block:
-
-                if token.is_text:
-                    builder.add_text(token.value)
-
-                elif token.is_control:
-                    builder.add_text(token.value)
-
-                elif token.is_command:
-
-                    if token.value in TEXT_SWITCHES:
-                        builder.etext.default.set(**TEXT_SWITCHES[token.value])
-
-                    else:
-                        pass
-
-                elif token.is_text_block:
-                    for k, v in builder.etext.default:
-                        if k not in token.props:
-                            token.props[k] = v
-
-                    tk = self.block_token_to_dict(token)
-
-                    builder.add_content(tk)
-
-                else:
-                    pass
-
-                continue
-
-            # ===========================================================================
-            # Math parser
-            # ===========================================================================
-
-            # ---------------------------------------------------------------------------
-            # Text : we add to the stack
-            # ---------------------------------------------------------------------------
-
-            if token.is_text:
-                # Consume text: the stack will contain only this one
-                if tokens.next_is_script:
-                    builder.consume_etext()
-
-                builder.add_text(token.value, italic=token.is_alpha)
-
-            # ---------------------------------------------------------------------------
-            # Control char
-            # ---------------------------------------------------------------------------
-
-            elif token.is_control:
-                
-                self.error(f"Control token {token} not supported yet.")
-
-            # ---------------------------------------------------------------------------
-            # Command
-            # ---------------------------------------------------------------------------
-
-            elif token.is_command:
-
-                is_under_deco = token.value.startswith('under') and token.value[5:] in DECORATORS
-                is_deco = is_under_deco or token.value in DECORATORS
-
-                # ---------------------------------------------------------------------------
-                # A function
-                # ---------------------------------------------------------------------------
-
-                if token.value in MATH_PATTERN_COMMANDS:
-                    pat = MATH_PATTERNS[MATH_PATTERN_COMMANDS[token.value]]
-
-                    # Read the optional scripts
-
-                    scripts = _read_scripts()
-                    if tokens.next_is_script:
-                        self.error(f"The control char {tokens.read_token()} is misplaced after function '{token.value}'.")
-
-                    if len(scripts) and not pat.get('scripts', False):
-                        self.error(f"The function '{token.value}' doesn't accept subscript or superscript.")
-
-                    function = {'type': 'FUNCTION', 'name': token.value, **scripts}
-
-                    # Read the option
-                    if pat.get('option', False):
-                        s = tokens.read_option()
-                        if s is not None:
-                            function['option'] = s
-
-                    # Read the arguments
-
-                    args = []
-                    for i in range(pat['tokens']):
-                        args.append(_token_to_dict(tokens.read_token()))
-
-                    print('PARSE', token.value)
-                    pprint(args)
-
-                    function['args'] = args
-
-                    # \mathbb : special math char
-                    if token.value == 'mathbb':
-                        darg = args[0]
-                        if darg['type'] == 'BLOCK':
-                            darg = darg['content'][0]
-
-                        if darg['type'] == 'STRING':
-                            mathbb = str(darg['string'])
-                            if mathbb in MATHBB:
-                                mathbb = MATHBB[mathbb]
-
-                            builder.add_content({'type': 'STRING', 'string': mathbb})
-                        else:
-                            self.error(f"mathbb command accept only string param, not: {darg}")
-                    else:
-                        builder.add_content(function)
-
-                # ---------------------------------------------------------------------------
-                # Left / Right
-                # ---------------------------------------------------------------------------
-
-                elif token.value == 'left':
-
-                    tk = tokens.read_token()
-                    if not tk.is_text:
-                        self.error(f"'\\left' must be followed by a character, not {tk}.")
-
-                    brackets = {}
-                    if tk.value != '.':
-                        brackets['left'] = tk.value
-
-                    user_block = []
-                    while True:
-
-                        sub_token = tokens.read_token()
-
-                        if sub_token.is_eof:
-                            self.error(f"'\\right' command expected to close block opened with '\\left{tk.value}'.")
-
-                        elif sub_token == Token.command('right'):
-                            tk = tokens.read_token()
-                            if not tk.is_text:
-                                self.error(f"'\\right' must be followed by a character, not {tk}.")
-
-                            if tk.value != '.':
-                                brackets['right'] = tk.value
-
-                            block_dict = self.block_token_to_dict(Token.block(True, user_block))
-                            sub_block = {**block_dict, **brackets}
-
-                            builder.add_content(sub_block)
-
-                            break
-
-                        # Add the current token to the list to parse
-                        user_block.append(sub_token)
-
-                # ----- Right is an error
-
-                elif token.value == 'right':
-                    self.error(f"'\\right' command encountered with no '\\left' comand before.")
-
-                # ---------------------------------------------------------------------------
-                # Decorators
-                # ---------------------------------------------------------------------------
-
-                elif is_deco:
-
-                    # Content to decorate
-                    cont = _token_to_dict(tokens.read_token())
-
-                    if is_under_deco:
-                        params = dict(DECORATORS[token.value[5:]])
-                        params['under'] = True
-                    else:
-                        params = dict(DECORATORS[token.value])
-
-                    deco_key = 'under' if params['under'] else 'over'
-                    if params['fix']:
-                        deco_key = 'fix_' + deco_key
-
-                    cont[deco_key] = params['char']
-                    for k, v in params.items():
-                        if k not in ['char', 'under', 'over']:
-                            cont[k] = v
-
-                    builder.add_content(cont)
-
-                # ---------------------------------------------------------------------------
-                # Transform the command into string
-                # ---------------------------------------------------------------------------
-
-                else:
-                    if block.is_math_block:
-                        builder.add_text(token.value, italic=False)
-                    else:
-                        builder.add_text(token.value)
-
-            # ---------------------------------------------------------------------------
-            # A block
-            # ---------------------------------------------------------------------------
-
-            elif token.is_block:
-
-                sub_block = self.block_token_to_dict(token)
-
-                builder.add_content(sub_block)
-
-            # ---------------------------------------------------------------------------
-            # Shouldn't happen
-            # ---------------------------------------------------------------------------
-
-            else:
-                if not token.is_eof:
-                    assert False, str(token)
-
-        # ===========================================================================
-        # Ouf
-        # ===========================================================================
-
-        return builder.get_dict(math_mode=block.is_math_block)
-    
     # ====================================================================================================
     # Debug
     # ====================================================================================================
@@ -1979,85 +1338,44 @@ class Parser:
                 yield str(d)
 
             else:
-                if True:
-                    # ----- Type
+                # ----- Type
 
-                    excl = ['type']
-                    content = None
-                    if d['type'] == 'STRING':
-                        yield f"STRING : '{str(d['string'])}'"
-                        excl.append('string')
+                excl = ['type']
+                content = None
+                if d['type'] in ['SYMBOL', 'STRING']:
+                    yield f"{d['type']} : '{str(d['string'])}'"
+                    excl.append('string')
 
-                    elif d['type'] == 'BLOCK':
-                        yield "BLOCK"
-                        content = 'content'
-                        excl.append(content)
+                elif d['type'] == 'BLOCK':
+                    yield "BLOCK"
+                    content = 'content'
+                    excl.append(content)
 
-                    elif d['type'] == 'FUNCTION':
-                        yield f"FUNCTION {d['name']}"
-                        excl.append('name')
-                        content = 'args'
-                        excl.append(content)
-
-                    else:
-                        yield f"{d['name']} ???"
-
-                    # ----- Attributes
-
-                    for k, v in d.items():
-                        if k not in excl:
-                            s = f"- {k:10s} : "
-                            for l in _lines(v):
-                                yield s + l
-                                s = "   "
-
-                    # ----- Content
-
-                    if content is not None:
-                        yield f"- {content}:"
-                        for c in d[content]:
-                            for line in _lines(c):
-                                yield "   " + line
-
+                elif d['type'] == 'FUNCTION':
+                    yield f"FUNCTION {d['name']}"
+                    excl.append('name')
+                    content = 'args'
+                    excl.append(content)
 
                 else:
-                    if d['type'] == 'STRING':
-                        yield f"{d['type']} : '{str(d['string'])}'"
-                        for k, v in d.items():
-                            if k not in ['type', 'string']:
-                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
+                    yield f"{d['type']} ???"
 
-                    elif d['type'] == 'BLOCK':
-                        yield f"{d['type']}"
-                        for k, v in d.items():
-                            if k not in ['type', 'content']:
-                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
-                                #yield f"- {k:10s} : '{v}'"
+                # ----- Attributes
 
-                        yield "- content:"
-                        for c in d['content']:
-                            for line in _lines(c):
-                                yield "   " + line
+                for k, v in d.items():
+                    if k not in excl:
+                        s = f"- {k:10s} : "
+                        for l in _lines(v):
+                            yield s + l
+                            s = "   "
 
-                    elif d['type'] == 'FUNCTION':
-                        yield f"{d['type']} : '{d['name']}'"
-                        for k, v in d.items():
-                            if k not in ['type', 'name', 'args']:
-                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
-                                #yield f"- {k:10s} : '{v}'"
+                # ----- Content
 
-                        yield "- args:"
-                        for c in d['args']:
-                            for line in _lines(c):
-                                yield "   " + line
-
-                    else:
-                        yield f"{d['type']}"
-                        for k, v in d.items():
-                            if k not in ['type']:
-                                #yield f"- {k:10s} : '{v}'"
-                                yield f"- {k:10s} : {', '.join([l for l in _lines(v)])}'"
-
+                if content is not None:
+                    yield f"- {content}:"
+                    for c in d[content]:
+                        for line in _lines(c):
+                            yield "   " + line
 
         print()
         print("-"*10, "Dump formula")
@@ -2085,12 +1403,13 @@ if __name__ == '__main__':
         r"\frac{1}{x}",
         r"\int_0^1x",
         r"x^2^2",
-        r"\sum{i^2}^2"
+        r"\sum{i^2}^2",
+        r"a = \ln(e^x)",
+        r"\text{TEXT} \ln(e^x)"        
     ]
 
     math_mode = True
-    index = 5
-
+    index = 8
 
     tests = math_tests if math_mode else text_tests
     text = tests[index]
