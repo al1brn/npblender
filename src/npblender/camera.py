@@ -111,15 +111,14 @@ import numpy as np
 import bpy
 from mathutils import Vector
 
-from numba import njit, prange
+from .numbawrapper import njit, prange, NUMBA_AVAILABLE
+import numpy as np
+
 from time import time
 
 # =============================================================================================================================
 # Just in time optimization
 
-#from numba import njit, prange
-from .numbawrapper import njit, prange, NUMBA_AVAILABLE
-import numpy as np
 
 USE_JIT = NUMBA_AVAILABLE
 
