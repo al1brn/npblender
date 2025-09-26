@@ -62,8 +62,8 @@ from .text import *
 __all__.extend(list(text.__all__))
 
 
-# TEMP
-enginemod.register()
+# DEV
+#enginemod.register()
 
 
 

@@ -86,7 +86,16 @@ def ensure_package(pkg: str, pip_name: str = None):
     subprocess.check_call([sys.executable, "-m", "ensurepip", "--upgrade"])
     subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", pip_name])
 
-    return importlib.import_module(pkg)
+    # 4. add in syspath
+    #import site
+    #user_site = site.getusersitepackages()
+    #if user_site not in sys.path:
+    #    sys.path.append(user_site)    
+
+    try:
+        return importlib.import_module(pkg)
+    except:
+        return None
 
 def uninstall_package(pkg: str, pip_name: str = None):
     """

@@ -18,6 +18,8 @@
     - `points`: [Point][npblender.Point]
 - [Meshes][npblender.Meshes]
     - `points`: [Point][npblender.Point]
+- [Text][npblender.Text]
+- [Formula][npblender.Formula]
 
 ### Animation
 - [Camera][npblender.Camera] : for camera culling

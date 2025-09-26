@@ -7,6 +7,8 @@ tagline = "Create and modify geometry with NumPy"
 maintainer = "Alain Bernard"
 type = "add-on"
 
+#entry = "npblender"
+
 blender_version_min = "4.5.0"
 license = ["SPDX:MIT"]
 

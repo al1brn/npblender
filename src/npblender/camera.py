@@ -117,10 +117,11 @@ from time import time
 # =============================================================================================================================
 # Just in time optimization
 
-from numba import njit, prange
+#from numba import njit, prange
+from .numbawrapper import njit, prange, NUMBA_AVAILABLE
 import numpy as np
 
-USE_JIT = True
+USE_JIT = NUMBA_AVAILABLE
 
 @njit(parallel=True)
 def camera_projection_jit(M, cam_z, cam_x0, cam_x1, cam_y0, cam_y1, verts, radius=0., cam_loc=(0., 0., 0.), normals=None):
