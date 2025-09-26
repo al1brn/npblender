@@ -1035,17 +1035,19 @@ class Formula(maths.Formula):
 
         super().__init__(None, body, geom_cls=FGeom, font=font, math_font=math_font, **attrs, **font_attrs)
 
-        if materials is None:
-            self.materials = []
-        else:
-            self.materials = []
+        self.materials = materials
 
-    def to_mesh(self):
+    # ----------------------------------------------------------------------------------------------------
+    # To mesh
+    # ----------------------------------------------------------------------------------------------------
+
+    def to_mesh(self, x_max=None, order_max=None):
 
         self.update()
         
         mesh = Mesh(materials=self.materials)
 
+        order = 0
         for _, fgeom in self.depths():
             if not isinstance(fgeom, FGeom):
                 continue
@@ -1054,7 +1056,16 @@ class Formula(maths.Formula):
             if not len(m.points):
                 continue
 
-            m.materials = list(self.materials)
+            if x_max is not None:
+                if np.max(m.points.x) > x_max:
+                    continue
+
+            if order_max is not None:
+                if order > order_max:
+                    continue
+            order += 1
+
+            #m.materials = list(self.materials)
             mesh.join(m)
 
         return mesh
