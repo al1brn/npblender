@@ -58,14 +58,14 @@ import subprocess
 import sys
 
 def ensure_modules_installed():
-    if importlib.util.find_spec("numba") is None:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "numba"])
+    #if importlib.util.find_spec("numba") is None:
+    #    subprocess.check_call([sys.executable, "-m", "pip", "install", "numba"])
     if importlib.util.find_spec("scipy") is None:
         subprocess.check_call([sys.executable, "-m", "pip", "install", "scipy"])
 
 ensure_modules_installed()
 
-from numba import njit
+from .numbawrapper import njit, NUMBA_AVAILABLE
 
 from . constants import SPLINE_TYPES, BEZIER, POLY, NURBS
 from . maths import Rotation, Quaternion, Transformation
