@@ -22,7 +22,7 @@ NPBlender does not replace GN — it complements it. Generate or edit geometry w
 
 > You don’t need to “install” an add‑on. Just make the package importable by Blender’s Python.
 
-1. **Clone (or symlink) the repository** into Blender’s *scripts/modules* directory so that the path ends with `.../scripts/modules/npblender`:
+1. **Clone (or symlink) the zip package** into Blender’s *scripts/modules* directory so that the path ends with `.../scripts/modules/npblender`:
 
 - **Linux**: `~/.config/blender/<version>/scripts/modules/`
 - **macOS**: `~/Library/Application Support/Blender/<version>/scripts/modules/`
@@ -42,6 +42,8 @@ For details on Blender’s script directories, see the Blender Manual:
 ---
 
 ## Quick Start
+
+Note: The API is not fully documented yet.
 
 ```python
 # Run inside Blender's Python console or Text Editor

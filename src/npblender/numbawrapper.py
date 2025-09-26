@@ -3,9 +3,21 @@ from __future__ import annotations
 
 __all__ = ["njit", "prange", "NUMBA_AVAILABLE"]
 
+
+import platform
+
+os_name = platform.system()
+if os_name == "Windows":
+    print("Windows")
+elif os_name == "Darwin":
+    print("macOS")
+elif os_name == "Linux":
+    print("Linux")
+
 from .deps import ensure_package
 
-ensure_package("numba")
+if os_name == "Darwin":
+    ensure_package("numba")
 
 try:
     # If numba is avaialble, import the true functions
