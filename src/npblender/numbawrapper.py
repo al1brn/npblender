@@ -5,16 +5,17 @@ __all__ = ["njit", "prange", "NUMBA_AVAILABLE"]
 
 
 import platform
+from .deps import ensure_package
 
 os_name = platform.system()
+"""
 if os_name == "Windows":
     print("Windows")
 elif os_name == "Darwin":
     print("macOS")
 elif os_name == "Linux":
     print("Linux")
-
-from .deps import ensure_package
+"""
 
 if os_name == "Darwin":
     ensure_package("numba")
