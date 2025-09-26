@@ -8,9 +8,6 @@ if __name__ == '__main__':
 else:
     from .constants import TAU, PI, ZERO
 
-BBOX_CACHE = False
-DEF_ADJUSTABLE = True
-
 INT_SYMBS = {
     'int': '∫',
     'iint': '∬',
@@ -21,10 +18,25 @@ INT_SYMBS = {
 }
 
 # ====================================================================================================
+# Touchable
+# ====================================================================================================
+
+class Touchable:
+    def touch(self, touched=True):
+        self._touched = touched
+
+    @property
+    def touched(self):
+        if hasattr(self, '_touched'):
+            return self._touched
+        else:
+            return True
+
+# ====================================================================================================
 # Transfo2D
 # ====================================================================================================
 
-class Transfo2d:
+class Transfo2d(Touchable):
     """2D affine transform in homogeneous coordinates (3x3).
     
     Column-vector convention: p' = M @ p_h, with p_h = [x, y, 1]^T.
@@ -39,7 +51,8 @@ class Transfo2d:
             if M.shape != (3, 3):
                 raise ValueError(f"Matrix must be shaped (3, 3), not {M.shape}")
             self._matrix = M
-        self._touched = False
+
+        self.touch(False)
 
     def __str__(self):
         sx, sy = self.scale
@@ -50,17 +63,10 @@ class Transfo2d:
                 f"sc: ({sx:.2f}, {sy:.2f}), "
                 f"ag: {angle_deg:.1f}°"
                 f">")
-    
-    @property
-    def touched(self):
-        return self._touched
-    
-    def touch(self, touch=True):
-        self._touched = touch
 
     def reset(self):
         self._matrix[...] = np.eye(3, dtype=float)
-        self.touch(self)
+        self.touch()
 
     def clone(self):
         return Transfo2d(np.array(self._matrix))
@@ -125,7 +131,6 @@ class Transfo2d:
         except:
             null_scale = True
 
-
         if null_scale:
             return np.zeros(2, dtype=float), 0., np.eye(2)
 
@@ -154,6 +159,7 @@ class Transfo2d:
         P = np.array([[sx, 0.0],
                       [0.0, sy]], dtype=float)
         self._matrix[:2, :2] = P @ R
+
         self.touch()
 
     @property
@@ -306,6 +312,7 @@ class Transfo2d:
 
     def apply_transfo(self, other):
         self.matrix[...] = other.matrix @ self.matrix
+        self.touch()
         return self
 
     def translate(self, *t, forward=True):
@@ -388,6 +395,8 @@ class Transfo2d:
 
 class BBox:
     def __init__(self, *bounds):
+        """Non mutable bound box.
+        """
         if len(bounds) == 1:
             self.set_bbox(bounds[0])
         else:
@@ -574,63 +583,97 @@ class BBox:
 # Animation
 # ====================================================================================================
 
-class Animation:
+class Animation(Touchable):
     def __init__(self):
+        """FormulaBox animation
+
+        Control size, location and rotation of FormulaBoxes
+        """
         self._tx, self._ty = 0.0, 0.0
         self._sx, self._sy = 1.0, 1.0
         self._rot = 0.0
-        self.z = 0.0
+        self._z = 0.0
 
     @property
     def tx(self):
+        """Translation along x
+        """
         return self._tx
     
     @tx.setter
     def tx(self, value):
+        self.touch()
         self._tx = value
 
     @property
     def ty(self):
+        """Translation along y
+        """
         return self._ty
     
     @ty.setter
     def ty(self, value):
+        self.touch()
         self._ty = value
 
     @property
     def sx(self):
+        """Scale along x
+        """
         return self._sx
     
     @sx.setter
     def sx(self, value):
+        self.touch()
         self._sx = value
 
     @property
     def sy(self):
+        """Scale along y
+        """
         return self._sy
     
     @sy.setter
     def sy(self, value):
+        self.touch()
         self._sy = value
 
     @property
     def rot(self):
+        """Rotation around z
+        """
         return self._rot
     
     @rot.setter
     def rot(self, value):
+        self.touch()
         self._rot = value
 
     @property
+    def z(self):
+        return self._z
+    
+    @z.setter
+    def z(self, value):
+        self.touch()
+        self._z = value
+
+    @property
     def translation(self):
+        """Translation (tx, ty).
+        """
         return self.tx, self.ty
 
     @property
     def scale(self):
+        """Scale (sx, sy)
+        """
         return self.sx, self.sy
     
     @property
     def transfo(self):
+        """The Transfo2d buit with properties
+        """
         return Transfo2d.from_components(tx=self.tx, ty=self.ty, sx=self.sx, sy=self.sy, angle=self.rot)
 
     @property
@@ -645,18 +688,25 @@ class Animation:
 # An area
 # ====================================================================================================
 
-class FormulaBox:
+class FormulaBox(Touchable):
 
     def __init__(self, name="FormulaBox"):
+        """The base class for box in a formula.
+
+        A FormulaBox is made of a boundingbox and a 2D transformation.
+        The 2D transformation is used by the owner to place the box at the right place.
+        """
+
         self.name      = name
         self._transfo  = Transfo2d()
         self._bbox     = BBox()
-        self._touched  = True
         self.anim      = Animation()
 
         self.owner        = None
         self.child_key    = None
         self._adjust_size = None
+
+        self.touch()
 
     # ====================================================================================================
     # Attach to an owner
@@ -678,16 +728,22 @@ class FormulaBox:
     # Update
     # ====================================================================================================
 
-    def update(self):
-        self.touch(True)
-        self.get_bbox()
+    def update(self, force=False):
+        if force or self.touched:
+            self.get_bbox()
+        self.touch(False)
 
     def touch(self, value=True):
-        self._touched = value
+        super().touch(value)
+        if not value:
+            self.anim.touch(False)
+            self._transfo.touch(False)
 
     @property
     def touched(self):
-        return self._touched
+        if super().touched:
+            return True
+        return self.anim.touched or self._transfo.touched
     
     # ====================================================================================================
     # Transformations
@@ -737,17 +793,10 @@ class FormulaBox:
         # No cache
         if self.touched or self._adjust_size is not None:
             self._bbox = self.get_bbox()
-            self.touch(False)
+            
+        self.touch(False)
 
         return self._bbox
-
-        if self._adjust_size is not None:
-            width, height = self._adjust_size
-            w = max(width, self._bbox.width)
-            h = max(height, self._bbox.height)
-            return self._bbox.scaled(w/self._bbox.width, h/self._bbox.height)
-        else:
-            return self._bbox
     
     @property
     def transformed_bbox(self):
@@ -911,7 +960,12 @@ class FormulaBox:
 
 class FormulaGeom(FormulaBox):
 
-    def __init__(self, term, content, symbol=True, name=None, adjustable=DEF_ADJUSTABLE):
+    def __init__(self, term, content, symbol=True, name=None):
+        """The base class for actual geometry box.
+
+        This class is necessarily initialized with an owner term to benefit
+        from attribute reading.
+        """
 
         if name is None:
             name = str(content)
@@ -984,6 +1038,8 @@ class FormulaGeom(FormulaBox):
 
 class PlaceHolder(FormulaBox):
     def __init__(self, formula=None, width=0., height=0., name="PlaceHolder"):
+        """Empty box with z fixed size to getting the size from an actual formula.
+        """
 
         super().__init__(name=name)
 
@@ -998,6 +1054,14 @@ class PlaceHolder(FormulaBox):
         # Fix space
         self.width  = width
         self.height = height
+
+    def __str__(self):
+        s = f"<PlaceHolder '{self.name}'"
+        if self.formula is None:
+            return f"{s} {self.width:.2f}, {self.height:.2f}>"
+        else:
+            return f"{s} of {self.formula.name}>"
+
 
     # ====================================================================================================
     # Expose the bbox of the encapsulated formula
@@ -1075,6 +1139,15 @@ class Formula(FormulaBox):
     # ====================================================================================================
 
     def __init__(self, owner=None, body=None, name="Formula", **attrs):
+        """Formula
+
+        The body of the formula is a list of Formulas.
+        The formula also belongs decorators.
+
+        The bbox is computed:
+        - by putting the terms in the body one right to the other one
+        - then by adding decorators
+        """
 
         super().__init__(name)
 
@@ -1084,9 +1157,6 @@ class Formula(FormulaBox):
 
         self.owner     = owner
         self.child_key = None
-
-        if owner is None and 'geom_cls' not in attrs:
-            raise ValueError(f"A Formula must be initialized with a 'geom_cls' argument when there is no owner.")
 
         # ----------------------------------------
         # Decorators
@@ -1135,10 +1205,12 @@ class Formula(FormulaBox):
             self.set_decorator(k, attrs[k])
 
         # ----------------------------------------
-        # Let's compute the bbox
+        # Update if root
         # ----------------------------------------
 
-        self.update()
+        if self.owner is None:
+            self.update()
+
 
     # ====================================================================================================
     # Str / repr
@@ -1181,18 +1253,24 @@ class Formula(FormulaBox):
 
         elif isinstance(body, FormulaBox):
             return body
+        
+        geom_cls = self.geom_cls
+        if geom_cls is None:
+            raise RuntimeError(
+                "The class 'geom_cls' is not defined in the formula. "
+                "Use geom_cls=class_name argument when create the Formula.")
 
-        elif isinstance(body, dict):
+        if isinstance(body, dict):
             if 'type' in body:
                 return self.parse_dict(body)
             else:
-                return self.geom_cls(self, **body)
+                return geom_cls(self, **body)
 
         elif isinstance(body, str):
-            return self.geom_cls(self, body)
+            return geom_cls(self, body)
         
         else:
-            return self.geom_cls(self, str(body))
+            return geom_cls(self, str(body))
 
     @staticmethod
     def to_underover(attrs):
@@ -1206,9 +1284,6 @@ class Formula(FormulaBox):
                 new_attrs[k] = v
         return new_attrs
     
-    #def _is_formula_dict(self, fdict):
-    #    return 'type' in fdict
-    
     @staticmethod
     def symbol_string(s):
         return {'type': 'SYMBOL', 'string': s}
@@ -1218,9 +1293,12 @@ class Formula(FormulaBox):
         if fdict['type'] in ['STRING', 'SYMBOL']:
 
             attrs = {k: v for k, v in fdict.items() if k not in ['type', 'string']}
+            name = str(fdict['string'])
             content = self.geom_cls(self, fdict['string'], symbol=fdict['type']=='SYMBOL')
-
-            return Formula(self, content, name=str(fdict['string']), **attrs)
+            if len(attrs):
+                return Formula(self, content, name=name, **attrs)
+            else:
+                return content
 
         elif fdict['type'] == 'BLOCK':
             attrs = {k: v for k, v in fdict.items() if k not in ['type', 'content']}
@@ -1232,8 +1310,9 @@ class Formula(FormulaBox):
                 return Formula(self, terms, **attrs)
             
         elif fdict['type'] == 'FUNCTION':
+
             name    = fdict['name']
-            option  = fdict.get('options')
+            option  = fdict.get('option')
             args    = fdict.get('args')
             attrs   = {k: v for k, v in fdict.items() if k not in ['type', 'name', 'options', 'args']}
 
@@ -1257,6 +1336,15 @@ class Formula(FormulaBox):
             
             elif name == 'binom':
                 return self.binom(args[0], args[1])
+            
+            elif name == 'term':
+                name = "Term" if option is None else str(option)
+                return Formula(self, args[0], name=name)
+            
+            elif name == 'ph':
+                print("PH", option, args)
+                name = "PlaceHolder" if option is None else str(option)
+                return self.fix_placeholder(name)
             
             else:
                 frm = Formula(self, name, **attrs)
@@ -1335,7 +1423,7 @@ class Formula(FormulaBox):
         # We can safely add the deco
         self._decos[key] = child.attach_to(self, key, **kwargs)
 
-        self.touch(True)
+        self.touch()
 
         return child
     
@@ -1356,7 +1444,7 @@ class Formula(FormulaBox):
         self.touch()
 
         return self.body[-1]
-    
+
     # ----------------------------------------------------------------------------------------------------
     # Iterators
     # ----------------------------------------------------------------------------------------------------
@@ -1395,6 +1483,21 @@ class Formula(FormulaBox):
                 return frm
             
         return None
+    
+    @property
+    def touched(self):
+        if super().touched:
+            return True
+        for t in self.terms():
+            if t.touched:
+                return True
+        return False
+    
+    def touch(self, value=True):
+        super().touch(value)
+        if not value:
+            for t in self.terms():
+                t.touch(False)
 
     # ====================================================================================================
     # Attributes
@@ -1424,6 +1527,9 @@ class Formula(FormulaBox):
         
         else:
             super().__setattr__(name, value)
+
+        if name != '_touched':
+            self.touch()
 
     # ====================================================================================================
     # Bounding boxes
@@ -1464,6 +1570,7 @@ class Formula(FormulaBox):
     def body_translate(self, tx, ty):
         for frm in self.body:
             frm.transfo.translate(tx, ty)    
+        self.touch()
 
     # ----------------------------------------------------------------------------------------------------
     # Adjust size
@@ -1472,6 +1579,7 @@ class Formula(FormulaBox):
     def adjust_size(self, width=0.0, height=0.0):
         for term in self.body:
             term.adjust_size(width, height)
+        self.touch()
 
     # ----------------------------------------------------------------------------------------------------
     # Compute the bbox
@@ -1740,6 +1848,7 @@ class Formula(FormulaBox):
             
         # ----- We've got our bounding box
 
+        self.touch(False)
         return bbox
 
     # ====================================================================================================

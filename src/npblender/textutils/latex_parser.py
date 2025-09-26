@@ -13,7 +13,7 @@ __all__ = ["parse_latex"]
 # Commandw which can be followed by an option [...]
 # ----------------------------------------------------------------------------------------------------
 
-OPTION_COMMANDS = ['sqrt', 'color', 'materialindex', 'material', 'matindex']
+OPTION_COMMANDS = ['sqrt', 'color', 'materialindex', 'material', 'matindex', 'term', 'ph']
 
 # ----------------------------------------------------------------------------------------------------
 # Text mode commands
@@ -29,18 +29,20 @@ TEXT_SWITCHES = {
     #'huge': {'font_size': 3.}, 
     #'Huge': {'font_size': 4.},
 
-    'itshape': {'italic': True},
-    'bfseries': {'bold': True},
-    'scshape' : {'small_caps': True},
     #'ttfamily' : {'family': 'courrier'},
     #'sffamily' : {'family': 'sans serif'},
     #'rmfamily' : {'family': 'serif'},
 
+    # Actual commands
+    'itshape': {'italic': True},
+    'bfseries': {'bold': True},
+    'scshape' : {'small_caps': True},
+
+    # Natural commands
     'italic'    : {'italic': True},
     'bold'      : {'bold': True},
     'smallcaps' : {'small_caps': True},
     'underline' : {'underline': True},
-    
 }
 
 TEXT_BLOCKS = {
@@ -68,7 +70,8 @@ MATH_PATTERNS = {
   "FRAC_PAT":    {"tokens": 2},
   "SQRT_PAT":    {"tokens": 1, "option": True},  
   "ACCENT_PAT":  {"tokens": 1},
-  "INT_PAT":     {"tokens": 1, "scripts": True}
+  "INT_PAT":     {"tokens": 1, "scripts": True},
+  "PH_PAT":      {"tokens": 0, "option": True}
 }
 
 MATH_PATTERN_COMMANDS = {
@@ -91,6 +94,10 @@ MATH_PATTERN_COMMANDS = {
   "limsup": "INT_PAT",
   "liminf": "INT_PAT",
   "mathbb": "ACCENT_PAT",
+
+  # Naming the terms / placeholders
+  "term"    : "SQRT_PAT",
+  "ph"      : "PH_PAT",
 }
 
 
@@ -732,6 +739,7 @@ class Tokens(list):
             else:
                 assert False, f"Unknown token {token}"
 
+        
         return dct
 
         # ---------------------------------------------------------------------------

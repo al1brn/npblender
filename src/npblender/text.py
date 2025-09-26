@@ -787,6 +787,11 @@ class FGeom(maths.FormulaGeom):
         self._mesh    = None # Mesh
         self._bbox    = None # bbox cache
 
+        # Size adjust
+        self._last_width  = 0.0
+        self._last_height = 0.0
+        
+
         _string  = None
 
         if isinstance(content, Mesh):
@@ -862,6 +867,9 @@ class FGeom(maths.FormulaGeom):
         bbox = BBox.from_points(self._mesh.points.position)
         width, height = self._adjust_size
 
+        if self._last_width == width and self._last_height == height:
+            return mesh
+        
         # Vertical adjustment
         if height > bbox.height:
             mesh.elongation(
@@ -884,6 +892,9 @@ class FGeom(maths.FormulaGeom):
             
         self._bbox = BBox.from_points(mesh.points.position)
 
+        self._last_width  = width
+        self._last_height = height
+
         return mesh
     
     # ----------------------------------------------------------------------------------------------------
@@ -891,6 +902,7 @@ class FGeom(maths.FormulaGeom):
     # ----------------------------------------------------------------------------------------------------
 
     def to_mesh(self, transfo=None, materials=None):
+
         if transfo is None:
             transfo = self.transfo3d
 
@@ -955,6 +967,57 @@ class FGeom(maths.FormulaGeom):
 class Formula(maths.Formula):
 
     def __init__(self, body, materials=None, font=None, math_font=None, **attrs):
+        """
+        ```python
+        # Two placeholders
+        # minus signed is named minus
+        # plus sign will be named + by default
+        latex = r"a \term[minus]- \ph[target] = b + \ph[source]"
+        frm = Formula(latex)
+        
+        c = Formula("c")
+        
+        plus  = frm.by_name("+")
+        minus = frm.by_name("minus")
+        
+        # Placeholrders 
+        tgt = frm.by_name("target")
+        tgt.formula = c
+
+        src = frm.by_name("source")
+        src.formula = c
+
+        # Target placeholder
+        frm.update()
+        tr1 = tgt.absolute_transfo
+        
+        # Starting from no minus sign and no target placeholder
+        tgt.anim.sx = 0.0
+        minus.anim.sx = 0.0
+        
+        # The source placeholder
+        frm.update()
+        tr0 = src.absolute_transfo
+        
+        # Animation
+        def update():
+            
+            factor = np.clip((engine.frame-50)/100, 0, 1)
+            
+            tgt.anim.sx     = factor
+            src.anim.sx     = 1 - factor
+            minus.anim.sx   = factor
+            plus.anim.sx    = 1 - factor
+            
+            c.move_to(tr0, tr1, factor, ymax=1.0, turns=0, smooth='SMOOTH')
+
+            # The two formulas to objects
+            frm.to_mesh().to_object("Formula")           
+            c.to_mesh().to_object("c")
+            
+        engine.go(update)
+        ```
+        """
 
         if isinstance(body, str):
             body = parse_latex(body, math_mode=True)
@@ -978,6 +1041,8 @@ class Formula(maths.Formula):
             self.materials = []
 
     def to_mesh(self):
+
+        self.update()
         
         mesh = Mesh(materials=self.materials)
 
