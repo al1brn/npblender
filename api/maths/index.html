@@ -517,18 +517,69 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#npblender.maths.Formula.transformed_bbox" class="md-nav__link">
+  <a href="#npblender.maths.Formula.get_bbox" class="md-nav__link">
     <span class="md-ellipsis">
-      transformed_bbox
+      get_bbox
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#npblender.maths.Formula.get_bbox" class="md-nav__link">
+  <a href="#npblender.maths.Formula.get_body_bbox" class="md-nav__link">
     <span class="md-ellipsis">
-      get_bbox
+      get_body_bbox
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.maths.Formula.x_align" class="md-nav__link">
+    <span class="md-ellipsis">
+      x_align
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.maths.Formula.y_align" class="md-nav__link">
+    <span class="md-ellipsis">
+      y_align
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#npblender.maths.FormulaBox" class="md-nav__link">
+    <span class="md-ellipsis">
+      FormulaBox
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="FormulaBox">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#npblender.maths.FormulaBox.x_align" class="md-nav__link">
+    <span class="md-ellipsis">
+      x_align
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#npblender.maths.FormulaBox.y_align" class="md-nav__link">
+    <span class="md-ellipsis">
+      y_align
     </span>
   </a>
   
@@ -919,7 +970,311 @@
 
 
 <a href="#npblender.maths.Formula" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Formula</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Formula</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;Formula&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="FormulaBox (npblender.maths.formula.FormulaBox)" href="#npblender.maths.FormulaBox">FormulaBox</a></code></p>
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="npblender.maths.Formula.get_bbox" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_bbox</span>
+
+
+<a href="#npblender.maths.Formula.get_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_bbox</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Formula bbox is the body bbox plus decorators</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="npblender.maths.Formula.get_body_bbox" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_body_bbox</span>
+
+
+<a href="#npblender.maths.Formula.get_body_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_body_bbox</span><span class="p">()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Surrounding BBox for all the formulas in terms list.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="npblender.maths.Formula.x_align" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">x_align</span>
+
+
+<a href="#npblender.maths.Formula.x_align" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">x_align</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update the transformation to align the bbox horizontally.</p>
+<p>Note : the margin is multiplied by the animation scale</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>x</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Position to align the bbox to</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>align</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> in (<span title="left">left</span>, <span title="center">center</span>, <span title="right">right</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>alignment mode
+default is 'left'</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;left&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>margin</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>additional margin
+default is 0.0</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="self">self</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="npblender.maths.Formula.y_align" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">y_align</span>
+
+
+<a href="#npblender.maths.Formula.y_align" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">y_align</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update the transformation to align the bbox vertically.</p>
+<p>Note : the margin is multiplied by the animation scale</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>x</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Position to align the bbox to</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>align</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> in (<span title="bottom">bottom</span>, <span title="middle">middle</span>, <span title="top">top</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>alignment mode
+default is 'bottom'</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;bottom&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>margin</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>additional margin
+default is 0.0</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="self">self</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="npblender.maths.FormulaBox" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">FormulaBox</span>
+
+
+<a href="#npblender.maths.FormulaBox" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">FormulaBox</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;FormulaBox&#39;</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -943,47 +1298,221 @@
 
 
 
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="npblender.maths.Formula.transformed_bbox" class="doc doc-heading">
-            <span class="doc doc-object-name doc-attribute-name">transformed_bbox</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#npblender.maths.Formula.transformed_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">transformed_bbox</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Returns the transformed bounding box.</p>
-
-    </div>
-
-</div>
-
 
 
 
 <div class="doc doc-object doc-function">
 
 
-<h3 id="npblender.maths.Formula.get_bbox" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_bbox</span>
+<h3 id="npblender.maths.FormulaBox.x_align" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">x_align</span>
 
 
-<a href="#npblender.maths.Formula.get_bbox" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_bbox</span><span class="p">()</span>
+<a href="#npblender.maths.FormulaBox.x_align" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">x_align</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="s1">&#39;left&#39;</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Formula bbox is the body bbox plus decorators</p>
+        <p>Update the transformation to align the bbox horizontally.</p>
+<p>Note : the margin is multiplied by the animation scale</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>x</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Position to align the bbox to</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>align</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> in (<span title="left">left</span>, <span title="center">center</span>, <span title="right">right</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>alignment mode
+default is 'left'</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;left&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>margin</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>additional margin
+default is 0.0</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="self">self</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="npblender.maths.FormulaBox.y_align" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">y_align</span>
+
+
+<a href="#npblender.maths.FormulaBox.y_align" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">y_align</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">align</span><span class="o">=</span><span class="s1">&#39;bottom&#39;</span><span class="p">,</span> <span class="n">margin</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update the transformation to align the bbox vertically.</p>
+<p>Note : the margin is multiplied by the animation scale</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>x</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Position to align the bbox to</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>align</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span> in (<span title="bottom">bottom</span>, <span title="middle">middle</span>, <span title="top">top</span>)</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>alignment mode
+default is 'bottom'</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;bottom&#39;</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>margin</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>additional margin
+default is 0.0</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.0</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="self">self</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
