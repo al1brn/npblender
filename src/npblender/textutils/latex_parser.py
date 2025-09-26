@@ -613,8 +613,6 @@ class Tokens(list):
 
                 elif token.value in MATH_PATTERN_COMMANDS:
 
-                    print("PATTERN", token)
-
                     pat = MATH_PATTERNS[MATH_PATTERN_COMMANDS[token.value]]
 
                     # Read the optional scripts
@@ -634,10 +632,6 @@ class Tokens(list):
                         args.append(self.read_term(True, styles))
 
                     dct['args'] = args
-
-                    print("ARGUMENTS")
-                    for a in args:
-                        pprint(a)
 
                     # mathbb : transform the argument to special math char
 

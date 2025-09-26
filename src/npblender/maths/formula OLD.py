@@ -1,12 +1,14 @@
-__all__ = ["Transfo2d", "BBox", "Formula", "FormulaBox", "FormulaGeom"]
+__all__ = ["Transfo2d", "BBox", "Formula", "FormulaGeom"]
 
 import numpy as np
 import math
 
 if __name__ == '__main__':
     from constants import TAU, PI, ZERO
+    #from placeholder import Transfo2d, BBox, PlaceHolder
 else:
     from .constants import TAU, PI, ZERO
+    #from .placeholder import Transfo2d, BBox, PlaceHolder
 
 BBOX_CACHE = False
 DEF_ADJUSTABLE = True
@@ -61,9 +63,6 @@ class Transfo2d:
     def reset(self):
         self._matrix[...] = np.eye(3, dtype=float)
         self.touch(self)
-
-    def clone(self):
-        return Transfo2d(np.array(self._matrix))
 
     # -------------------------------------
     # Basic accessors
@@ -261,7 +260,7 @@ class Transfo2d:
         M4[:2, :2] = self._matrix[:2, :2]
         M4[:2, 3]  = self._matrix[:2, 2]
 
-        return Transformation(M4, copy=True)
+        return Transformation(M4, copy=False)
 
     def transform(self, vectors):
         """Transform an array of 2D or 3D vectors, shape (...,2) or (...,3)."""
@@ -394,7 +393,7 @@ class BBox:
             self.set_bbox(bounds)
 
     def __str__(self):
-        return f"<BBox {self.x0:.2f}, {self.y0:.2f}, {self.x1:.2f}, {self.y1:.2f}>"
+        return f"<BBox ({self.x0:.2f}, {self.y0:.2f}, {self.x1:.2f}, {self.y1:.2f}])"
     
     @classmethod
     def from_points(cls, points):
@@ -569,7 +568,6 @@ class BBox:
         # Plot the bounding box
         plt.plot(x, y, color=color, alpha=alpha, **kwargs)
 
-
 # ====================================================================================================
 # Animation
 # ====================================================================================================
@@ -579,7 +577,6 @@ class Animation:
         self._tx, self._ty = 0.0, 0.0
         self._sx, self._sy = 1.0, 1.0
         self._rot = 0.0
-        self.z = 0.0
 
     @property
     def tx(self):
@@ -645,34 +642,14 @@ class Animation:
 # An area
 # ====================================================================================================
 
-class FormulaBox:
+class Area:
 
-    def __init__(self, name="FormulaBox"):
+    def __init__(self, name="Area"):
         self.name      = name
         self._transfo  = Transfo2d()
         self._bbox     = BBox()
         self._touched  = True
         self.anim      = Animation()
-
-        self.owner        = None
-        self.child_key    = None
-        self._adjust_size = None
-
-    # ====================================================================================================
-    # Attach to an owner
-    # ====================================================================================================
-
-    def attach_to(self, owner, child_key, **kwargs):
-
-        self.owner     = owner
-        self.child_key = child_key
-
-        for k, v in kwargs.items():
-            setattr(self, k, v)
-
-        self.owner.touch()
-
-        return self
 
     # ====================================================================================================
     # Update
@@ -680,7 +657,7 @@ class FormulaBox:
 
     def update(self):
         self.touch(True)
-        self.get_bbox()
+        _ = self.bbox
 
     def touch(self, value=True):
         self._touched = value
@@ -700,31 +677,6 @@ class FormulaBox:
     def transfo(self):
         return self._transfo
     
-    def get_transfo(self, owner_transfo=None):
-        if owner_transfo is None:
-            return self.transfo
-        else:
-            return owner_transfo @ self.transfo
-        
-    @property
-    def absolute_transfo(self):
-        if self.owner is None:
-            return self.transfo
-        else:
-            return self.get_transfo(self.owner.absolute_transfo)
-        
-    @property
-    def transfo3d(self):
-
-        T = self.transfo.transformation3d
-        T.z = self.anim.z
-
-        if self.owner is None:
-            return T
-        else:
-            return self.owner.transfo3d @ T
-
-    
     # ====================================================================================================
     # BBox
     # ====================================================================================================
@@ -734,28 +686,14 @@ class FormulaBox:
 
     @property
     def bbox(self):
-        # No cache
-        if self.touched or self._adjust_size is not None:
+        if self.touched:
             self._bbox = self.get_bbox()
             self.touch(False)
-
         return self._bbox
-
-        if self._adjust_size is not None:
-            width, height = self._adjust_size
-            w = max(width, self._bbox.width)
-            h = max(height, self._bbox.height)
-            return self._bbox.scaled(w/self._bbox.width, h/self._bbox.height)
-        else:
-            return self._bbox
     
     @property
     def transformed_bbox(self):
-        try:
-            return self.bbox.transform(self.transfo)
-        except Exception as e:
-            print(str(e))
-            raise e
+        return self.bbox.transform(self.transfo)
     
     # ====================================================================================================
     # Operations
@@ -844,21 +782,13 @@ class FormulaBox:
         self.transfo.translate(0.0, delta + margin*self.anim.sy)
         return self
     
-    # ----------------------------------------------------------------------------------------------------
-    # Adjust size
-    # ----------------------------------------------------------------------------------------------------
-    
-    def adjust_size(self, width=0.0, height=0.0):
-        self._adjust_size = width, height
-        self.touch()
-    
     # ====================================================================================================
     # DEBUG
     # ====================================================================================================
 
-    def _plot(self, plt, color=None, full=False, **kwargs):
+    def _plot(self, plt, **kwargs):
 
-        def plot_bbox(transfo, bbox, col, name=None, **attrs):
+        def plot_bbox(transfo, bbox, col, **attrs):
             points = bbox.corners
             if transfo is not None:
                 points = transfo @ points
@@ -869,58 +799,34 @@ class FormulaBox:
 
             plt.plot(x, y, color=col, **attrs)
 
-            # Plot the name
-            if name is not None:
-                xs, ys = (x[0] + x[1])/2, (y[1] + y[2])/2
-                plt.text(xs, ys, name, ha="center", va="center", color=col, fontsize=12)
+        bbox = self.bbox
+        plot_bbox(None, bbox, 'gray', **kwargs)
 
-        if full:
-            bbox = self.bbox
-            plot_bbox(None, bbox, 'gray', **kwargs)
+        transfo = self.transfo
+        plot_bbox(transfo, bbox, 'black', **kwargs)
 
-            transfo = self.transfo
-            plot_bbox(transfo, bbox, 'black', **kwargs)
-
-        if color is None:
-            color = np.random.uniform(0, 1, 3)
-
-        plot_bbox(None, self.bbox.transform(self.absolute_transfo), color, name=self.name, **kwargs)
-
-    def _plot_global(self, plt, color=None, **kwargs):
-        
-        bbox = self.bbox.transform(self.absolute_transfo).bordered(.1)
-        points = bbox.corners
-
-        x, y = list(points[:, 0]), list(points[:, 1])
-        x.append(x[0])
-        y.append(y[0])
-
-        if color is None:
-            color = np.random.uniform(0, 1, 3)
-
-        plt.plot(x, y, color=color, **kwargs)
-
-        # Plot the name
-        xs, ys = (x[0] + x[1])/2, (y[1] + y[2])/2
-        plt.text(xs, ys, self.name, ha="center", va="center", color=color, fontsize=14)
+        plot_bbox(None, self.transformed_bbox, 'red', **kwargs)
 
 
 # ====================================================================================================
 # The content of a term
 # ====================================================================================================
 
-class FormulaGeom(FormulaBox):
+class FormulaGeom:
 
-    def __init__(self, term, content, symbol=True, name=None, adjustable=DEF_ADJUSTABLE):
-
-        if name is None:
-            name = str(content)
-
-        super().__init__(name=name)
+    def __init__(self, term, content, symbol=True, adjustable=DEF_ADJUSTABLE):
 
         # Owning formula term
         self.term   = term
         self.symbol = symbol
+
+        # Default name
+        self.name = type(content).__name__
+
+        # BBox
+        self.adjustable = adjustable
+        self._bbox = None
+        self.adjust_dims = (0.0, 0.0)
 
         # Create the content
         self.set_content(content)
@@ -938,32 +844,23 @@ class FormulaGeom(FormulaBox):
         return self.term.font
 
     @property
-    def transfo3d_OLD(self):
-
-        T = self.transfo.transformation3d
-        T.z = self.anim.z
-
-        if self.owner is None:
-            return T
-        else:
-            return self.owner.transfo3d @ T
-
-        T = self.absolute_transfo.transformation3d
-        T.z = self.anim.z
-        return T
+    def transfo3d(self):
         
         from .transformation import Transformation
 
         if self.term is None:
             return Transformation()
         else:
-            transfo = self.absolute_transfo
+            transfo = self.term.absolute_transfo
             return transfo.transformation3d
+
+    def adjust_size(self, width=0.0, height=0.0):
+        self.adjust_dims = (width, height)
+        if self.adjustable:
+            self._bbox = None
 
     @property
     def bbox(self):
-        # No Cache
-        return self.get_bbox()
         if self._bbox is None:
             self._bbox = self.get_bbox()
         return self._bbox
@@ -982,10 +879,8 @@ class FormulaGeom(FormulaBox):
 # A place Holder
 # ====================================================================================================
 
-class PlaceHolder(FormulaBox):
+class PlaceHolder:
     def __init__(self, formula=None, width=0., height=0., name="PlaceHolder"):
-
-        super().__init__(name=name)
 
         self.name  = name
 
@@ -1003,17 +898,44 @@ class PlaceHolder(FormulaBox):
     # Expose the bbox of the encapsulated formula
     # ====================================================================================================
 
-    def get_bbox(self):
+    @property
+    def bbox(self):
         if self.formula is None:
             return BBox(0, 0, self.width, self.height)
         else:
             return self.formula.bbox
 
+    # ====================================================================================================
+    # Get the transfo from the owner
+    # ====================================================================================================
+
+    @property
+    def transfo(self):
+        if self.term is None:
+            return Transfo2d()
+        else:
+            return self.term.transfo
+        
+    @property
+    def get_transfo(self, transfo):
+        if self.term is None:
+            return transfo
+        else:
+            return self.term.get_transfo(transfo)
+        
+    @property
+    def absolute_transfo(self):
+        if self.term is None:
+            return Transfo2d()
+        else:
+            return self.term.absolute_transfo
+
+
 # ====================================================================================================
 # A Formula
 # ====================================================================================================
 
-class Formula(FormulaBox):
+class Formula:
 
     ATTRIBUTES = {
         'geom_cls'      : FormulaGeom,
@@ -1074,19 +996,26 @@ class Formula(FormulaBox):
     # Initialize
     # ====================================================================================================
 
-    def __init__(self, owner=None, body=None, name="Formula", **attrs):
-
-        super().__init__(name)
+    def __init__(self, owner=None, body=None, name=None, **attrs):
 
         # ----------------------------------------
         # Initialization with no ownership
         # ----------------------------------------
 
-        self.owner     = owner
-        self.child_key = None
+        self.owner        = owner
+        self.child_key    = None
+        self.scale_x      = 1.
+        self.scale_y      = 1.
 
         if owner is None and 'geom_cls' not in attrs:
             raise ValueError(f"A Formula must be initialized with a 'geom_cls' argument when there is no owner.")
+
+        # ----------------------------------------
+        # Transformation
+        # ----------------------------------------
+
+        self._transfo = Transfo2d()
+        self._bbox    = None
 
         # ----------------------------------------
         # Decorators
@@ -1106,23 +1035,69 @@ class Formula(FormulaBox):
                 setattr(self, k, v)
 
         # ----------------------------------------
-        # The list of areas forming the content
+        # No body : we stop here (certainly root)
         # ----------------------------------------
 
-        self.body = []
-
         if body is None:
-            pass
+            self.body_type = 'LIST'
+            self.name = self.body_type if name is None else name
+            return
 
-        elif isinstance(body, FormulaBox):
-            self.body.append(body.attach_to(self, 'term', child_index=0))
+        # ----------------------------------------
+        # Body
+        # - TERM : accepts decorators
+        # - LIST : doesn't accept decorators
+        # - GEOM : doesn't accept decorators
+        # ----------------------------------------
 
+        # To manage decorators the content must be a Formula
+        if has_decorator and not isinstance(body, Formula):
+            body = Formula(self, body)
+
+        # body is a Formula
+        if isinstance(body, Formula):
+            self.body_type = 'TERM'
+            self._term = body.attach_to(self, 'body')
+
+        # body is a list of Formulas
         elif isinstance(body, list):
-            for i, item in enumerate(body):
-                self.body.append(self._to_term(item).attach_to(self, 'term', child_index=i))
+            self.body_type = 'LIST'
 
+            self._list = []
+            for i, item in enumerate(body):
+                if not isinstance(item, Formula):
+                    item = Formula(self, item)
+                self._list.append(item.attach_to(self, 'term', child_index=i))
+
+        # body is a dict to parse
+        elif isinstance(body, dict):
+            if self._is_formula_dict(body):
+                self.body_type = 'TERM'
+                self._term = self.parse_dict(body)
+            else:
+                self.body_type = 'GEOM'
+                self._geom = self.geom_cls(self, body)
+
+        # body is a FormulaGeom
+        elif isinstance(body, FormulaGeom):
+            self.body_type = 'GEOM'
+            body.term = self
+            self._geom = body
+
+        # A place holder
+        elif isinstance(body, PlaceHolder):
+            self.body_type = 'PLACEHOLDER'
+            body.term = self
+            self._placeholder = body
+            # For name to body name
+            name = body.name
+
+        # body is to build a FormulaGeom
         else:
-            self.body.append(self._to_term(body).attach_to(self, 'term', child_index=0))
+            self.body_type = 'GEOM'
+            self._geom = self.geom_cls(self, body)
+
+        self.name = self.body_type if name is None else name
 
         # ----------------------------------------
         # Set decorators
@@ -1132,13 +1107,13 @@ class Formula(FormulaBox):
         for k in Formula.DECORATORS:
             if k not in attrs:
                 continue
-            self.set_decorator(k, attrs[k])
+            self._set_decorator(k, attrs[k])
 
         # ----------------------------------------
         # Let's compute the bbox
         # ----------------------------------------
 
-        self.update()
+        _ = self.get_bbox()
 
     # ====================================================================================================
     # Str / repr
@@ -1151,10 +1126,23 @@ class Formula(FormulaBox):
         else:
             skey = f"({str(self.child_key)})"
 
-        slen = f"[{len(self.body)}]"
+        if self.body_type == 'ROOT':
+            stype = "[ROOT]"
+
+        elif self.body_type == 'GEOM':
+            stype = f"'{self._geom.name}'"
+
+        elif self.body_type == 'LIST':
+            stype = f"list[len(self._list)]"
+
+        elif self.body_type == 'PLACEHOLDER':
+            stype = 'placeholder'
+
+        else:
+            stype = f"term"
 
         sname = f"'{self.name}'"
-        s = f"<Term {slen} {sname:10s}: {skey:15s}"
+        s = f"<Term {sname:10s}: {skey:15s} {stype:10s} "
 
         return f"{s}, {str(self.transfo)[1:-1]}>"
     
@@ -1162,11 +1150,7 @@ class Formula(FormulaBox):
 
         lines = [str(self)]
         for depth, term in self.depths():
-            if term.child_key == 'term':
-                lines.append(f"{'   '*(depth+1)}{term.child_index:2d}: {str(term)}")
-            else:
-                lines.append(f"{'   '*(depth+1)}    {term.child_key}: {str(term)}")
-
+            lines.append(f"{'   '*(depth+1)}{str(term)}")
 
         return "\n".join(lines)
     
@@ -1174,26 +1158,12 @@ class Formula(FormulaBox):
     # Special
     # ====================================================================================================
 
-    def _to_term(self, body):
-
-        if body is None:
-            return None
-
-        elif isinstance(body, FormulaBox):
-            return body
-
-        elif isinstance(body, dict):
-            if 'type' in body:
-                return self.parse_dict(body)
-            else:
-                return self.geom_cls(self, **body)
-
-        elif isinstance(body, str):
-            return self.geom_cls(self, body)
-        
+    def ensure_formula(self, term):
+        if isinstance(term, Formula):
+            return term
         else:
-            return self.geom_cls(self, str(body))
-
+            return Formula(self, term)
+        
     @staticmethod
     def to_underover(attrs):
         new_attrs = {}
@@ -1206,8 +1176,8 @@ class Formula(FormulaBox):
                 new_attrs[k] = v
         return new_attrs
     
-    #def _is_formula_dict(self, fdict):
-    #    return 'type' in fdict
+    def _is_formula_dict(self, fdict):
+        return 'type' in fdict
     
     @staticmethod
     def symbol_string(s):
@@ -1238,16 +1208,16 @@ class Formula(FormulaBox):
             attrs   = {k: v for k, v in fdict.items() if k not in ['type', 'name', 'options', 'args']}
 
             if name == 'sum':
-                return self.operator(self.symbol_string('Σ'), args[0], **self.to_underover(attrs))
+                return self.operator(self.symbol_string('Σ'), args[0], adjustable=True, **self.to_underover(attrs))
 
             elif name == 'prod':
-                return self.operator(self.symbol_string('Π'), args[0], **self.to_underover(attrs))
+                return self.operator(self.symbol_string('Π'), args[0], adjustable=True, **self.to_underover(attrs))
             
             elif name in INT_SYMBS:
-                return self.operator(self.symbol_string(INT_SYMBS[name]), args[0], sub_offset=self.int_sub_ofs, **attrs)
+                return self.operator(self.symbol_string(INT_SYMBS[name]), args[0], adjustable=True, sub_offset=self.int_sub_ofs, **attrs)
             
             elif name in ['lim', 'limsup', 'liminf']:
-                return self.fix_operator(self.symbol_string(name), args[0], **self.to_underover(attrs))
+                return self.fix_operator(self.symbol_string(name), args[0], adjustable=False, **self.to_underover(attrs))
             
             elif name in ['frac', 'tfrac', 'dfrac']:
                 return self.fraction(args[0], args[1], **attrs)
@@ -1303,39 +1273,177 @@ class Formula(FormulaBox):
             body = Formula(self, body, **attrs)
 
         frm = Formula(self, body)
-        frm.sqrt = self.geom_cls(frm, r"\sqrt")
+        frm.sqrt = Formula(frm, r"\sqrt")
 
         return frm
+
+    # ====================================================================================================
+    # Body
+    # ====================================================================================================
+
+    @property
+    def body_type(self):
+        return self._body_type
+    
+    @body_type.setter
+    def body_type(self, value):
+        """Set the body_type.
+        """
+
+        if not value in ['TERM', 'LIST', 'GEOM', 'PLACEHOLDER']:
+            raise ValueError(f"Unknown bodytype: '{value}'")
+
+        self._body_type = value
+
+        self._term        = None
+        self._list        = []
+        self._geom        = None
+        self._placeholder = None
+
+    @property
+    def body_is_term(self):
+        return self.body_type == 'TERM'
+    
+    @property
+    def body_is_list(self):
+        return self.body_type == 'LIST'
+
+    @property
+    def body_is_geom(self):
+        return self.body_type == 'GEOM'
+    
+    @property
+    def body_is_placeholder(self):
+        return self.body_type == 'PLACEHOLDER'
+    
+    @property
+    def body(self):
+        if self.body_type == 'TERM':
+            return self._term
+        elif self.body_type == 'LIST':
+            return self._list
+        elif self.body_type == 'GEOM':
+            return self._geom
+        elif self.body_type == 'PLACEHOLDER':
+            return self._placeholder
+
+    # ----------------------------------------------------------------------------------------------------
+    # Body bbox
+    # ----------------------------------------------------------------------------------------------------
+
+    @property
+    def body_bbox(self):
+
+        # --------------------------------------------------
+        # Nothing to do
+        # --------------------------------------------------
+
+        if self.body_type == 'TERM':
+            return self._term.bbox
+        
+        elif self.body_type == 'GEOM':
+            try:
+                return BBox(self._geom.bbox)
+            except Exception as e:
+                raise RuntimeError(str(e))
+            
+        elif self.body_type == 'PLACEHOLDER':
+            return self._placeholder.bbox
+
+        # --------------------------------------------------
+        # List of formulas : one after the other
+        # --------------------------------------------------
+
+        bbox = BBox()
+        x = 0.
+        for term in self._list:
+
+            # Term bbox
+            t_bbox = term.bbox
+
+            # Locate after current cursor
+            space = 0. if x < ZERO else self.x_sepa
+            term.x_align(x + space, align='left')
+
+            #x += (space + t_bbox.width)*term.owner_factor
+            x += space + t_bbox.width
+
+            # Update bbox
+            bbox += term.transformed_bbox
+
+        # True bbox depends upon animation
+        x0, y0, _, y1 = bbox.as_tuple()
+        bbox = BBox(x0, y0, x, y1)
+
+        return bbox
 
     # ====================================================================================================
     # Owner / Children
     # ====================================================================================================
 
-    def _add_layer(self):
+    def _add_layer(self, as_list=False):
+
         # Keep the attributes at this level
         # Put content and decorators in another child
-
-        new_term = Formula(self, self.body, name=self.name, **self._decos)
-        self._decos = {}
-        self.body.clear()
-        self.body.append(new_term.attach_to(self, 'term', child_index=0))
-
-        self.touch()
-
-    def set_decorator(self, key, child, **kwargs):
-
-        if child is None:
-            return None
+        if self.body_is_geom:
+            new_body = Formula(self, self._geom)
+        elif self.body_is_list:
+            new_body = Formula(self, self._list)
+        elif self.body_is_placeholder:
+            new_body = Formula(self, self._placeholder)
         else:
-            child = self._to_term(child)
+            new_body = Formula(self, self._term, **self._decos).attach_to(self, 'body')
 
-        if key in self._decos:
-            self._add_layer()
+        self._decos = {}
+        if as_list:
+            self.body_type = 'LIST'
+            self._list.append(new_body.attach_to(self, 'term', child_index=0))
+        else:
+            self.body_type = 'TERM'
+            self._term = new_body.attach_to(self, 'body')
+
+        self._bbox = None
+
+    def attach_to(self, owner, child_key, **kwargs):
+
+        self.owner = owner
+        self.child_key = child_key
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+        self._bbox = None
+
+        return self
+    
+    def _set_decorator(self, key, child, **kwargs):
+
+        if False:
+            print("SET DECO:", self.body_type, child, key)
+
+        # Make sure child is a Formula
+        if not isinstance(child, Formula):
+            child = Formula(self, child)
 
         # We can safely add the deco
-        self._decos[key] = child.attach_to(self, key, **kwargs)
+        child.attach_to(self, key, **kwargs)
+        self._decos[key] = child
 
-        self.touch(True)
+        self._bbox = None
+
+        return child
+    
+    def set_decorator(self, key, child, **kwargs):
+
+        # Need to encapsulate the content ?
+        if (not self.body_is_term) or (key in self._decos):
+            self._add_layer()
+
+        # Now the decorator can be added safely
+        child = self._set_decorator(key, child, **kwargs)
+
+        # Update the bbox
+        self.get_bbox()
 
         return child
     
@@ -1343,19 +1451,18 @@ class Formula(FormulaBox):
         return self._decos.get(key)
     
     def append(self, term):
+        if self.body_type != 'LIST':
+            self._add_layer(as_list=True)
 
-        term = self._to_term(term)
+        if not isinstance(term, Formula):
+            term = Formula(self, term)
 
-        add_layer = isinstance(term, Formula) and len(term._decos) and len(self.body)
-        if add_layer or len(self._decos):
-            self._add_layer()
+        self._list.append(term.attach_to(self, 'term', child_index=len(self._list)))
 
+        self._bbox = None
+        _ = self.get_bbox()
 
-        self.body.append(term.attach_to(self, 'term', child_index=len(self.body)))
-
-        self.touch()
-
-        return self.body[-1]
+        return term
     
     # ----------------------------------------------------------------------------------------------------
     # Iterators
@@ -1363,9 +1470,13 @@ class Formula(FormulaBox):
 
     def terms(self):
 
-        # Bodies
-        for term in self.body:
-            yield term
+        # Body
+        if self.body_type == 'TERM':
+            yield self._term
+
+        elif self.body_type == 'LIST':
+            for term in self._list:
+                yield term
 
         # Decorators
         for term in self._decos.values():
@@ -1374,9 +1485,6 @@ class Formula(FormulaBox):
     def depths(self):
 
         def recur(depth, term):
-            if not isinstance(term, Formula):
-                return
-            
             for child in term.terms():
                 yield depth, child
 
@@ -1395,6 +1503,17 @@ class Formula(FormulaBox):
                 return frm
             
         return None
+    
+    def get_placeholder(self, name):
+        if self.body_is_placeholder and self._placeholder.name == name:
+            return self._placeholder
+        
+        for frm in self.terms():
+            ph = frm.get_placeholder(name)
+            if ph is not None:
+                return ph
+            
+        return None
 
     # ====================================================================================================
     # Attributes
@@ -1406,13 +1525,15 @@ class Formula(FormulaBox):
             return self._decos.get(name)
         
         elif name in Formula.ATTRIBUTES:
+            #if name in self._attrs:
+            #    return self._attrs[name]
             if self.owner is None:
                 return Formula.ATTRIBUTES[name]
             else:
                 return getattr(self.owner, name)
         else:
             raise AttributeError(
-                f"'{name}' is not a valid attribute for '{type(self).__name__}'. Valid are\n"
+                f"'{name}' is not a valid attribute. Valid are\n"
                 f"{list(Formula.DECORATORS.keys())}"
                 f"{list(Formula.ATTRIBUTES.keys())}"
                 )
@@ -1422,8 +1543,102 @@ class Formula(FormulaBox):
         if name in Formula.DECORATORS:
             self.set_decorator(name, value)
         
+        #elif name in Formula.ATTRIBUTES:
+        #    self._attrs[name] = value
+
         else:
             super().__setattr__(name, value)
+
+    # ====================================================================================================
+    # Transformation
+    # ====================================================================================================
+
+    def reset_transfo(self):
+        self._transfo.reset()
+
+    @property
+    def scale_transfo(self):
+        if abs(self.scale_x - 1.0) < ZERO and abs(self.scale_y - 1.0) < ZERO:
+            return Transfo2d()
+        
+        return Transfo2d()
+        
+        bbox = self.bbox
+        x0, y0 = bbox.x0, bbox.center[1]
+
+        return (
+            Transfo2d.from_components(tx=x0, ty=y0) @ 
+            #Transfo2d.from_components(sx=self.scale_x, ty=self.scale_y) @ 
+            Transfo2d.from_components(sx=1., ty=1.) @ 
+            Transfo2d.from_components(tx=-x0, ty=-y0)
+        )
+
+    @property
+    def transfo(self):
+        return self._transfo
+    
+    #@transfo.setter
+    #def transfo(self, value):
+    #    if not isinstance(value, Transfo2d):
+    #        raise AttributeError(f"transfo property must be a Transfo2d, not {type(value)}")
+    #    self._transfo = value
+    
+    def get_transfo(self, owner_transfo=None):
+        if owner_transfo is None:
+            return self.transfo
+        else:
+            return owner_transfo @ self.transfo
+        
+    @property
+    def absolute_transfo(self):
+        if self.owner is None:
+            return self.transfo
+        else:
+            return self.get_transfo(self.owner.absolute_transfo)
+
+    # ----------------------------------------------------------------------------------------------------
+    # X alignment
+    # ----------------------------------------------------------------------------------------------------
+
+    def x_align(self, x, align='left', margin=0.0):
+
+        align = align.lower()
+        bbox = self.transformed_bbox
+
+        if align == 'left':
+            x_ref = bbox.x0
+        elif align in ['center', 'middle']:
+            x_ref = bbox.x0 + bbox.width / 2
+        elif align == 'right':
+            x_ref = bbox.x1
+        else:
+            raise ValueError(f"Unknown x-align: {align}")
+
+        delta = x - x_ref
+        self.transfo.translate(delta + margin, 0.0)
+        return self
+
+    # ----------------------------------------------------------------------------------------------------
+    # Y alignment
+    # ----------------------------------------------------------------------------------------------------
+
+    def y_align(self, y, align='bottom', margin=0.0):
+
+        align = align.lower()
+        bbox = self.transformed_bbox
+
+        if align in ['bottom', 'bot']:
+            y_ref = bbox.y0
+        elif align in ['center', 'middle']:
+            y_ref = bbox.y0 + bbox.height / 2
+        elif align in ['top']:
+            y_ref = bbox.y1
+        else:
+            raise ValueError(f"Unknown y-align: {align}")
+
+        delta = y - y_ref
+        self.transfo.translate(0.0, delta + margin)
+        return self
 
     # ====================================================================================================
     # Bounding boxes
@@ -1435,61 +1650,52 @@ class Formula(FormulaBox):
     @staticmethod
     def fix_placeholder(name, width=0., height=0.):
         return PlaceHolder(None, width=width, height=height, name=name)
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Body bbox
-    # ----------------------------------------------------------------------------------------------------
 
-    def get_body_bbox(self):
-        """Surrounding BBox for all the formulas in terms list.
-        """
-        bbox = BBox()
-        for frm in self.body:
-
-            frm.reset_transfo()
-
-            x = bbox.x1
-            margin = self.x_sepa if x > ZERO else 0.
-            frm.x_align(x, align='left', margin=margin)
-            frm.transfo.translate(frm.anim.translation)
-
-            bbox += frm.transformed_bbox
-
-        return bbox
-    
-    # ----------------------------------------------------------------------------------------------------
-    # Translate the body
-    # ----------------------------------------------------------------------------------------------------
-
-    def body_translate(self, tx, ty):
-        for frm in self.body:
-            frm.transfo.translate(tx, ty)    
 
     # ----------------------------------------------------------------------------------------------------
-    # Adjust size
+    # Cached
     # ----------------------------------------------------------------------------------------------------
-    
-    def adjust_size(self, width=0.0, height=0.0):
-        for term in self.body:
-            term.adjust_size(width, height)
+
+    @property
+    def bbox(self):
+
+        if not BBOX_CACHE:
+            return self.get_bbox()
+
+        # We have a cache
+        if self._bbox is not None:
+            return self._bbox
+
+        msg = None
+        try:
+            return self.get_bbox()
+        except Exception as e:
+            raise RuntimeError(f"Error when getting bbox.", msg)
 
     # ----------------------------------------------------------------------------------------------------
-    # Compute the bbox
+    # Compute and cache bbox
     # ----------------------------------------------------------------------------------------------------
 
     def get_bbox(self):
         """Formula bbox is the body bbox plus decorators
         """
 
-        # ---------------------------------------------------------------------------
+        # Reset the children transformations
+        for term in self.terms():
+            term.reset_transfo()
+
         # Starting from the body bbox
-        # ---------------------------------------------------------------------------
+        bbox = self.body_bbox
 
-        bbox = self.get_body_bbox()
+        # Terms and content : no decorator to take into account
+        if self.body_type != 'TERM':
+            assert len(self._decos) == 0, f"Body_type {self.body_type} doesn't accept decorators"
+            return bbox
 
+        # Align the body to left
         if abs(bbox.x0) > ZERO:
             dx = -bbox.x0
-            self.body_translate(dx, 0.)
+            self.body.x_align(0, 'left')
             bbox = bbox.translated(dx, 0.0)
 
         # x to place the scripts
@@ -1499,14 +1705,15 @@ class Formula(FormulaBox):
         # Some decorators need to move the body and the decorators already placed
         # ---------------------------------------------------------------------------
 
-        dones = []
+        dones = [self.body]
         def _translate_dones(dx=0., dy=0.):
-            self.body_translate(dx, dy)
+            tr = Transfo2d.from_components(tx=dx, ty=dy)
             for term in dones:
-                term.transfo.translate(dx, dy)
+                term.transfo.apply_transfo(tr)
 
         # A term over or under can be wider than the body
         def _left_adjust(term):
+            #width = term.transformed_bbox.width*term.owner_factor            
             width = term.transformed_bbox.width         
             w = (width - bbox.width)/2
             if w > 0:
@@ -1531,6 +1738,7 @@ class Formula(FormulaBox):
                 continue
 
             term = self._decos[key]
+
             term.reset_transfo()
 
             # --------------------------------------------------
@@ -1549,6 +1757,9 @@ class Formula(FormulaBox):
             elif key in ['operation']:
                 term.adjust_size(0.0, bbox.height + 2*self.y_sepa)
 
+            # Recompute
+            _ = term.get_bbox()
+
             # --------------------------------------------------
             # Scripts
             # --------------------------------------------------
@@ -1561,7 +1772,7 @@ class Formula(FormulaBox):
                     space = self.script_scale*self.x_sepa
                     if key == 'subscript':
                         space += self.sub_offset
-                    term.x_align(x_script, align='left', margin=space)
+                    term.x_align(x_script + space, align='left')
 
                     if key == 'superscript':
                         y = max(bbox.y1 - self.dy_super, self.y_super_min)
@@ -1570,7 +1781,8 @@ class Formula(FormulaBox):
                         y = min(bbox.y0 + self.dy_sub, self.y_sub_max)
                         term.y_align(y, align='top')
 
-                    #bbox = bbox + term.transformed_bbox
+                    #bbox = bbox.interpolate(bbox + term.transformed_bbox, term.owner_factor)
+                    bbox = bbox + term.transformed_bbox
 
                 elif key in ['underscript', 'overscript']:
                     term.x_align(bbox.center[0], align='middle')
@@ -1583,8 +1795,8 @@ class Formula(FormulaBox):
                     width = _left_adjust(term)
 
                     # Resulting bbox
-                    #_, ty0, _, ty1 = term.transformed_bbox.as_tuple()
-                    #bbox = bbox + (0, ty0, width, ty1)
+                    _, ty0, _, ty1 = term.transformed_bbox.as_tuple()
+                    bbox = bbox + (0, ty0, width, ty1)
 
             # --------------------------------------------------
             # Over / under
@@ -1604,7 +1816,8 @@ class Formula(FormulaBox):
                 # Term can be wider
                 _left_adjust(term)
 
-                #bbox = bbox + term.transformed_bbox
+                #bbox = bbox.interpolate(bbox + term.transformed_bbox, term.owner_factor)
+                bbox = bbox + term.transformed_bbox
 
             # --------------------------------------------------
             # Left / right
@@ -1619,22 +1832,23 @@ class Formula(FormulaBox):
                     term.x_align(0., align='left')
                     term.y_align(bbox.center[1], align='middle')
 
-                    w = t_bbox.width + self.x_sepa*term.anim.sx
+                    #w = (t_bbox.width + self.x_sepa)*term.owner_factor
+                    w = t_bbox.width + self.x_sepa
 
                     # Left shift the body and done terms
                     _translate_dones(w, 0)
 
                     # Resulting bbox
-                    #_, ty0, _, ty1 = term.transformed_bbox.as_tuple()
-                    #bbox = bbox + (0, ty0, bbox.x1 + w, ty1)
-                    bbox = bbox + (0, 0, bbox.x1 + w, 0)
+                    _, ty0, _, ty1 = term.transformed_bbox.as_tuple()
+                    bbox = bbox + (0, ty0, bbox.x1 + w, ty1)
 
                 elif key in ['right', 'fix_right']:
                     x = bbox.x1 + self.x_sepa
                     term.x_align(x, align='left')
                     term.y_align(bbox.center[1], align='middle')
 
-                    #bbox = bbox + term.transformed_bbox
+                    #bbox = bbox.interpolate(bbox + term.transformed_bbox, term.owner_factor)
+                    bbox = bbox + term.transformed_bbox
 
             # --------------------------------------------------
             # Fraction
@@ -1702,14 +1916,14 @@ class Formula(FormulaBox):
             # --------------------------------------------------
 
             elif key == 'sqrt':
-
+                
                 # Do we have an option ?
                 # NOT YET IMPLEMENTED
                 opt = self._decos.get('sqrt_option')
 
                 # The symbol is around the bbox size
                 term.adjust_size(bbox.width, bbox.height)
-                t_bbox = term.transformed_bbox
+                t_bbox = term.bbox
                 tx = -t_bbox.x0
 
                 # Move body to right
@@ -1719,6 +1933,7 @@ class Formula(FormulaBox):
                 term.transfo.translate(tx, bbox.y0)
 
                 # New bbox
+                #bbox = bbox.interpolate(term.transformed_bbox, term.owner_factor)
                 bbox = term.transformed_bbox
 
             # --------------------------------------------------
@@ -1729,47 +1944,110 @@ class Formula(FormulaBox):
                 # Should never occur
                 assert(False)
 
-            # --------------------------------------------------
-            # Update the bbox
-            # --------------------------------------------------
-
-            term.transfo.translate(term.anim.translation)
-            bbox = bbox + term.transformed_bbox
-
+            # Done
             dones.append(term)
             
         # ----- We've got our bounding box
 
-        return bbox
+        self._bbox = bbox
+
+        return self._bbox
+        
+    @property
+    def transformed_bbox(self):
+        """Returns the transformed bounding box.
+        """
+        return self.bbox.transform(self.transfo)
+        
+    def adjust_size(self, width=0.0, height=0.0):
+        
+        if self.body_is_geom:
+            self._geom.adjust_size(width, height)
+
+        elif self.body_is_term:
+            self._term.adjust_size(width, height)
+
+        else:
+            for t in self._list:
+                t.adjust_size(width, height)
+
+        self._bbox = None
 
     # ====================================================================================================
     # Some useful animations
     # ====================================================================================================
 
-    def move_to(self, transfo0, transfo1, factor=1.0, ymax=0.0, turns=0, smooth="LINEAR"):
+    def appear(self, placeholder=None, factor=1.0, scale_y=False):
 
-        tr = transfo0.interpolate(transfo1, factor=factor, ymax=ymax, turns=turns, smooth=smooth)
+        tr = Transfo2d.from_components(sx=factor, sy=factor if scale_y else 1.)
+
+        if placeholder is None:
+            self._transfo = tr
+        else:
+            placeholder.scale_x = factor
+            self._transfo = placeholder.absolute_transfo @ tr
+
+    def move_to(self, placeholder0, placeholder1, factor=1.0, ymax=0.0, turns=0, smooth="LINEAR"):
+
+        placeholder0.scale_x = 1.0 - factor
+        placeholder1.scale_x = factor
+
+        tr = placeholder0.absolute_transfo.interpolate(placeholder1.absolute_transfo, factor=factor, ymax=ymax, turns=turns, smooth=smooth)
         self._transfo = tr
 
     # ====================================================================================================
     # Debug
     # ====================================================================================================
 
-    def _plot(self, plt, color='black', border=.2, **kwargs):
-
-        if isinstance(self, Formula):
-            n = 0
-            for _ in self.terms():
-                n += 1
-            if False and n > 1:
-                super()._plot_global(plt, color='red')
+    def _plot(self, plt, owner_transfo=None, color='black', border=.2, **kwargs):
 
         if False:
             print("PLOT", self)
 
-        for term in self.terms():
-            term._plot(plt)
+        transfo = self.get_transfo(owner_transfo)
 
+        def plot_bbox(bbox, col, content=False):
+
+            points = transfo @ bbox.corners
+            x, y = list(points[:, 0]), list(points[:, 1])
+            x.append(x[0])
+            y.append(y[0])
+
+            plt.plot(x, y, color=col, **kwargs)
+
+            if content:
+                if True:
+                    xs, ys = (x[0] + x[1])/2, (y[1] + y[2])/2
+                    plt.text(xs, ys, self.name, ha="center", va="center", fontsize=12)
+                else:                    
+                    plt.plot([x[0], x[2]], [y[0], y[2]], color=col, **kwargs)
+                    plt.plot([x[1], x[3]], [y[1], y[3]], color=col, **kwargs)
+
+        # ----- Body bbox
+        if self.body_is_geom:
+            bbox = self.bbox
+            plot_bbox(bbox, col=color, content=self.body_is_geom)
+
+        # ----- Decorators
+        has_children = False
+        for term in self.terms():
+
+            term_col = color
+            
+            if term.child_key == 'body':
+                term_col = np.random.uniform(0, 1, 3)
+            elif term.child_key == 'term':
+                term_col = np.random.uniform(0, 1, 3)
+            
+            term._plot(plt, owner_transfo=transfo, color=term_col, border=border/2, **kwargs)
+            has_children = True
+
+        # ----- Surrounding box
+        if has_children:
+            bbox = self.bbox.bordered(border)
+            plot_bbox(bbox, col=color)
+
+    
 
 
 # ====================================================================================================
@@ -1778,36 +2056,55 @@ class Formula(FormulaBox):
 
 if __name__ == "__main__":
 
+    class Fake(FormulaGeom):
+
+        def set_content(self, content):
+
+            #print("SET CONTENT", content)
+
+            self.adjustable = True
+
+            if isinstance(content, (str, int, float)):
+                self.name = str(content)
+                if self.name == '_':
+                    bbox = BBox(0, 0, .1, .1)
+                else:
+                    bbox = BBox(-1, -1, 1, 1)
+            elif isinstance(content, dict):
+                self.name = content['text']
+                bbox = BBox(-1, -1, 1, 1)
+            else:
+                self.name = content[0]
+                bbox = BBox(*content[1])
+
+            self._bbox = bbox
+            self.ref_bbox = bbox
+
+        def get_bbox(self):
+
+            if self._bbox is None:
+                w, h = self.adjust_dims
+
+                sx = 1. if w <= self.ref_bbox.width else w/self.ref_bbox.width
+                sy = 1. if h <= self.ref_bbox.height else h/self.ref_bbox.height
+
+                return self.ref_bbox.scaled(sx, sy)
+            else:
+                return self._bbox
+        
+
     from pprint import pprint
     import matplotlib.pyplot as plt
 
-    class Fake(FormulaBox):
-
-        def __init__(self, owner, name, bbox=(-1, -1, 1, 1), **kwargs):
-            super().__init__(name)
-            self.owner = owner
-            self._bbox = BBox(bbox)
-
-        def __str__(self):
-            return f"<Fake {self.name} ({self.child_key}), {self.transfo}>"
-
-        def get_bbox(self):
-            return self._bbox
-        
-        def adjust_size(self, width=0, height=0):
-            super().adjust_size(width, height)
-
-
-    np.random.seed(0)
-    ok_plot = True
+    ok_plot = False
     frm = Formula(None, "x", geom_cls=Fake)
 
     # ---------------------------------------------------------------------------
-    # FormulaBox
+    # Area
     # ---------------------------------------------------------------------------
 
     if False:
-        class FakeArea(FormulaBox):
+        class FakeArea(Area):
             def get_bbox(self):
                 return BBox(-1, -1, 1, 1)
             
@@ -1824,6 +2121,25 @@ if __name__ == "__main__":
         plt.axis("equal")
         plt.show()
 
+    
+
+
+
+    # ---------------------------------------------------------------------------
+    # Layer
+    # ---------------------------------------------------------------------------
+
+    if False:
+        frm = Formula(None, "x", geom_cls=Fake)
+
+        # Type content
+        print("----- x alone")
+        print(repr(frm))
+        # Add a decorator -> add a layer
+        frm.fix_under = "U"
+        print("----- x _")
+        print(repr(frm))
+
     # ---------------------------------------------------------------------------
     # Decorators
     # ---------------------------------------------------------------------------
@@ -1833,37 +2149,37 @@ if __name__ == "__main__":
         frm = Formula(None, ["x", "y"], geom_cls = Fake,
                     superscript = "2", 
                     subscript   = "i",
-                    overscript  = Fake(None, "oscript", (0, 0, 3, .6)),
-                    underscript = Fake(None, "uscript", (0, 0, 3, .6)),
+                    overscript  = ("oscript", (0, 0, 3, .6)),
+                    underscript = ("uscript", (0, 0, 3, .6)),
 
-                    fix_over  = Fake(None, "over", (0, 0, 2, .6)),
-                    fix_under = Fake(None, "under", (0, 0, 2, .6)),
-                    over      = Fake(None, "<< over >>", (0, 0, 1, .6)),
-                    under     = Fake(None, "<< under >>", (0, 0, 1, .6)),
+                    fix_over  = ("over", (0, 0, 2, .6)),
+                    fix_under = ("under", (0, 0, 2, .6)),
+                    over      = ("<< over >>", (0, 0, 1, .6)),
+                    under     = ("<< under >>", (0, 0, 1, .6)),
 
-                    fix_left  = Fake(None, "(", (0, 0, .3, 2)),
-                    fix_right = Fake(None, ")", (0, 0, .3, 2)),
-                    left      = Fake(None, "[", (0, 0, .3, 1)),
-                    right     = Fake(None, "]", (0, 0, .3, 1)),
+                    fix_left  = ("(", (0, 0, .3, 2)),
+                    fix_right = (")", (0, 0, .3, 2)),
+                    left      = ("[", (0, 0, .3, 1)),
+                    right     = ("]", (0, 0, .3, 1)),
                     )
         
-        if False:
+        if True:
             frm = Formula(None, [frm, "z"], geom_cls = Fake,
                     superscript = "2", 
                     subscript   = "i",
-                    overscript  = Fake(None, "oscript", (0, 0, 3, .6)),
-                    underscript = Fake(None, "uscript", (0, 0, 3, .6)),
+                    overscript  = ("oscript", (0, 0, 3, .6)),
+                    underscript = ("uscript", (0, 0, 3, .6)),
 
-                    fix_over  = Fake(None, "over", (0, 0, 2, .6)),
-                    fix_under = Fake(None, "under", (0, 0, 2, .6)),
-                    over      = Fake(None, "<< over >>", (0, 0, 1, .6)),
-                    under     = Fake(None, "<< under >>", (0, 0, 1, .6)),
+                    fix_over  = ("over", (0, 0, 2, .6)),
+                    fix_under = ("under", (0, 0, 2, .6)),
+                    over      = ("<< over >>", (0, 0, 1, .6)),
+                    under     = ("<< under >>", (0, 0, 1, .6)),
 
-                    fix_left  = Fake(None, "(", (0, 0, .3, 2)),
-                    fix_right = Fake(None, ")", (0, 0, .3, 2)),
-                    left      = Fake(None, "[", (0, 0, .3, 1)),
-                    right     = Fake(None, "]", (0, 0, .3, 1)),
-                    )
+                    fix_left  = ("(", (0, 0, .3, 2)),
+                    fix_right = (")", (0, 0, .3, 2)),
+                    left      = ("[", (0, 0, .3, 1)),
+                    right     = ("]", (0, 0, .3, 1)),
+                        )
             
     # ---------------------------------------------------------------------------
     # Append
@@ -1873,11 +2189,9 @@ if __name__ == "__main__":
             frm = Formula(geom_cls=Fake)
             frm.append("x")
             frm.superscript="2"
-            frm.superscript="2"
             frm.append("y")
             frm.append("z")
             frm.subscript="sub"
-            frm.superscript="sup"
             frm.superscript="sup"
             frm.append("After")
             
@@ -1886,23 +2200,15 @@ if __name__ == "__main__":
     # ---------------------------------------------------------------------------
 
     if False:
-        frm = Formula(geom_cls=Fake, name="Main")
-
-        itg1 = Fake(None, "/", (0, 0, .2, .6))
-        itg2 = Fake(None, "/", (0, 0, .2, .6))
-        frm.append(frm.operator( itg1, "F1", subscript="0", superscript="1") )
-        frm.append(frm.fix_operator( itg2, "F2") )
-        frm.append(("x"))
-
-        frm.update()
-        print(repr(frm))
-
+        frm = Formula(geom_cls=Fake)
+        frm.append(frm.operator( ("/", (0, 0, .2, .6)), "F1", subscript="0", superscript="1") )
+        frm.append(frm.fix_operator( ("/", (0, 0, .2, .6)), "F2") )
 
     # ---------------------------------------------------------------------------
     # from dict
     # ---------------------------------------------------------------------------
 
-    if True:
+    if False:
         d = {'type': 'BLOCK', 'content': [
                 {'type': 'STRING', 'string': 'I='},
                 {'type': 'FUNCTION', 'name': 'sum', 'args': [
@@ -1917,138 +2223,6 @@ if __name__ == "__main__":
                     'superscript': 1,
                 },
         ]}
-
-        d = {'content': [{'string': '∀', 'type': 'SYMBOL'},
-             {'string': 'n', 'type': 'STRING'},
-             {'string': '∈', 'type': 'SYMBOL'},
-             {'string': 'ℕ', 'type': 'SYMBOL'},
-             {'string': ',', 'type': 'SYMBOL'},
-             {'string': '∃', 'type': 'SYMBOL'},
-             {'string': 'x', 'type': 'STRING'},
-             {'string': '∈', 'type': 'SYMBOL'},
-             {'string': 'ℝ', 'type': 'SYMBOL'},
-             {'content': [{'content': [{'string': ' tel que ', 'type': 'STRING'}],
-                           'type': 'BLOCK'}],
-              'type': 'BLOCK'},
-             {'string': 'sin', 'type': 'STRING'},
-             {'string': '(', 'type': 'SYMBOL'},
-             {'string': 'x', 'type': 'STRING'},
-             {'string': ')', 'type': 'SYMBOL'},
-             {'string': '+', 'type': 'SYMBOL'},
-             {'string': 'cos', 'type': 'STRING'},
-             {'string': '(', 'type': 'SYMBOL'},
-             {'string': 'x', 'type': 'STRING'},
-             {'string': ')', 'type': 'SYMBOL'},
-             {'string': '+', 'type': 'SYMBOL'},
-             {'string': 'tan', 'type': 'STRING'},
-             {'string': '(', 'type': 'SYMBOL'},
-             {'string': 'x', 'type': 'STRING'},
-             {'string': ')', 'type': 'SYMBOL'},
-             {'string': '+', 'type': 'SYMBOL'},
-             {'string': 'arcsin', 'type': 'STRING'},
-             {'content': [{'args': [{'content': [{'string': '1',
-                                                  'type': 'STRING'}],
-                                     'type': 'BLOCK'},
-                                    {'content': [{'string': '2',
-                                                  'type': 'STRING'}],
-                                     'type': 'BLOCK'}],
-                           'name': 'tfrac',
-                           'type': 'FUNCTION'}],
-              'type': 'BLOCK'},
-             {'string': '+', 'type': 'SYMBOL'},
-             {'string': 'ln', 'type': 'STRING'},
-             {'string': '(', 'type': 'SYMBOL'},
-             {'content': [{'string': 'e', 'type': 'STRING'}],
-              'superscript': {'content': [{'string': 'x', 'type': 'STRING'}],
-                              'type': 'BLOCK'},
-              'type': 'BLOCK'},
-             {'string': ')', 'type': 'SYMBOL'},
-             {'string': '+', 'type': 'SYMBOL'},
-             {'content': [{'string': 'log', 'type': 'STRING'}],
-              'subscript': {'content': [{'string': '10', 'type': 'STRING'}],
-                            'type': 'BLOCK'},
-              'type': 'BLOCK'},
-             {'string': '(', 'type': 'SYMBOL'},
-             {'string': '100', 'type': 'STRING'},
-             {'string': ')', 'type': 'SYMBOL'},
-             {'string': '+', 'type': 'SYMBOL'},
-             {'string': 'exp', 'type': 'STRING'},
-             {'string': '(', 'type': 'SYMBOL'},
-             {'string': '0', 'type': 'STRING'},
-             {'string': ')', 'type': 'SYMBOL'},
-             {'string': '=', 'type': 'SYMBOL'},
-             {'string': '1', 'type': 'STRING'},
-             {'string': ',', 'type': 'SYMBOL'},
-             {'args': [{'args': [{'content': [{'string': 'n', 'type': 'STRING'}],
-                                  'type': 'BLOCK'},
-                                 {'content': [{'string': 'k', 'type': 'STRING'}],
-                                  'type': 'BLOCK'}],
-                        'name': 'binom',
-                        'type': 'FUNCTION'}],
-              'name': 'sum',
-              'subscript': {'content': [{'string': 'k', 'type': 'STRING'},
-                                        {'string': '=', 'type': 'SYMBOL'},
-                                        {'string': '0', 'type': 'STRING'}],
-                            'type': 'BLOCK'},
-              'superscript': {'content': [{'string': 'n', 'type': 'STRING'}],
-                              'type': 'BLOCK'},
-              'type': 'FUNCTION'},
-             {'string': '=', 'type': 'SYMBOL'},
-             {'content': [{'string': '2', 'type': 'STRING'}],
-              'superscript': {'content': [{'string': 'n', 'type': 'STRING'}],
-                              'type': 'BLOCK'},
-              'type': 'BLOCK'},
-             {'string': ',', 'type': 'SYMBOL'},
-             {'args': [{'string': 'k', 'type': 'STRING'}],
-              'name': 'prod',
-              'subscript': {'content': [{'string': 'k', 'type': 'STRING'},
-                                        {'string': '=', 'type': 'SYMBOL'},
-                                        {'string': '1', 'type': 'STRING'}],
-                            'type': 'BLOCK'},
-              'superscript': {'content': [{'string': 'n', 'type': 'STRING'}],
-                              'type': 'BLOCK'},
-              'type': 'FUNCTION'},
-             {'string': '=', 'type': 'SYMBOL'},
-             {'string': 'n', 'type': 'STRING'},
-             {'string': '!', 'type': 'SYMBOL'},
-             {'string': ',', 'type': 'SYMBOL'},
-             {'args': [{'content': [{'content': [{'string': 'x',
-                                                  'type': 'STRING'}],
-                                     'superscript': {'content': [{'string': '2',
-                                                                  'type': 'STRING'}],
-                                                     'type': 'BLOCK'},
-                                     'type': 'BLOCK'}],
-                        'type': 'BLOCK'}],
-              'name': 'int',
-              'subscript': {'content': [{'string': '0', 'type': 'STRING'}],
-                            'type': 'BLOCK'},
-              'superscript': {'content': [{'string': '1', 'type': 'STRING'}],
-                              'type': 'BLOCK'},
-              'type': 'FUNCTION'},
-             {'string': 'dx', 'type': 'STRING'},
-             {'string': '=', 'type': 'SYMBOL'},
-             {'args': [{'content': [{'string': '1', 'type': 'STRING'}],
-                        'type': 'BLOCK'},
-                       {'content': [{'string': '3', 'type': 'STRING'}],
-                        'type': 'BLOCK'}],
-              'name': 'tfrac',
-              'type': 'FUNCTION'},
-             {'string': ',', 'type': 'SYMBOL'},
-             {'args': [{'args': [{'content': [{'string': '1', 'type': 'STRING'}],
-                                  'type': 'BLOCK'},
-                                 {'content': [{'string': 'n', 'type': 'STRING'}],
-                                  'type': 'BLOCK'}],
-                        'name': 'tfrac',
-                        'type': 'FUNCTION'}],
-              'name': 'lim',
-              'subscript': {'content': [{'string': 'n', 'type': 'STRING'},
-                                        {'string': '→', 'type': 'SYMBOL'},
-                                        {'string': '∞', 'type': 'SYMBOL'}],
-                            'type': 'BLOCK'},
-              'type': 'FUNCTION'},
-            ],
-            'type': 'BLOCK'}
-
         frm = Formula(None, d, geom_cls=Fake)
 
     # ---------------------------------------------------------------------------
@@ -2085,19 +2259,13 @@ if __name__ == "__main__":
     if False:
         term = Formula(geom_cls=Fake)
         term.append("x")
-
         frm = Formula(geom_cls=Fake)
         frm.append("a+")
-        frm.append(Formula.fix_placeholder("test", .5, 0.))
-
+        frm.append(Formula.fix_placeholder(.5, 0.))
         frm.append(term)
         frm.append("=")
-        ph = frm.append(term.placeholder("frm"))
+        frm.append(term.placeholder(0.5))
         frm.append("+19")
-
-        ph.anim.sx = 2
-
-
 
 
     # ---------------------------------------------------------------------------
@@ -2110,8 +2278,6 @@ if __name__ == "__main__":
         print()
 
     if ok_plot:
-
-        frm.update()
 
         frm._plot(plt, color='red')
 

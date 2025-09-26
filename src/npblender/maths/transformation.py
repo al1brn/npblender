@@ -246,7 +246,31 @@ class Transformation(ItemsArray):
             raise ValueError(f"Scale shape {value.shape} does not match {(mat[..., :3, 3].shape)}")
         rot = self.rotation  # pure rotation, shape (..., 3, 3)
         mat[..., :3, :3] = rot * value[..., None, :]
+
+    @property
+    def x(self):
+        return self._mat[..., 0, 3]
     
+    @x.setter
+    def x(self, value):
+        self._mat[..., 0, 3][...] = value    
+
+    @property
+    def y(self):
+        return self._mat[..., 1, 3]
+    
+    @y.setter
+    def y(self, value):
+        self._mat[..., 1, 3][...] = value    
+
+    @property
+    def z(self):
+        return self._mat[..., 2, 3]
+    
+    @z.setter
+    def z(self, value):
+        self._mat[..., 2, 3][...] = value    
+
     # ------------------------------------------------------------------
     # Inversion
     # ------------------------------------------------------------------

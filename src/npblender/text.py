@@ -58,17 +58,50 @@ from . import maths
 
 class Font:
 
-    def __init__(self, name=None, filepath=None, regular="", bold="Bold", italic="Italic", bold_italic="Bold Italic", font_scale=1.0, extension="ttf"):
+    FONTS = {}
 
-        self.filepath = filepath
-        self.extension = extension
+    def __init__(self, name=None, filepath=None, regular="", bold="Bold", italic="Italic", bold_italic="Bold Italic", font_scale=1.0, extension="ttf", font_name=None):
+
+        # Is the font already known
+        self.font_name = name if font_name is None else font_name
+        if self.font_name is not None:
+            if self.font_name in Font.FONTS:
+                self.copy_from(Font.FONTS[self.font_name])
+                return
+
+        # Let's create it
+        self.filepath     = filepath
+        self.extension    = extension
 
         self._regular     = self.load_font(name, regular,     filepath, default = None)
         self._bold        = self.load_font(name, bold,        filepath, default = self._regular)
         self._italic      = self.load_font(name, italic,      filepath, default = self._regular)
         self._bold_italic = self.load_font(name, bold_italic, filepath, default = self._bold)
 
-        self.font_scale     = font_scale
+        self.font_scale   = font_scale
+        self._dimensions  = None
+
+        if self.font_name is not None:
+            Font.FONTS[self.font_name] = self
+
+    # ====================================================================================================
+    # Copy from another one
+    # ====================================================================================================
+
+    def copy_from(self, font):
+
+        self.filepath     = font.filepath
+        self.extension    = font.extension
+
+        self._regular     = font.regular
+        self._bold        = font.bold
+        self._italic      = font.italic
+        self._bold_italic = font.bold_italic
+
+        self.font_scale   = font.font_scale
+        self._dimensions  = font._dimensions
+
+        return self
 
     # ====================================================================================================
     # Load a font
@@ -183,17 +216,18 @@ class Font:
         if isinstance(variant, bpy.types.VectorFont):
             return variant
         
-        # Included STIX font
-        if name == 'STIX':
-            font = cls._STIX_load(variant)
-            if font is not None:
-                return font
-            
-        # Included STIX Math font
-        if name.lower() in ['math', 'maths']:
-            font = cls._STIX_math_load()
-            if font is not None:
-                return font
+        if name is not None:
+            # Included STIX font
+            if name == 'STIX':
+                font = cls._STIX_load(variant)
+                if font is not None:
+                    return font
+                
+            # Included STIX Math font
+            if name.lower() in ['math', 'maths']:
+                font = cls._STIX_math_load()
+                if font is not None:
+                    return font
 
         # Let's try to load from name only
         font_name = cls._get_font_name(name, variant)
@@ -331,6 +365,19 @@ class Font:
 
     def get_dimensions(self, italic=False, bold=False, scale=1.0):
 
+        # ----- Already computed
+        if self._dimensions is not None:
+            return self._dimensions
+        
+        # ----- Computed globally
+        if self.font_name is not None:
+            font = Font.FONTS.get(self.font_name)
+            if font is not None and font._dimensions is not None:
+                return font._dimensions
+            
+
+        print("Font: compute dimensions", self.font_name)
+
         mesh = Text("aAp> <=_", font=self).to_mesh(transform=False, char_index=True)
 
         def _dims(char_index):
@@ -356,6 +403,10 @@ class Font:
         d['dy_sub']      = d['y_body']*0.4
         d['y_sub_max']   = d['y_body']*0.4
         d['oversize']    = d['thickness']*0.8
+
+        self._dimensions = d
+        if self.font_name is not None:
+            Font.FONTS[self.font_name]._dimensions = d
 
         return d
 
@@ -740,10 +791,8 @@ class FGeom(maths.FormulaGeom):
 
         if isinstance(content, Mesh):
             self._mesh = content
-            self.name = "Mesh"
 
         elif isinstance(content, str):
-            self.name = str(content)
             if content.startswith('\\'):
                 self._special = content
             else:
@@ -751,20 +800,16 @@ class FGeom(maths.FormulaGeom):
 
         elif isinstance(content, (EText, EChar)):
             _string = content
-            self.name = str(content)
 
         elif isinstance(content, (float, int, np.integer, np.float64, np.float32)):
             _string = str(content)
-            self.name = self._string
 
         elif isinstance(content, dict):
             text = Text(content, font=self.term.font)
             self._mesh = text.to_mesh()
-            self.name = str(content['text'])
 
         elif isinstance(content, Geometry):
             self._mesh = content.to_mesh()
-            self.name = type(content).__name__
 
         else:
             raise ValueError(f"FGeom(): 'content' must be Geometry or a string, not '{type(content).__name__}'")
@@ -783,6 +828,12 @@ class FGeom(maths.FormulaGeom):
     # ---------------------------------------------------------------------------
     # Compute the bbox
     # ---------------------------------------------------------------------------
+
+    @property
+    def bbox(self):
+        if self._bbox is None or (self._adjust_size is not None):
+            self._bbox = self.get_bbox()
+        return self._bbox
 
     def get_bbox(self):
         if self._mesh is None and self._special is None:
@@ -803,13 +854,13 @@ class FGeom(maths.FormulaGeom):
             return Mesh()
         
         mesh = Mesh.from_mesh(self._mesh)
-        if not self.adjustable:
+        if self._adjust_size is None:
             return mesh
         
-        # Adjust from property adjust_dims
+        # Adjust from property _adjust_size
 
         bbox = BBox.from_points(self._mesh.points.position)
-        width, height = self.adjust_dims
+        width, height = self._adjust_size
 
         # Vertical adjustment
         if height > bbox.height:
@@ -863,7 +914,10 @@ class FGeom(maths.FormulaGeom):
 
             # Dimensions
             x0, y0 = 0.0, 0.0
-            width, height = self.adjust_dims
+            if self._adjust_size is None:
+                width, height = 0.0, 0.0
+            else:
+                width, height = self._adjust_size
             if width < ZERO or height < ZERO:
                 return Text("√").to_mesh()
             
@@ -924,12 +978,17 @@ class Formula(maths.Formula):
             self.materials = []
 
     def to_mesh(self):
+        
         mesh = Mesh(materials=self.materials)
+
         for _, fgeom in self.depths():
-            if not fgeom.body_is_geom:
+            if not isinstance(fgeom, FGeom):
                 continue
 
-            m = fgeom.body.to_mesh()
+            m = fgeom.to_mesh()
+            if not len(m.points):
+                continue
+
             m.materials = list(self.materials)
             mesh.join(m)
 
