@@ -730,6 +730,8 @@ class Tokens(list):
             # ---------------------------------------------------------------------------
 
             elif token.is_control:
+                if token.value == '~':
+                    return {'type': 'SYMBOL', 'string': ' '}
                 assert False, f"Strange, shouldn't happen {token}"
 
             # ---------------------------------------------------------------------------

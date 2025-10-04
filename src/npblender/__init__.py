@@ -22,7 +22,7 @@ from . import textutils
 
 from .maths import Rotation, Quaternion, Transformation
 
-VERSION         = (3, 0, 0)
+VERSION         = (3, 0, 1)
 BLENDER_VERSION = (4, 5, 0)
 
 __version__ = ".".join(map(str, VERSION))
@@ -62,8 +62,8 @@ from .text import *
 __all__.extend(list(text.__all__))
 
 
-# DEV
-#enginemod.register()
+# Registring engine
+enginemod.register()
 
 
 

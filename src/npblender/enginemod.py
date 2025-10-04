@@ -1160,6 +1160,8 @@ class npblenderBakePanel(bpy.types.Panel):
 
 def register():
 
+    print("Registring npblender engine")
+
     create_scene_properties()
 
     # Clean and append

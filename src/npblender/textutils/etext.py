@@ -24,6 +24,21 @@ BL_ATTRS = {
 
 __all__ = ["CharStyle", "EText", "EChar", "StyleContext"]
 
+
+
+def _ensure_color(value):
+
+    OK = True
+    try:
+        from ..maths import Color
+    except:
+        OK = False
+
+    if OK:
+        return Color.to_rgba(value)
+    else:
+        return value
+
 # ====================================================================================================
 # Style
 # ====================================================================================================
@@ -59,18 +74,7 @@ class CharStyle:
         
         if name in self._styles:
             if name == 'color':
-
-                OK = True
-                try:
-                    from ..maths import Color
-                except:
-                    OK = False
-
-                if OK:
-                    self._styles[name] = Color.to_rgba(value)
-                else:
-                    self._styles[name] = value
-
+                self._styles[name] = _ensure_color(value)
             else:
                 self._styles[name] = value
             return
@@ -266,12 +270,6 @@ class EText:
     @text.setter
     def text(self, value):
 
-        ok_color = True
-        try:
-            from ..maths import Color
-        except:
-            ok_color = False
-
         if isinstance(value, EText):
             self._data = np.array(value._data).view(np.recarray)
 
@@ -302,13 +300,10 @@ class EText:
                 for k in CharStyle.STYLES:
                     v = getattr(ec, k)
                     if k == 'color':
-                        if ok_color:
-                            self._data[k][index:index + n] = Color.to_rgba(v)
-                        else:
-                            self._data[k][index:index + n] = v
-
+                        self._data[k][index:index + n] = _ensure_color(v)
                     else:
                         self._data[k][index:index + n] = v
+
                 index += n
 
         elif len(value) == 0:
@@ -336,6 +331,10 @@ class EText:
 
         if name in ['_data', '_cstyle']:
             object.__setattr__(self, name, value)
+            return
+        
+        elif name == 'color':
+            self._data[name] = _ensure_color(value)
             return
 
         elif name in CharStyle.STYLES:

@@ -1049,23 +1049,46 @@ class Formula(maths.Formula):
 
         order = 0
         for _, fgeom in self.depths():
-            if not isinstance(fgeom, FGeom):
-                continue
 
-            m = fgeom.to_mesh()
-            if not len(m.points):
-                continue
+            # ---------------------------------------------------------------------------
+            # PlaceHolder can capture geometries
+            # ---------------------------------------------------------------------------
+
+            if type(fgeom).__name__ == "PlaceHolder":
+                if not fgeom.capture or fgeom.formula is None:
+                    continue
+
+                fgeom.update()
+                m = fgeom.formula.to_mesh()
+
+                if fgeom.second is not None:
+                    m.join(fgeom.second.to_mesh())
+
+            # ---------------------------------------------------------------------------
+            # Not a PlaceHolder
+            # ---------------------------------------------------------------------------
+
+            else:
+                if not isinstance(fgeom, FGeom):
+                    continue
+
+                m = fgeom.to_mesh()
+                if not len(m.points):
+                    continue
+
+            # ---------------------------------------------------------------------------
+            # Animation
+            # ---------------------------------------------------------------------------
 
             if x_max is not None:
                 if np.max(m.points.x) > x_max:
                     continue
 
             if order_max is not None:
-                if order > order_max:
+                if order >= order_max:
                     continue
             order += 1
 
-            #m.materials = list(self.materials)
             mesh.join(m)
 
         return mesh

@@ -38,7 +38,7 @@ class Custom:
         if 'description' not in attributes:
             attributes['description'] = tip
         if 'subtype' not in attributes:
-            attributes['subtypes'] = 'NONE'
+            attributes['subtype'] = 'NONE'
         
         self._create(name, value, target, attributes)
     
@@ -246,7 +246,12 @@ class Custom:
         if self.is_function:
             return self._func(bpy.context.scene.frame_current)
         else:
-            return self._data[self._name]
+            try:
+                return self._data[self._name]
+            except ReferenceError as e:
+                raise RuntimeError(f"Parameter '{self._name}' error: {str(e)}.")
+
+
     
     @value.setter
     def value(self, val):

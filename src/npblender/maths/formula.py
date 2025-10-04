@@ -70,6 +70,10 @@ class Transfo2d(Touchable):
 
     def clone(self):
         return Transfo2d(np.array(self._matrix))
+    
+    def copy(self, other):
+        self._matrix[:] = other._matrix
+        self.touch()
 
     # -------------------------------------
     # Basic accessors
@@ -1037,7 +1041,7 @@ class FormulaGeom(FormulaBox):
 # ====================================================================================================
 
 class PlaceHolder(FormulaBox):
-    def __init__(self, formula=None, width=0., height=0., name="PlaceHolder"):
+    def __init__(self, formula=None, width=0., height=0., name="PlaceHolder", **attrs):
         """Empty box with z fixed size to getting the size from an actual formula.
         """
 
@@ -1048,30 +1052,79 @@ class PlaceHolder(FormulaBox):
         # Owning formula
         self.term = None
 
-        # Formula to keep a placeholder for
-        self.formula = formula
+        # Formulas to keep a placeholder for
+        self.formula       = formula
+        self.second        = None
+        self.capture       = False
+        self.switch_factor = 0.
 
         # Fix space
         self.width  = width
         self.height = height
+
+        # Attributes
+        for k, v in attrs.items():
+            setattr(self, k, v)
 
     def __str__(self):
         s = f"<PlaceHolder '{self.name}'"
         if self.formula is None:
             return f"{s} {self.width:.2f}, {self.height:.2f}>"
         else:
-            return f"{s} of {self.formula.name}>"
-
+            return f"{s} of {self.formula}>"
 
     # ====================================================================================================
     # Expose the bbox of the encapsulated formula
     # ====================================================================================================
 
+    @property
+    def touched(self):
+        return True
+
+    @property
+    def bbox(self):
+        return self.get_bbox()
+
     def get_bbox(self):
         if self.formula is None:
             return BBox(0, 0, self.width, self.height)
-        else:
+        
+        elif self.second is None:
             return self.formula.bbox
+        
+        else:
+            f = self.switch_factor
+            bbox0 = self.formula.bbox.scaled(1 - f, 1.)
+            bbox0 = bbox0.translated(-bbox0.x0)
+            bbox1 = self.second.bbox.scaled(f, 1.)
+            bbox1 = bbox1.translated(bbox0.x1 - bbox1.x0)
+
+            return bbox0 + bbox1
+        
+    # ====================================================================================================
+    # Update the formula and second transformations
+    # ====================================================================================================
+
+    def update(self):
+        if self.formula is None or (not self.capture):
+            return
+        
+        if self.second is None:
+            self.formula.transfo.copy(self.absolute_transfo)
+
+        else:
+            f = self.switch_factor
+            bbox0 = self.formula.bbox 
+            bbox1 = self.second.bbox
+
+            f_transfo = Transfo2d.from_components(sx = 1 - f)
+            s_transfo = Transfo2d.from_components(tx = bbox0.width*(1 - f), sx=f)
+
+            self.formula.transfo.copy(self.absolute_transfo @ f_transfo)
+            self.second.transfo.copy(self.absolute_transfo @ s_transfo)
+
+
+
 
 # ====================================================================================================
 # A Formula
@@ -1294,7 +1347,14 @@ class Formula(FormulaBox):
 
             attrs = {k: v for k, v in fdict.items() if k not in ['type', 'string']}
             name = str(fdict['string'])
-            content = self.geom_cls(self, fdict['string'], symbol=fdict['type']=='SYMBOL')
+            # Space ~ 
+            if fdict['type'] == 'SYMBOL' and name == " ":
+                name = "Space"
+                content = self.fix_placeholder(name, width=0.)
+            # Other
+            else:
+                content = self.geom_cls(self, fdict['string'], symbol=fdict['type']=='SYMBOL')
+
             if len(attrs):
                 return Formula(self, content, name=name, **attrs)
             else:
