@@ -5483,7 +5483,7 @@ equal top and bottom radii.</p>
 
 
 <a href="#npblender.Mesh.delete_faces" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">delete_faces</span><span class="p">(</span><span class="n">selection</span><span class="p">)</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">delete_faces</span><span class="p">(</span><span class="n">selection</span><span class="p">,</span> <span class="n">del_vertices</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -5516,6 +5516,23 @@ equal top and bottom radii.</p>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>del_vertices</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Delete vertices
+default = False</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
             </td>
           </tr>
       </tbody>
@@ -5553,9 +5570,7 @@ equal top and bottom radii.</p>
     Corner array of the mesh, used to identify face connectivity.</p>
 <blockquote>
 <p><strong><em>Warning:</em></strong> This function permanently deletes faces and their
-associated corners. Handle undo/history in Blender if needed.</p>
-<p><strong><em>Note:</em></strong> Only faces are removed. Edges and vertices remain in
-the mesh unless explicitly deleted by other operations.</p>
+associated corners.</p>
 </blockquote>
 </details>
 
