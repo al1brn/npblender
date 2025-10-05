@@ -722,7 +722,9 @@ class Tokens(list):
                 # ---------------------------------------------------------------------------
 
                 else:
-                    return {'type': 'STRING', 'string': token.value}
+                    echar = EChar(token.value, **styles.as_dict())
+                    return {'type': 'STRING', 'string': echar}
+                    #return {'type': 'STRING', 'string': token.value}
 
 
             # ---------------------------------------------------------------------------
@@ -744,16 +746,6 @@ class Tokens(list):
         
         return dct
 
-        # ---------------------------------------------------------------------------
-        # Scripts
-        # ---------------------------------------------------------------------------
-
-        scripts = self.read_scripts(styles)
-        while len(scripts):
-            dct = {'type': 'BLOCK', 'content': [dct], **scripts}
-            scripts = self.read_scripts(styles)
-
-        return dct
 
     # ----------------------------------------------------------------------------------------------------
     # Read a formula, i.e. a list of tokens
@@ -1394,6 +1386,11 @@ class Parser:
         for line in _lines(parsed):
             print(line)
         print("\n")
+
+
+# ====================================================================================================
+# Tests
+# ====================================================================================================
 
 
 if __name__ == '__main__':
