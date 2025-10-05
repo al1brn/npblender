@@ -727,8 +727,8 @@ class Text(Geometry):
             self._etext.material_index = matind
 
             # Color property
-            mesh.faces.new_color("color")
-            mesh.faces.color = self._etext.color[index]
+            mesh.faces.new_color("face_color")
+            mesh.faces.face_color = self._etext.color[index]
 
 
         # ----- Transformation
@@ -772,8 +772,8 @@ class Text(Geometry):
             self._etext.material_index = matind
 
             # Color property
-            curve.splines.new_color("color")
-            curve.splines.color = self._etext.color[curve.splines.char_index]
+            curve.splines.new_color("face_color")
+            curve.splines.face_color = self._etext.color[curve.splines.char_index]
 
         # ----- Transformation
 
@@ -811,9 +811,11 @@ class FGeom(maths.FormulaGeom):
         # Size adjust
         self._last_width  = 0.0
         self._last_height = 0.0
-        
 
         _string  = None
+
+
+        print("---", str(content), type(content).__name__)
 
         if isinstance(content, Mesh):
             self._mesh = content
@@ -825,7 +827,10 @@ class FGeom(maths.FormulaGeom):
                 _string = content
 
         elif isinstance(content, (EText, EChar)):
-            _string = content
+            if str(content).startswith('\\'):
+                self._special = content
+            else:
+                _string = content
 
         elif isinstance(content, (float, int, np.integer, np.float64, np.float32)):
             _string = str(content)
@@ -888,8 +893,8 @@ class FGeom(maths.FormulaGeom):
         bbox = BBox.from_points(self._mesh.points.position)
         width, height = self._adjust_size
 
-        if self._last_width == width and self._last_height == height:
-            return mesh
+        #if self._last_width == width and self._last_height == height:
+        #    return mesh
         
         # Vertical adjustment
         if height > bbox.height:
@@ -943,7 +948,7 @@ class FGeom(maths.FormulaGeom):
 
         # Special mesh are built around (0, 0, width height)
 
-        if code == r"\sqrt":
+        if str(code) == r"\sqrt":
 
             # Dimensions
             x0, y0 = 0.0, 0.0
@@ -974,6 +979,11 @@ class FGeom(maths.FormulaGeom):
                 inner_mode      = [0, 0, 1, 0, 0, 0], 
                 factor          = .8,
                 end_thickness   = 0)
+            
+            mesh.faces.new_color("face_color")
+            mesh.faces.new_int("char_index")
+            if isinstance(self._special, EText):
+                mesh.faces.face_color = self._special.color[0]
             
             return mesh
 

@@ -1057,6 +1057,7 @@ class PlaceHolder(FormulaBox):
         self.second        = None
         self.capture       = False
         self.switch_factor = 0.
+        self.active        = True
 
         # Fix space
         self.width  = width
@@ -1079,7 +1080,21 @@ class PlaceHolder(FormulaBox):
 
     @property
     def touched(self):
-        return True
+        return self.active
+    
+        if self.formula is not None and self.formula.touched:
+            return True
+        if self.second is not None and self.second.touched:
+            return True
+        return super().touched
+    
+    def touch(self, value=True):
+        if not value:
+            if self.formula is not None:
+                self.formula.touch(False)
+            if self.second is not None:
+                self.second.touch(False)
+        super().touch(value)
 
     @property
     def bbox(self):
@@ -1123,7 +1138,15 @@ class PlaceHolder(FormulaBox):
             self.formula.transfo.copy(self.absolute_transfo @ f_transfo)
             self.second.transfo.copy(self.absolute_transfo @ s_transfo)
 
+    # ====================================================================================================
+    # Utility
+    # ====================================================================================================
 
+    def switch(self, from_formula, to_formula, factor=.5, capture=True):
+        self.formula = from_formula
+        self.second  = to_formula
+        self.capture = capture
+        self.switch_factor = factor
 
 
 # ====================================================================================================
@@ -1318,12 +1341,16 @@ class Formula(FormulaBox):
                 return self.parse_dict(body)
             else:
                 return geom_cls(self, **body)
-
-        elif isinstance(body, str):
-            return geom_cls(self, body)
-        
+            
         else:
-            return geom_cls(self, str(body))
+            return geom_cls(self, body)
+
+
+        #elif isinstance(body, str):
+        #    return geom_cls(self, body)
+        
+        #else:
+        #    return geom_cls(self, str(body))
 
     @staticmethod
     def to_underover(attrs):
@@ -1412,6 +1439,13 @@ class Formula(FormulaBox):
                 return frm
             
         raise ValueError(f"Unknown type '{fdict['type']}' in dict.\n{fdict}")
+    
+    @staticmethod
+    def _same_style(model, s):
+        if model is None:
+            return s
+        else:
+            return model.same_style(s)
 
     def operator(self, symbol, body, **attrs):
         frm = Formula(self, body)
@@ -1423,10 +1457,11 @@ class Formula(FormulaBox):
 
     def fix_operator(self, symbol, body, **attrs):
         frm = Formula(self, body)
+        esymb = self._same_style(attrs.get('func_style'), symbol)
         if len(attrs):
-            frm.fix_operation = Formula(frm, symbol, **attrs)
+            frm.fix_operation = Formula(frm, esymb, **attrs)
         else:
-            frm.fix_operation = symbol
+            frm.fix_operation = esymb
         return frm
     
     def fraction(self, numerator, denominator, **attrs):
@@ -1434,7 +1469,9 @@ class Formula(FormulaBox):
             numerator = Formula(self, numerator, **attrs)
         frm = Formula(self, numerator)
         frm.denominator = Formula(frm, denominator)
-        frm.fraction_bar = Formula(frm, "_")
+
+        frm.fraction_bar = Formula(frm, self._same_style(attrs.get('func_style'), "_"))
+
         return frm
     
     def binom(self, n, k, **attrs):
@@ -1442,7 +1479,10 @@ class Formula(FormulaBox):
             n = Formula(self, n, **attrs)
         body = Formula(self, n)
         body.denominator = Formula(body, k)
-        return Formula(self, body, left=self.symbol_string("("), right=self.symbol_string(")"))
+        eleft = self._same_style(attrs.get('func_style'), "(")
+        eright = self._same_style(attrs.get('func_style'), ")")
+        return Formula(self, body, left=self.symbol_string(eleft), right=self.symbol_string(eright))
+        #return Formula(self, body, left=self.symbol_string("("), right=self.symbol_string(")"))
     
     def sqrt(self, body, option=None, **attrs):
 
@@ -1450,7 +1490,10 @@ class Formula(FormulaBox):
             body = Formula(self, body, **attrs)
 
         frm = Formula(self, body)
-        frm.sqrt = self.geom_cls(frm, r"\sqrt")
+        esqrt = self._same_style(attrs.get('func_style'), r"\sqrt")
+
+        frm.sqrt = self.geom_cls(frm, esqrt)
+        #frm.sqrt = self.geom_cls(frm, r"\sqrt")
 
         return frm
 
@@ -1810,12 +1853,13 @@ class Formula(FormulaBox):
             elif key == 'denominator':
 
                 # fraction bar is treated with denominator
-                if key == 'fraction_bar':
-                    continue
+                #if key == 'fraction_bar':
+                #    continue
 
                 # Dimensions
 
                 t_bbox = term.bbox
+
                 w_num, h_num = bbox.width, bbox.height
                 w_den, h_den = t_bbox.width, t_bbox.height
 

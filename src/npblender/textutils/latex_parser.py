@@ -622,10 +622,13 @@ class Tokens(list):
 
                     pat = MATH_PATTERNS[MATH_PATTERN_COMMANDS[token.value]]
 
-                    # Read the optional scripts
+                    # Capture the current style for function symbols
+                    func_style = EText("F", **styles.as_dict())
 
+                    # Read the optional scripts
                     scripts = self.read_scripts(styles)
-                    dct = {'type': 'FUNCTION', 'name': token.value, **scripts}
+
+                    dct = {'type': 'FUNCTION', 'name': token.value, 'func_style': func_style, **scripts}
 
                     # Do we have an option
 
