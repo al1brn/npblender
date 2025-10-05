@@ -378,7 +378,7 @@ class Font:
 
         print("Font: compute dimensions", self.font_name)
 
-        mesh = Text("aAp> <=_", font=self).to_mesh(transform=False, char_index=True)
+        mesh = Text("aAp> <=_", font=self).to_mesh(transform=False, char_index=0)
 
         def _dims(char_index):
             cis = mesh.faces[mesh.faces.char_index==char_index].loop_index
@@ -683,10 +683,10 @@ class Text(Geometry):
     # To Mesh
     # ----------------------------------------------------------------------------------------------------
 
-    def to_mesh(self, transform=True, char_index=True, **kwargs):
+    def to_mesh(self, transform=True, char_index=0, dissolve=True, **kwargs):
 
         # Char index
-        if char_index:
+        if char_index is not None:
             mats = self.materials
             matind = np.array(self._etext.material_index)
             self.materials = [None] * len(matind)
@@ -695,20 +695,41 @@ class Text(Geometry):
         # Create the mesh
         with self.object(readonly=True, **kwargs) as obj:
             bl_mesh = bpy.data.meshes.new_from_object(obj)
+
+            if dissolve:
+                import bmesh
+
+                bm = bmesh.new()
+                bm.from_mesh(bl_mesh)
+
+                bmesh.ops.dissolve_limit(bm, 
+                    angle_limit             = np.radians(5), 
+                    use_dissolve_boundaries = False, 
+                    verts                   = bm.verts, 
+                    edges                   = bm.edges,
+                    delimit                 = {'NORMAL'},
+                    )
+
+                bm.to_mesh(bl_mesh)
+
             mesh = Mesh.from_mesh_data(bl_mesh)
 
         # Char index
-        if char_index:
+        if char_index is not None:
+
+            index = np.array(mesh.faces.material_index)
+
             mesh.faces.new_int("char_index")
-            mesh.faces.char_index = mesh.faces.material_index
-            mesh.faces.material_index = matind[mesh.faces.char_index]
+            mesh.faces.char_index = char_index + index
+            mesh.faces.material_index = matind[index]
             mesh.materials = list(mats)
 
             self._etext.material_index = matind
 
             # Color property
             mesh.faces.new_color("color")
-            mesh.faces.color = self._etext.color[mesh.faces.char_index]
+            mesh.faces.color = self._etext.color[index]
+
 
         # ----- Transformation
 
@@ -1041,13 +1062,26 @@ class Formula(maths.Formula):
     # To mesh
     # ----------------------------------------------------------------------------------------------------
 
-    def to_mesh(self, x_max=None, order_max=None):
+    def to_mesh(self, x_max=None, term_count=None, char_count=None):
+
+        # ----- One char index per char
+
+        def _update_char_index(m, start=0):
+            if not len(m.faces):
+                return m, start
+            
+            c0 = np.min(m.faces.char_index)
+            m.faces.char_index += start - c0
+            return m, np.max(m.faces.char_index) + 1
+
+        # ----- Main
 
         self.update()
         
         mesh = Mesh(materials=self.materials)
 
         order = 0
+        char_index = 0
         for _, fgeom in self.depths():
 
             # ---------------------------------------------------------------------------
@@ -1059,10 +1093,11 @@ class Formula(maths.Formula):
                     continue
 
                 fgeom.update()
-                m = fgeom.formula.to_mesh()
+                m, char_index = _update_char_index(fgeom.formula.to_mesh(), char_index)
 
                 if fgeom.second is not None:
-                    m.join(fgeom.second.to_mesh())
+                    ms, char_index = _update_char_index(fgeom.second.to_mesh(), char_index)
+                    m.join(ms)
 
             # ---------------------------------------------------------------------------
             # Not a PlaceHolder
@@ -1072,7 +1107,7 @@ class Formula(maths.Formula):
                 if not isinstance(fgeom, FGeom):
                     continue
 
-                m = fgeom.to_mesh()
+                m, char_index = _update_char_index(fgeom.to_mesh(), char_index)
                 if not len(m.points):
                     continue
 
@@ -1084,12 +1119,15 @@ class Formula(maths.Formula):
                 if np.max(m.points.x) > x_max:
                     continue
 
-            if order_max is not None:
-                if order >= order_max:
+            if term_count is not None:
+                if order >= term_count:
                     continue
             order += 1
 
             mesh.join(m)
+
+        if char_count is not None and len(mesh.faces):
+            mesh.delete_faces(mesh.faces.char_index >= char_count, del_vertices=True)
 
         return mesh
 

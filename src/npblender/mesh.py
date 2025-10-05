@@ -1637,7 +1637,7 @@ class Mesh(Geometry):
     # Delete faces
     # ----------------------------------------------------------------------------------------------------
 
-    def delete_faces(self, selection):
+    def delete_faces(self, selection, del_vertices=False):
         """
         Delete only the selected faces from the mesh.
 
@@ -1645,6 +1645,9 @@ class Mesh(Geometry):
         ----------
         selection : array-like of int or bool
             Indices or boolean mask specifying which faces to delete.
+        del_vertices : bool, optional
+            Delete vertices
+            default = False
 
         Returns
         -------
@@ -1659,12 +1662,11 @@ class Mesh(Geometry):
             Corner array of the mesh, used to identify face connectivity.
 
         > ***Warning:*** This function permanently deletes faces and their
-        > associated corners. Handle undo/history in Blender if needed.
-
-        > ***Note:*** Only faces are removed. Edges and vertices remain in
-        > the mesh unless explicitly deleted by other operations.
+        > associated corners.
         """
-        self.faces.delete_loops(selection, self.corners)
+        verts = self.faces.delete_loops(selection, self.corners)
+        if del_vertices:
+            self.delete_vertices(points=verts)
 
     # ----------------------------------------------------------------------------------------------------
     # Delete vertices

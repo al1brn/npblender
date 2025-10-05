@@ -1402,7 +1402,6 @@ class Formula(FormulaBox):
                 return Formula(self, args[0], name=name)
             
             elif name == 'ph':
-                print("PH", option, args)
                 name = "PlaceHolder" if option is None else str(option)
                 return self.fix_placeholder(name)
             
