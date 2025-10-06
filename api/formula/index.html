@@ -521,55 +521,6 @@
               Bases: <code><a class="autorefs autorefs-internal" title="Formula (npblender.maths.Formula)" href="../maths/#npblender.maths.Formula">Formula</a></code></p>
 
 
-        <div class="highlight"><pre><span></span><code><span class="c1"># Two placeholders</span>
-<span class="c1"># minus signed is named minus</span>
-<span class="c1"># plus sign will be named + by default</span>
-<span class="n">latex</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;a     erm[minus]- \ph[target] = b + \ph[source]&quot;</span>
-<span class="n">frm</span> <span class="o">=</span> <span class="n">Formula</span><span class="p">(</span><span class="n">latex</span><span class="p">)</span>
-
-<span class="n">c</span> <span class="o">=</span> <span class="n">Formula</span><span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">)</span>
-
-<span class="n">plus</span>  <span class="o">=</span> <span class="n">frm</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">&quot;+&quot;</span><span class="p">)</span>
-<span class="n">minus</span> <span class="o">=</span> <span class="n">frm</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">&quot;minus&quot;</span><span class="p">)</span>
-
-<span class="c1"># Placeholrders </span>
-<span class="n">tgt</span> <span class="o">=</span> <span class="n">frm</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
-<span class="n">tgt</span><span class="o">.</span><span class="n">formula</span> <span class="o">=</span> <span class="n">c</span>
-
-<span class="n">src</span> <span class="o">=</span> <span class="n">frm</span><span class="o">.</span><span class="n">by_name</span><span class="p">(</span><span class="s2">&quot;source&quot;</span><span class="p">)</span>
-<span class="n">src</span><span class="o">.</span><span class="n">formula</span> <span class="o">=</span> <span class="n">c</span>
-
-<span class="c1"># Target placeholder</span>
-<span class="n">frm</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
-<span class="n">tr1</span> <span class="o">=</span> <span class="n">tgt</span><span class="o">.</span><span class="n">absolute_transfo</span>
-
-<span class="c1"># Starting from no minus sign and no target placeholder</span>
-<span class="n">tgt</span><span class="o">.</span><span class="n">anim</span><span class="o">.</span><span class="n">sx</span> <span class="o">=</span> <span class="mf">0.0</span>
-<span class="n">minus</span><span class="o">.</span><span class="n">anim</span><span class="o">.</span><span class="n">sx</span> <span class="o">=</span> <span class="mf">0.0</span>
-
-<span class="c1"># The source placeholder</span>
-<span class="n">frm</span><span class="o">.</span><span class="n">update</span><span class="p">()</span>
-<span class="n">tr0</span> <span class="o">=</span> <span class="n">src</span><span class="o">.</span><span class="n">absolute_transfo</span>
-
-<span class="c1"># Animation</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">():</span>
-
-    <span class="n">factor</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">((</span><span class="n">engine</span><span class="o">.</span><span class="n">frame</span><span class="o">-</span><span class="mi">50</span><span class="p">)</span><span class="o">/</span><span class="mi">100</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-
-    <span class="n">tgt</span><span class="o">.</span><span class="n">anim</span><span class="o">.</span><span class="n">sx</span>     <span class="o">=</span> <span class="n">factor</span>
-    <span class="n">src</span><span class="o">.</span><span class="n">anim</span><span class="o">.</span><span class="n">sx</span>     <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">factor</span>
-    <span class="n">minus</span><span class="o">.</span><span class="n">anim</span><span class="o">.</span><span class="n">sx</span>   <span class="o">=</span> <span class="n">factor</span>
-    <span class="n">plus</span><span class="o">.</span><span class="n">anim</span><span class="o">.</span><span class="n">sx</span>    <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">factor</span>
-
-    <span class="n">c</span><span class="o">.</span><span class="n">move_to</span><span class="p">(</span><span class="n">tr0</span><span class="p">,</span> <span class="n">tr1</span><span class="p">,</span> <span class="n">factor</span><span class="p">,</span> <span class="n">ymax</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">turns</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">smooth</span><span class="o">=</span><span class="s1">&#39;SMOOTH&#39;</span><span class="p">)</span>
-
-    <span class="c1"># The two formulas to objects</span>
-    <span class="n">frm</span><span class="o">.</span><span class="n">to_mesh</span><span class="p">()</span><span class="o">.</span><span class="n">to_object</span><span class="p">(</span><span class="s2">&quot;Formula&quot;</span><span class="p">)</span>           
-    <span class="n">c</span><span class="o">.</span><span class="n">to_mesh</span><span class="p">()</span><span class="o">.</span><span class="n">to_object</span><span class="p">(</span><span class="s2">&quot;c&quot;</span><span class="p">)</span>
-
-<span class="n">engine</span><span class="o">.</span><span class="n">go</span><span class="p">(</span><span class="n">update</span><span class="p">)</span>
-</code></pre></div>
-
 
 
 
