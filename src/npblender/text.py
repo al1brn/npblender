@@ -815,8 +815,6 @@ class FGeom(maths.FormulaGeom):
         _string  = None
 
 
-        print("---", str(content), type(content).__name__)
-
         if isinstance(content, Mesh):
             self._mesh = content
 
@@ -860,11 +858,9 @@ class FGeom(maths.FormulaGeom):
     # Compute the bbox
     # ---------------------------------------------------------------------------
 
-    @property
-    def bbox(self):
-        if self._bbox is None or (self._adjust_size is not None):
-            self._bbox = self.get_bbox()
-        return self._bbox
+    def reset_bbox(self):
+        # Do not change _bbox cache
+        pass
 
     def get_bbox(self):
         if self._mesh is None and self._special is None:
@@ -998,57 +994,6 @@ class FGeom(maths.FormulaGeom):
 class Formula(maths.Formula):
 
     def __init__(self, body, materials=None, font=None, math_font=None, **attrs):
-        """
-        ```python
-        # Two placeholders
-        # minus signed is named minus
-        # plus sign will be named + by default
-        latex = r"a \term[minus]- \ph[target] = b + \ph[source]"
-        frm = Formula(latex)
-        
-        c = Formula("c")
-        
-        plus  = frm.by_name("+")
-        minus = frm.by_name("minus")
-        
-        # Placeholrders 
-        tgt = frm.by_name("target")
-        tgt.formula = c
-
-        src = frm.by_name("source")
-        src.formula = c
-
-        # Target placeholder
-        frm.update()
-        tr1 = tgt.absolute_transfo
-        
-        # Starting from no minus sign and no target placeholder
-        tgt.anim.sx = 0.0
-        minus.anim.sx = 0.0
-        
-        # The source placeholder
-        frm.update()
-        tr0 = src.absolute_transfo
-        
-        # Animation
-        def update():
-            
-            factor = np.clip((engine.frame-50)/100, 0, 1)
-            
-            tgt.anim.sx     = factor
-            src.anim.sx     = 1 - factor
-            minus.anim.sx   = factor
-            plus.anim.sx    = 1 - factor
-            
-            c.move_to(tr0, tr1, factor, ymax=1.0, turns=0, smooth='SMOOTH')
-
-            # The two formulas to objects
-            frm.to_mesh().to_object("Formula")           
-            c.to_mesh().to_object("c")
-            
-        engine.go(update)
-        ```
-        """
 
         if isinstance(body, str):
             body = parse_latex(body, math_mode=True)
@@ -1086,34 +1031,36 @@ class Formula(maths.Formula):
 
         # ----- Main
 
-        self.update()
+        self.reset_bbox()
         
         mesh = Mesh(materials=self.materials)
 
         order = 0
         char_index = 0
-        for _, fgeom in self.depths():
+        #for _, fgeom in self.depths():
+        for fgeom in self.all_children(False):
 
             # ---------------------------------------------------------------------------
             # PlaceHolder can capture geometries
             # ---------------------------------------------------------------------------
 
+            """
             if type(fgeom).__name__ == "PlaceHolder":
                 if not fgeom.capture or fgeom.formula is None:
                     continue
 
-                fgeom.update()
                 m, char_index = _update_char_index(fgeom.formula.to_mesh(), char_index)
 
                 if fgeom.second is not None:
                     ms, char_index = _update_char_index(fgeom.second.to_mesh(), char_index)
                     m.join(ms)
-
             # ---------------------------------------------------------------------------
             # Not a PlaceHolder
             # ---------------------------------------------------------------------------
 
             else:
+            """
+            if True:
                 if not isinstance(fgeom, FGeom):
                     continue
 

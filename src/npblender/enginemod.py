@@ -768,6 +768,8 @@ def update(scene, depsgraph):
     else:
         engine._scene = scene
         engine.step()
+        # AVOID error: ReferenceError: StructRNA of type Scene has been removed
+        engine._scene = scene
 
 # ====================================================================================================
 # Render animation

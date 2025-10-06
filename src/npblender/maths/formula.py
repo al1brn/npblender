@@ -18,25 +18,10 @@ INT_SYMBS = {
 }
 
 # ====================================================================================================
-# Touchable
-# ====================================================================================================
-
-class Touchable:
-    def touch(self, touched=True):
-        self._touched = touched
-
-    @property
-    def touched(self):
-        if hasattr(self, '_touched'):
-            return self._touched
-        else:
-            return True
-
-# ====================================================================================================
 # Transfo2D
 # ====================================================================================================
 
-class Transfo2d(Touchable):
+class Transfo2d:
     """2D affine transform in homogeneous coordinates (3x3).
     
     Column-vector convention: p' = M @ p_h, with p_h = [x, y, 1]^T.
@@ -52,8 +37,6 @@ class Transfo2d(Touchable):
                 raise ValueError(f"Matrix must be shaped (3, 3), not {M.shape}")
             self._matrix = M
 
-        self.touch(False)
-
     def __str__(self):
         sx, sy = self.scale
         tx, ty = self.translation
@@ -66,14 +49,12 @@ class Transfo2d(Touchable):
 
     def reset(self):
         self._matrix[...] = np.eye(3, dtype=float)
-        self.touch()
 
     def clone(self):
         return Transfo2d(np.array(self._matrix))
     
     def copy(self, other):
         self._matrix[:] = other._matrix
-        self.touch()
 
     # -------------------------------------
     # Basic accessors
@@ -93,7 +74,6 @@ class Transfo2d(Touchable):
         if M.shape != (3, 3):
             raise ValueError(f"Matrix must be shaped (3, 3), not {M.shape}")
         self._matrix[...] = M
-        self.touch()
 
     @property
     def translation(self):
@@ -104,7 +84,6 @@ class Transfo2d(Touchable):
     def translation(self, value):
         v = np.asarray(value, dtype=float).reshape(2)
         self._matrix[:2, 2] = v
-        self.touch()
 
     # -------------------------------------
     # Scale / Rotation decomposition (left polar: A = P @ R)
@@ -163,8 +142,6 @@ class Transfo2d(Touchable):
         P = np.array([[sx, 0.0],
                       [0.0, sy]], dtype=float)
         self._matrix[:2, :2] = P @ R
-
-        self.touch()
 
     @property
     def scale(self):
@@ -316,7 +293,6 @@ class Transfo2d(Touchable):
 
     def apply_transfo(self, other):
         self.matrix[...] = other.matrix @ self.matrix
-        self.touch()
         return self
 
     def translate(self, *t, forward=True):
@@ -325,7 +301,6 @@ class Transfo2d(Touchable):
         if not forward:
             T[:2, 2] *= -1  # invert the just-built translation
         self.matrix[...] = T @ self.matrix
-        self.touch()
         return self
 
 
@@ -340,7 +315,6 @@ class Transfo2d(Touchable):
         if pivot is not None:
             self.translate(pivot, True)
 
-        self.touch()
         return self
 
     def apply_scale(self, *scale, pivot=None):
@@ -355,7 +329,6 @@ class Transfo2d(Touchable):
         if pivot is not None:
             self.translate(pivot, True)
 
-        self.touch()
         return self
     
     # -------------------------------------
@@ -587,7 +560,7 @@ class BBox:
 # Animation
 # ====================================================================================================
 
-class Animation(Touchable):
+class Animation:
     def __init__(self):
         """FormulaBox animation
 
@@ -606,7 +579,6 @@ class Animation(Touchable):
     
     @tx.setter
     def tx(self, value):
-        self.touch()
         self._tx = value
 
     @property
@@ -617,7 +589,6 @@ class Animation(Touchable):
     
     @ty.setter
     def ty(self, value):
-        self.touch()
         self._ty = value
 
     @property
@@ -628,7 +599,6 @@ class Animation(Touchable):
     
     @sx.setter
     def sx(self, value):
-        self.touch()
         self._sx = value
 
     @property
@@ -639,7 +609,6 @@ class Animation(Touchable):
     
     @sy.setter
     def sy(self, value):
-        self.touch()
         self._sy = value
 
     @property
@@ -650,7 +619,6 @@ class Animation(Touchable):
     
     @rot.setter
     def rot(self, value):
-        self.touch()
         self._rot = value
 
     @property
@@ -659,7 +627,6 @@ class Animation(Touchable):
     
     @z.setter
     def z(self, value):
-        self.touch()
         self._z = value
 
     @property
@@ -692,7 +659,7 @@ class Animation(Touchable):
 # An area
 # ====================================================================================================
 
-class FormulaBox(Touchable):
+class FormulaBox:
 
     def __init__(self, name="FormulaBox"):
         """The base class for box in a formula.
@@ -703,52 +670,82 @@ class FormulaBox(Touchable):
 
         self.name      = name
         self._transfo  = Transfo2d()
-        self._bbox     = BBox()
+        self._bbox     = None
         self.anim      = Animation()
 
-        self.owner        = None
-        self.child_key    = None
-        self._adjust_size = None
+        self._adjust_size = None 
 
-        self.touch()
+        # ----- Tree structure
+
+        self.owner        = None # Owner
+        self.child_key    = None # Key in owner
+        self.child_index  = None
+        self.children     = []   # List of children
 
     # ====================================================================================================
-    # Attach to an owner
+    # Tree management
     # ====================================================================================================
+
+    def detach(self):
+        if self.owner is not None and self in self.owner.children:
+            self.owner.children.remove(self)
+
+        self.child_key   = None
+        self.child_index = None
+        return self
 
     def attach_to(self, owner, child_key, **kwargs):
 
-        self.owner     = owner
-        self.child_key = child_key
+        self.detach()
+
+        self.owner       = owner
+        self.child_key   = child_key
+        if owner is not None:
+            self.owner.children.append(self)
 
         for k, v in kwargs.items():
             setattr(self, k, v)
 
-        self.owner.touch()
-
         return self
-
-    # ====================================================================================================
-    # Update
-    # ====================================================================================================
-
-    def update(self, force=False):
-        if force or self.touched:
-            self.get_bbox()
-        self.touch(False)
-
-    def touch(self, value=True):
-        super().touch(value)
-        if not value:
-            self.anim.touch(False)
-            self._transfo.touch(False)
-
-    @property
-    def touched(self):
-        if super().touched:
-            return True
-        return self.anim.touched or self._transfo.touched
     
+    def all_children(self, depth=False):
+
+        child_depth = 1
+        for child in self.children:
+            if depth:
+                yield child, child_depth
+            else:
+                yield child
+
+            for c, d in child.all_children(True):
+                if depth:
+                    yield c, child_depth + d
+                else:
+                    yield c
+
+    # ====================================================================================================
+    # Hierarchical attributes read
+    # ====================================================================================================
+
+    def __getattr__(self, name):
+        if self.owner is None:
+            raise AttributeError(f"'{name}' is not a valid attribute for '{type(self).__name__}'.")
+        
+        return getattr(self.owner, name)
+
+    # ====================================================================================================
+    # Dump
+    # ====================================================================================================
+
+    def __str__(self):
+        return f"<{type(self).name} '{self.name}' {self.transfo}>"
+    
+    def __repr__(self):
+        lines = [str(self)]
+        for d, c in self.all_children(True):
+            lines.append(f"{'   '*d}" + str(c))
+        return "\n".join(line)
+
     # ====================================================================================================
     # Transformations
     # ====================================================================================================
@@ -783,7 +780,6 @@ class FormulaBox(Touchable):
             return T
         else:
             return self.owner.transfo3d @ T
-
     
     # ====================================================================================================
     # BBox
@@ -792,15 +788,23 @@ class FormulaBox(Touchable):
     def get_bbox(self):
         raise NotImplementedError(f"get_bbox must be implemented")
 
+    def reset_bbox(self):
+        for c in self.children:
+            c.reset_bbox()
+
+        self._bbox = self.get_bbox()
+
     @property
     def bbox(self):
-        # No cache
-        if self.touched or self._adjust_size is not None:
+        if self._bbox is None:
             self._bbox = self.get_bbox()
-            
-        self.touch(False)
 
-        return self._bbox
+        if self._adjust_size is None:
+            return self._bbox
+        
+        width, height = self._adjust_size
+        x0, y0, x1, y1 = self._bbox.as_tuple()
+        return BBox(x0, y0, max(x1, x0 + width), max(y1, y0 + height))
     
     @property
     def transformed_bbox(self):
@@ -903,7 +907,6 @@ class FormulaBox(Touchable):
     
     def adjust_size(self, width=0.0, height=0.0):
         self._adjust_size = width, height
-        self.touch()
     
     # ====================================================================================================
     # DEBUG
@@ -995,37 +998,6 @@ class FormulaGeom(FormulaBox):
             
         return self.term.font
 
-    @property
-    def transfo3d_OLD(self):
-
-        T = self.transfo.transformation3d
-        T.z = self.anim.z
-
-        if self.owner is None:
-            return T
-        else:
-            return self.owner.transfo3d @ T
-
-        T = self.absolute_transfo.transformation3d
-        T.z = self.anim.z
-        return T
-        
-        from .transformation import Transformation
-
-        if self.term is None:
-            return Transformation()
-        else:
-            transfo = self.absolute_transfo
-            return transfo.transformation3d
-
-    @property
-    def bbox(self):
-        # No Cache
-        return self.get_bbox()
-        if self._bbox is None:
-            self._bbox = self.get_bbox()
-        return self._bbox
-        
     # ---------------------------------------------------------------------------
     # Interface to be implemented
     # ---------------------------------------------------------------------------
@@ -1041,112 +1013,191 @@ class FormulaGeom(FormulaBox):
 # ====================================================================================================
 
 class PlaceHolder(FormulaBox):
-    def __init__(self, formula=None, width=0., height=0., name="PlaceHolder", **attrs):
-        """Empty box with z fixed size to getting the size from an actual formula.
+    def __init__(self, width=0., height=0., name="PlaceHolder", **attrs):
+        """PlaceHolder is treated as a term but get its size from external info.
+
+        A PlaceHolder can be:
+        - fixed size box (default)
+        - get size from an external formula which doesn't belong to the PlaceHolder
+        - anim effect between two formulas which belong to the PlaceHolder
         """
 
         super().__init__(name=name)
 
         self.name  = name
-
-        # Owning formula
-        self.term = None
-
-        # Formulas to keep a placeholder for
-        self.formula       = formula
-        self.second        = None
-        self.capture       = False
-        self.switch_factor = 0.
-        self.active        = True
-
-        # Fix space
-        self.width  = width
-        self.height = height
-
-        # Attributes
+        self.fix(width, height)
+        
         for k, v in attrs.items():
             setattr(self, k, v)
 
-    def __str__(self):
-        s = f"<PlaceHolder '{self.name}'"
-        if self.formula is None:
-            return f"{s} {self.width:.2f}, {self.height:.2f}>"
-        else:
-            return f"{s} of {self.formula}>"
+    # ====================================================================================================
+    # Initializers
+    # ====================================================================================================
 
+    def fix(self, width, height):
+        for c in self.children:
+            c.detach()
+
+        self.mode = 'FIX'
+        self.width = width
+        self.height = height
+
+    def placeholder(self, formula):
+        if formula is None:
+            raise ValueError(f"PlaceHolder in mode 'PLACEHOLDER' needs a not None formula.")
+
+        for c in self.children:
+            c.detach()
+
+        self.mode = 'PLACEHOLDER'
+        self.formula = formula
+
+        return self
+
+    def switch(self, from_formula, to_formula, factor=0.5):
+        if from_formula is None or to_formula is None:
+            raise ValueError(f"PlaceHolder in mode 'SWITCH' needs two not None formulas to switch between.")
+        
+        for c in self.children:
+            c.detach()
+
+        self.mode = 'SWITCH'
+        from_formula.attach_to(self, 'from_formula')
+        to_formula.attach_to(self, 'to_formula')
+        self.factor = factor
+
+        return self
+    
+    def jump(self, formula, to_placeholder, factor=0.5):
+
+        if formula is None:
+            raise ValueError(f"PlaceHolder in mode 'JUMP' needs a not None Formula.")
+        if to_placeholder is None:
+            raise ValueError(f"PlaceHolder in mode 'JUMP' needs a not None target PlaceHolder to jump to.")
+        
+        for c in self.children:
+            c.detach()
+
+        self.mode = 'JUMP'
+        self.formula = formula
+        self.factor  = factor
+
+        self.to_ph = to_placeholder
+        self.to_ph.placeholder(self.formula)
+
+        # Compute the two jump transformations
+        self.jump_init()
+
+        return self
+    
+    # ====================================================================================================
+    # Initializers
+    # ====================================================================================================
+
+    def __str__(self):
+        return f"<PlaceHolder[{self.mode}] '{self.name}'>"
+        
     # ====================================================================================================
     # Expose the bbox of the encapsulated formula
     # ====================================================================================================
 
-    @property
-    def touched(self):
-        return self.active
-    
-        if self.formula is not None and self.formula.touched:
-            return True
-        if self.second is not None and self.second.touched:
-            return True
-        return super().touched
-    
-    def touch(self, value=True):
-        if not value:
-            if self.formula is not None:
-                self.formula.touch(False)
-            if self.second is not None:
-                self.second.touch(False)
-        super().touch(value)
+    def reset_bbox(self):
+        if self.mode == 'PLACEHOLDER':
+            self.formula.reset_bbox()
 
-    @property
-    def bbox(self):
-        return self.get_bbox()
+        elif self.mode == 'JUMP':
+            # Set other PH scale (will reset formula bbox)
+            self.to_ph.anim.sx = self.factor
+
+            self.anim.sx = 1.0 - self.factor
+
+        super().reset_bbox()
 
     def get_bbox(self):
-        if self.formula is None:
+
+        if self.mode == 'FIX':
             return BBox(0, 0, self.width, self.height)
         
-        elif self.second is None:
+        if self.mode == 'PLACEHOLDER':
             return self.formula.bbox
         
-        else:
-            f = self.switch_factor
-            bbox0 = self.formula.bbox.scaled(1 - f, 1.)
-            bbox0 = bbox0.translated(-bbox0.x0)
-            bbox1 = self.second.bbox.scaled(f, 1.)
-            bbox1 = bbox1.translated(bbox0.x1 - bbox1.x0)
+        if self.mode == 'SWITCH':
 
-            return bbox0 + bbox1
+            f = self.factor
+
+            frm0, frm1 = self.children
+            frm0.reset_transfo()
+            frm1.reset_transfo()
+
+            bbox0 = frm0.bbox 
+            bbox1 = frm1.bbox
+
+            frm0.transfo.apply_scale(1 - f, 1.)
+            frm1.transfo.apply_scale(f, 1.)
+            frm1.transfo.translate(frm0.transformed_bbox.width, 0.)
+
+            return frm0.transformed_bbox + frm1.transformed_bbox
         
+        if self.mode == 'JUMP':
+            self.anim.sx = 1 - self.factor
+            self.to_ph.anim.sx = self.factor
+            return self.formula.bbox
+        
+        assert False, "Shouldn't occur"
+
     # ====================================================================================================
-    # Update the formula and second transformations
+    # Specific to jump
     # ====================================================================================================
 
-    def update(self):
-        if self.formula is None or (not self.capture):
+    # ----------------------------------------------------------------------------------------------------
+    # Initial and final absolute transfo
+    # ----------------------------------------------------------------------------------------------------
+
+    def jump_init(self):
+
+        self.transfo0 = None
+        self.transfo1 = None
+
+        if self.mode != 'JUMP':
             return
         
-        if self.second is None:
-            self.formula.transfo.copy(self.absolute_transfo)
+        # ----- Get the top formula
+        top = self
+        if top is None:
+            return
+        
+        while top.owner is not None:
+            top = top.owner
 
-        else:
-            f = self.switch_factor
-            bbox0 = self.formula.bbox 
-            bbox1 = self.second.bbox
+        # ----- Compute the formula for the two cases
 
-            f_transfo = Transfo2d.from_components(sx = 1 - f)
-            s_transfo = Transfo2d.from_components(tx = bbox0.width*(1 - f), sx=f)
+        # Store current factor
+        factor = self.factor
 
-            self.formula.transfo.copy(self.absolute_transfo @ f_transfo)
-            self.second.transfo.copy(self.absolute_transfo @ s_transfo)
+        # Factor = 0
+        self.factor = 0.0
+        top.reset_bbox()
+        self.transfo0 = self.absolute_transfo
 
-    # ====================================================================================================
-    # Utility
-    # ====================================================================================================
+        # Factor = 1
+        self.factor = 1.0
+        top.reset_bbox()
+        self.transfo1 = self.to_ph.absolute_transfo
 
-    def switch(self, from_formula, to_formula, factor=.5, capture=True):
-        self.formula = from_formula
-        self.second  = to_formula
-        self.capture = capture
-        self.switch_factor = factor
+        # Restore current factor
+        self.factor = factor
+
+
+
+    # ----------------------------------------------------------------------------------------------------
+    # Intermediary transfos
+    # ----------------------------------------------------------------------------------------------------
+
+    def get_jump_transfo(self, ymax):
+        if self.mode != 'JUMP':
+            return Transfo2d()
+
+        return self.transfo0.interpolate(self.transfo1, self.factor, ymax=ymax)
 
 
 # ====================================================================================================
@@ -1163,6 +1214,7 @@ class Formula(FormulaBox):
         'x_sepa'        : 0.1,  # Space between successive terms
         'y_sepa'        : 0.1,  # Space between arranged one over the oher one
         'script_scale'  : 0.5,  # Scripts scale
+        'oper_scale'    : 1.2,  # Over scale for integral, sum,...
         'dy_super'      : 0.1,  # Location of superscript: y1 - y_super
         'y_super_min'   : 0.35, # Minimum y location for superscript
         'dy_sub'        : 0.15, # Location of subscript y0 + y_sub
@@ -1280,14 +1332,6 @@ class Formula(FormulaBox):
                 continue
             self.set_decorator(k, attrs[k])
 
-        # ----------------------------------------
-        # Update if root
-        # ----------------------------------------
-
-        if self.owner is None:
-            self.update()
-
-
     # ====================================================================================================
     # Str / repr
     # ====================================================================================================
@@ -1309,7 +1353,8 @@ class Formula(FormulaBox):
     def __repr__(self):
 
         lines = [str(self)]
-        for depth, term in self.depths():
+        #for depth, term in self.depths():
+        for term, depth in self.all_children(True):
             if term.child_key == 'term':
                 lines.append(f"{'   '*(depth+1)}{term.child_index:2d}: {str(term)}")
             else:
@@ -1365,7 +1410,10 @@ class Formula(FormulaBox):
         return new_attrs
     
     @staticmethod
-    def symbol_string(s):
+    def symbol_string(s, func_style):
+
+        if func_style is not None:
+            s = func_style.same_style(s)
         return {'type': 'SYMBOL', 'string': s}
 
     def parse_dict(self, fdict):
@@ -1377,7 +1425,7 @@ class Formula(FormulaBox):
             # Space ~ 
             if fdict['type'] == 'SYMBOL' and name == " ":
                 name = "Space"
-                content = self.fix_placeholder(name, width=0.)
+                content = self.placeholder(name=name)
             # Other
             else:
                 content = self.geom_cls(self, fdict['string'], symbol=fdict['type']=='SYMBOL')
@@ -1402,18 +1450,19 @@ class Formula(FormulaBox):
             option  = fdict.get('option')
             args    = fdict.get('args')
             attrs   = {k: v for k, v in fdict.items() if k not in ['type', 'name', 'options', 'args']}
+            fstyle  = attrs.get('func_style')
 
             if name == 'sum':
-                return self.operator(self.symbol_string('Σ'), args[0], **self.to_underover(attrs))
+                return self.operator(self.symbol_string('Σ', fstyle), args[0], **self.to_underover(attrs))
 
             elif name == 'prod':
-                return self.operator(self.symbol_string('Π'), args[0], **self.to_underover(attrs))
+                return self.operator(self.symbol_string('Π', fstyle), args[0], **self.to_underover(attrs))
             
             elif name in INT_SYMBS:
-                return self.operator(self.symbol_string(INT_SYMBS[name]), args[0], sub_offset=self.int_sub_ofs, **attrs)
+                return self.operator(self.symbol_string(INT_SYMBS[name], fstyle), args[0], sub_offset=self.int_sub_ofs, **attrs)
             
             elif name in ['lim', 'limsup', 'liminf']:
-                return self.fix_operator(self.symbol_string(name), args[0], **self.to_underover(attrs))
+                return self.fix_operator(self.symbol_string(name, fstyle), args[0], **self.to_underover(attrs))
             
             elif name in ['frac', 'tfrac', 'dfrac']:
                 return self.fraction(args[0], args[1], **attrs)
@@ -1430,7 +1479,7 @@ class Formula(FormulaBox):
             
             elif name == 'ph':
                 name = "PlaceHolder" if option is None else str(option)
-                return self.fix_placeholder(name)
+                return self.placeholder(name=name)
             
             else:
                 frm = Formula(self, name, **attrs)
@@ -1510,8 +1559,6 @@ class Formula(FormulaBox):
         self.body.clear()
         self.body.append(new_term.attach_to(self, 'term', child_index=0))
 
-        self.touch()
-
     def set_decorator(self, key, child, **kwargs):
 
         if child is None:
@@ -1524,8 +1571,6 @@ class Formula(FormulaBox):
 
         # We can safely add the deco
         self._decos[key] = child.attach_to(self, key, **kwargs)
-
-        self.touch()
 
         return child
     
@@ -1540,10 +1585,7 @@ class Formula(FormulaBox):
         if add_layer or len(self._decos):
             self._add_layer()
 
-
         self.body.append(term.attach_to(self, 'term', child_index=len(self.body)))
-
-        self.touch()
 
         return self.body[-1]
 
@@ -1551,7 +1593,7 @@ class Formula(FormulaBox):
     # Iterators
     # ----------------------------------------------------------------------------------------------------
 
-    def terms(self):
+    def terms_OLD(self):
 
         # Bodies
         for term in self.body:
@@ -1561,7 +1603,7 @@ class Formula(FormulaBox):
         for term in self._decos.values():
             yield term
     
-    def depths(self):
+    def depths_OLD(self):
 
         def recur(depth, term):
             if not isinstance(term, Formula):
@@ -1580,26 +1622,12 @@ class Formula(FormulaBox):
         if self.name == name:
             return self
         
-        for _, frm in self.depths():
+        #for _, frm in self.depths():
+        for frm in self.all_children(False):
             if frm.name == name:
                 return frm
             
         return None
-    
-    @property
-    def touched(self):
-        if super().touched:
-            return True
-        for t in self.terms():
-            if t.touched:
-                return True
-        return False
-    
-    def touch(self, value=True):
-        super().touch(value)
-        if not value:
-            for t in self.terms():
-                t.touch(False)
 
     # ====================================================================================================
     # Attributes
@@ -1630,20 +1658,17 @@ class Formula(FormulaBox):
         else:
             super().__setattr__(name, value)
 
-        if name != '_touched':
-            self.touch()
+    # ====================================================================================================
+    # Create a place holder
+    # ====================================================================================================
+
+    def placeholder(self, name):
+        return PlaceHolder(name=name)
 
     # ====================================================================================================
     # Bounding boxes
     # ====================================================================================================
 
-    def placeholder(self, name):
-        return PlaceHolder(self, name=name)
-    
-    @staticmethod
-    def fix_placeholder(name, width=0., height=0.):
-        return PlaceHolder(None, width=width, height=height, name=name)
-    
     # ----------------------------------------------------------------------------------------------------
     # Body bbox
     # ----------------------------------------------------------------------------------------------------
@@ -1672,7 +1697,6 @@ class Formula(FormulaBox):
     def body_translate(self, tx, ty):
         for frm in self.body:
             frm.transfo.translate(tx, ty)    
-        self.touch()
 
     # ----------------------------------------------------------------------------------------------------
     # Adjust size
@@ -1681,7 +1705,6 @@ class Formula(FormulaBox):
     def adjust_size(self, width=0.0, height=0.0):
         for term in self.body:
             term.adjust_size(width, height)
-        self.touch()
 
     # ----------------------------------------------------------------------------------------------------
     # Compute the bbox
@@ -1690,7 +1713,6 @@ class Formula(FormulaBox):
     def get_bbox(self):
         """Formula bbox is the body bbox plus decorators
         """
-
         # ---------------------------------------------------------------------------
         # Starting from the body bbox
         # ---------------------------------------------------------------------------
@@ -1757,7 +1779,7 @@ class Formula(FormulaBox):
                 term.adjust_size(0.0, left_right_bbox.height + 2*self.y_sepa)
 
             elif key in ['operation']:
-                term.adjust_size(0.0, bbox.height + 2*self.y_sepa)
+                term.adjust_size(0.0, bbox.height*self.oper_scale + 2*self.y_sepa)
 
             # --------------------------------------------------
             # Scripts
@@ -1951,7 +1973,6 @@ class Formula(FormulaBox):
             
         # ----- We've got our bounding box
 
-        self.touch(False)
         return bbox
 
     # ====================================================================================================
@@ -1971,7 +1992,8 @@ class Formula(FormulaBox):
 
         if isinstance(self, Formula):
             n = 0
-            for _ in self.terms():
+            #for _ in self.terms():
+            for _ in self.children:
                 n += 1
             if False and n > 1:
                 super()._plot_global(plt, color='red')
@@ -1979,7 +2001,9 @@ class Formula(FormulaBox):
         if False:
             print("PLOT", self)
 
-        for term in self.terms():
+        #for term in self.terms():
+        #    term._plot(plt)
+        for term in self.children:
             term._plot(plt)
 
 
@@ -1998,17 +2022,16 @@ if __name__ == "__main__":
         def __init__(self, owner, name, bbox=(-1, -1, 1, 1), **kwargs):
             super().__init__(name)
             self.owner = owner
-            self._bbox = BBox(bbox)
+            self.the_bbox = BBox(bbox)
 
         def __str__(self):
             return f"<Fake {self.name} ({self.child_key}), {self.transfo}>"
 
         def get_bbox(self):
-            return self._bbox
+            return self.the_bbox
         
         def adjust_size(self, width=0, height=0):
             super().adjust_size(width, height)
-
 
     np.random.seed(0)
     ok_plot = True
@@ -2106,15 +2129,11 @@ if __name__ == "__main__":
         frm.append(frm.fix_operator( itg2, "F2") )
         frm.append(("x"))
 
-        frm.update()
-        print(repr(frm))
-
-
     # ---------------------------------------------------------------------------
     # from dict
     # ---------------------------------------------------------------------------
 
-    if True:
+    if False:
         d = {'type': 'BLOCK', 'content': [
                 {'type': 'STRING', 'string': 'I='},
                 {'type': 'FUNCTION', 'name': 'sum', 'args': [
@@ -2300,17 +2319,20 @@ if __name__ == "__main__":
 
         frm = Formula(geom_cls=Fake)
         frm.append("a+")
-        frm.append(Formula.fix_placeholder("test", .5, 0.))
+        frm.append(Formula.placeholder(name="test", width=.5, height=0.))
 
         frm.append(term)
         frm.append("=")
-        ph = frm.append(term.placeholder("frm"))
+        ph = frm.append(term.placeholder(name="frm"))
         frm.append("+19")
 
         ph.anim.sx = 2
 
+    # ---------------------------------------------------------------------------
+    # Algo
+    # ---------------------------------------------------------------------------
 
-
+    #term = Formula("{{{x}}}", geom_cls=Fake)
 
     # ---------------------------------------------------------------------------
     # Draw
@@ -2323,8 +2345,8 @@ if __name__ == "__main__":
 
     if ok_plot:
 
-        frm.update()
-
+        frm.reset_bbox()
+        print(repr(frm))
         frm._plot(plt, color='red')
 
         plt.axis("equal")
