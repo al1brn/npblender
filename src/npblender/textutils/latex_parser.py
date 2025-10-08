@@ -71,7 +71,7 @@ MATH_PATTERNS = {
   "SQRT_PAT":    {"tokens": 1, "option": True},  
   "ACCENT_PAT":  {"tokens": 1},
   "INT_PAT":     {"tokens": 1, "scripts": True},
-  "PH_PAT":      {"tokens": 0, "option": True}
+  "PH_PAT":      {"tokens": 0, "scripts": True, "option": True}
 }
 
 MATH_PATTERN_COMMANDS = {

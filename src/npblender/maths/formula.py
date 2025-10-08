@@ -742,9 +742,9 @@ class FormulaBox:
     
     def __repr__(self):
         lines = [str(self)]
-        for d, c in self.all_children(True):
+        for c, d in self.all_children(True):
             lines.append(f"{'   '*d}" + str(c))
-        return "\n".join(line)
+        return "\n".join(lines)
 
     # ====================================================================================================
     # Transformations
@@ -1478,8 +1478,20 @@ class Formula(FormulaBox):
                 return Formula(self, args[0], name=name)
             
             elif name == 'ph':
-                name = "PlaceHolder" if option is None else str(option)
-                return self.placeholder(name=name)
+                if True:
+                    name = "PlaceHolder" if option is None else str(option)
+                    ph = self.placeholder(name=name)
+                    return Formula(self, ph, name=f"{name} term", **attrs)
+                    return self.append(ph)
+                else:
+                    print("DEBUG")
+                    print(attrs)
+                    name = "PlaceHolder" if option is None else str(option)
+                    return self.placeholder(name=name)
+            
+
+
+
             
             else:
                 frm = Formula(self, name, **attrs)
