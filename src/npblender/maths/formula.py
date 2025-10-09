@@ -745,6 +745,14 @@ class FormulaBox:
         for c, d in self.all_children(True):
             lines.append(f"{'   '*d}" + str(c))
         return "\n".join(lines)
+    
+    # ====================================================================================================
+    # Horizontal separation after
+    # ====================================================================================================
+
+    @property
+    def sepa_after(self):
+        return True
 
     # ====================================================================================================
     # Transformations
@@ -1091,12 +1099,30 @@ class PlaceHolder(FormulaBox):
         return self
     
     # ====================================================================================================
-    # Initializers
+    # str
     # ====================================================================================================
 
     def __str__(self):
-        return f"<PlaceHolder[{self.mode}] '{self.name}'>"
-        
+        if self.mode == 'FIX':
+            return f"<PlaceHolder[{self.mode}] '{self.name}' width: {self.width:.2f}, height: {self.height:.2f}>"
+        else:
+            return f"<PlaceHolder[{self.mode}] '{self.name}'>"
+
+    # ====================================================================================================
+    # Sepa after
+    # ====================================================================================================
+
+    @property
+    def sepa_after(self):
+        if self.mode == 'FIX':
+            return False
+        elif self.mode == 'PLACEHOLDER':
+            return self.formula.sepa_after
+        elif self.mode == 'SWITCH':
+            return self.children[0].sepa_after
+        elif self.mode == 'JUMP':
+            return self.formula.sepa_after
+
     # ====================================================================================================
     # Expose the bbox of the encapsulated formula
     # ====================================================================================================
@@ -1128,9 +1154,6 @@ class PlaceHolder(FormulaBox):
             frm0, frm1 = self.children
             frm0.reset_transfo()
             frm1.reset_transfo()
-
-            bbox0 = frm0.bbox 
-            bbox1 = frm1.bbox
 
             frm0.transfo.apply_scale(1 - f, 1.)
             frm1.transfo.apply_scale(f, 1.)
@@ -1187,8 +1210,6 @@ class PlaceHolder(FormulaBox):
         # Restore current factor
         self.factor = factor
 
-
-
     # ----------------------------------------------------------------------------------------------------
     # Intermediary transfos
     # ----------------------------------------------------------------------------------------------------
@@ -1213,6 +1234,8 @@ class Formula(FormulaBox):
 
         'x_sepa'        : 0.1,  # Space between successive terms
         'y_sepa'        : 0.1,  # Space between arranged one over the oher one
+        'x_sepa_factor' : 1.0,  # Factor to apply to x_sepa
+        'em'            : 0.6,  # em unit (around M width)
         'script_scale'  : 0.5,  # Scripts scale
         'oper_scale'    : 1.2,  # Over scale for integral, sum,...
         'dy_super'      : 0.1,  # Location of superscript: y1 - y_super
@@ -1426,6 +1449,11 @@ class Formula(FormulaBox):
             if fdict['type'] == 'SYMBOL' and name == " ":
                 name = "Space"
                 content = self.placeholder(name=name)
+
+                # Only width, no sepa
+                content.width=fdict.get('width', .434)*self.em
+                content.x_sepa_factor=0.0
+
             # Other
             else:
                 content = self.geom_cls(self, fdict['string'], symbol=fdict['type']=='SYMBOL')
@@ -1682,6 +1710,17 @@ class Formula(FormulaBox):
     # ====================================================================================================
 
     # ----------------------------------------------------------------------------------------------------
+    # Sepa after
+    # ----------------------------------------------------------------------------------------------------
+
+    @property
+    def sepa_after(self):
+        if len(self.body):
+            return self.body[-1].sepa_after
+        else:
+            return False
+
+    # ----------------------------------------------------------------------------------------------------
     # Body bbox
     # ----------------------------------------------------------------------------------------------------
 
@@ -1689,16 +1728,20 @@ class Formula(FormulaBox):
         """Surrounding BBox for all the formulas in terms list.
         """
         bbox = BBox()
+        use_sepa = False # Sepa from previous terme
         for frm in self.body:
 
             frm.reset_transfo()
 
             x = bbox.x1
-            margin = self.x_sepa if x > ZERO else 0.
+            margin = self.x_sepa*frm.x_sepa_factor if use_sepa else 0.
+
             frm.x_align(x, align='left', margin=margin)
             frm.transfo.translate(frm.anim.translation)
 
             bbox += frm.transformed_bbox
+
+            use_sepa = frm.sepa_after
 
         return bbox
     
@@ -1863,7 +1906,7 @@ class Formula(FormulaBox):
                     term.x_align(0., align='left')
                     term.y_align(bbox.center[1], align='middle')
 
-                    w = t_bbox.width + self.x_sepa*term.anim.sx
+                    w = t_bbox.width + self.x_sepa*term.anim.sx*term.x_sepa_factor
 
                     # Left shift the body and done terms
                     _translate_dones(w, 0)
@@ -1874,7 +1917,7 @@ class Formula(FormulaBox):
                     bbox = bbox + (0, 0, bbox.x1 + w, 0)
 
                 elif key in ['right', 'fix_right']:
-                    x = bbox.x1 + self.x_sepa
+                    x = bbox.x1 + self.x_sepa*self.x_sepa_factor
                     term.x_align(x, align='left')
                     term.y_align(bbox.center[1], align='middle')
 

@@ -374,11 +374,9 @@ class Font:
             font = Font.FONTS.get(self.font_name)
             if font is not None and font._dimensions is not None:
                 return font._dimensions
-            
 
-        print("Font: compute dimensions", self.font_name)
 
-        mesh = Text("aAp> <=_", font=self).to_mesh(transform=False, char_index=0)
+        mesh = Text("aAp> <=_M00", font=self).to_mesh(transform=False, char_index=0)
 
         def _dims(char_index):
             cis = mesh.faces[mesh.faces.char_index==char_index].loop_index
@@ -387,6 +385,9 @@ class Font:
         
         d_eq  = _dims(6)
         d_bar = _dims(7)
+        d_em  = _dims(8)
+        d_0   = _dims(9)
+        d_1   = _dims(10)
 
         d = {
             'y_body'    : _dims(0)[3],
@@ -396,13 +397,16 @@ class Font:
             'y_frac'    : (d_eq[1] + d_eq[3])/2.0,
             'thickness' : d_bar[3] - d_bar[1],
         }
-        d['x_sepa']      = d['x_space']*0.5
+        d['x_sepa']      = d_1[0] - d_0[2] #d['x_space']*0.5
         d['y_sepa']      = d['thickness']*3.0
         d['dy_super']    = d['y_body']*0.2
         d['y_super_min'] = d['y_body']*0.8
         d['dy_sub']      = d['y_body']*0.4
         d['y_sub_max']   = d['y_body']*0.4
         d['oversize']    = d['thickness']*0.8
+        d['em']          = d_em[2] - d_em[0]
+
+        print("Font: compute dimensions of", self.font_name, f"em: {d['em']:.3f}, 'space': {d['x_space']/d['em']*100:.1f}%, x_sepa: {d['x_sepa']/d['em']*100:.1f}%")
 
         self._dimensions = d
         if self.font_name is not None:
